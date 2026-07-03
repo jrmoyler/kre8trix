@@ -1,6 +1,9 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronRight, Check, Link, Wallet, TrendingUp, Shield, Sparkles } from 'lucide-react';
+import { ChevronRight, Check, Link, Wallet, Shield, Sparkles } from 'lucide-react';
+import { api } from '@/lib/api';
+import type { PlatformConnection } from '@/lib/types';
 
 /* ── steps ────────────────────────────────────────────────── */
 const STEPS = [
@@ -19,12 +22,20 @@ const PLATFORMS = [
 ];
 
 export default function Onboarding() {
+  const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [connected, setConnected] = useState<string[]>([]);
   const [walletType, setWalletType] = useState<'new' | 'existing'>('new');
 
   const connectPlatform = (name: string) => {
-    setConnected((prev) => (prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name]));
+    const isConnected = connected.includes(name);
+    setConnected((prev) => (isConnected ? prev.filter((n) => n !== name) : [...prev, name]));
+    // Persist to the creator profile so Settings → Connected Accounts reflects it.
+    api
+      .put<PlatformConnection[]>('/profile/connections', { name, connected: !isConnected })
+      .catch(() => {
+        /* non-blocking during onboarding */
+      });
   };
 
   const canProceed = () => {
@@ -205,7 +216,7 @@ export default function Onboarding() {
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                onClick={() => window.location.href = '/dashboard'}
+                onClick={() => navigate('/dashboard')}
                 className="bg-acid text-void font-body text-[16px] font-semibold px-8 py-4 rounded-2xl"
               >
                 Go to Dashboard
@@ -224,16 +235,24 @@ export default function Onboarding() {
             >
               Back
             </button>
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => setStep(step + 1)}
-              disabled={!canProceed()}
-              className="flex items-center gap-2 bg-acid text-void font-body text-[16px] font-semibold px-6 py-3 rounded-2xl disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              Continue
-              <ChevronRight size={18} />
-            </motion.button>
+            <div className="flex items-center gap-5">
+              <button
+                onClick={() => navigate('/dashboard')}
+                className="font-body text-[14px] text-[rgba(255,255,255,0.42)] hover:text-white transition-colors"
+              >
+                Skip for now
+              </button>
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setStep(step + 1)}
+                disabled={!canProceed()}
+                className="flex items-center gap-2 bg-acid text-void font-body text-[16px] font-semibold px-6 py-3 rounded-2xl disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Continue
+                <ChevronRight size={18} />
+              </motion.button>
+            </div>
           </div>
         )}
       </div>

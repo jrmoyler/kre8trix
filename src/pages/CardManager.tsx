@@ -41,42 +41,6 @@ const SPEND_CATEGORIES: SpendCategory[] = [
   { name: 'Daily Spend', icon: ShoppingBag, current: 280, limit: 500, color: '#00D4FF' },
 ];
 
-export const MONTHLY_TOTAL = 2578;
-export const MONTHLY_LIMIT = 4500;
-
-interface CardTransaction {
-  id: string;
-  date: string;
-  merchant: string;
-  category: string;
-  amount: number;
-  cashback: number;
-  cashbackRate: number;
-  status: 'Completed' | 'Pending';
-}
-
-export const CARD_TRANSACTIONS: CardTransaction[] = [
-  { id: '1', date: 'Oct 15', merchant: 'B&H Photo', category: 'Equipment', amount: -1299.00, cashback: 38.97, cashbackRate: 3, status: 'Completed' },
-  { id: '2', date: 'Oct 14', merchant: 'Adobe CC', category: 'Software', amount: -59.99, cashback: 1.20, cashbackRate: 2, status: 'Completed' },
-  { id: '3', date: 'Oct 12', merchant: 'Delta Airlines', category: 'Travel', amount: -450.00, cashback: 9.00, cashbackRate: 2, status: 'Completed' },
-  { id: '4', date: 'Oct 10', merchant: 'Facebook Ads', category: 'Advertising', amount: -200.00, cashback: 4.00, cashbackRate: 2, status: 'Completed' },
-  { id: '5', date: 'Oct 8', merchant: 'WeWork', category: 'Workspace', amount: -299.00, cashback: 2.99, cashbackRate: 1, status: 'Completed' },
-  { id: '6', date: 'Oct 5', merchant: 'Starbucks', category: 'Dining', amount: -12.50, cashback: 0.13, cashbackRate: 1, status: 'Completed' },
-];
-
-export const CASHBACK_RATES = [
-  { category: 'Equipment', rate: 3, color: '#C8FF00', width: '40%' },
-  { category: 'Software', rate: 2, color: '#00D4FF', width: '25%' },
-  { category: 'Advertising', rate: 2, color: '#00D4FF', width: '20%' },
-  { category: 'Other', rate: 1, color: 'rgba(255,255,255,0.2)', width: '15%' },
-];
-
-export const CASHBACK_STATS: { label: string; value?: number; valueStr?: string; detail: string }[] = [
-  { label: 'This Month', value: 24.70, detail: '2.1% avg rate' },
-  { label: 'Total Earned', value: 342.80, detail: 'Since Jan 2024' },
-  { label: 'Next Payout', valueStr: 'Nov 1', detail: '$24.70 pending' },
-];
-
 /* ------------------------------------------------------------------ */
 /*  3D Tilt Card                                                       */
 /* ------------------------------------------------------------------ */
@@ -172,26 +136,6 @@ function TiltCard({ src, alt, frozen, showDetails }: { src: string; alt: string;
         </motion.div>
       </motion.div>
     </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/*  Toggle Switch                                                      */
-/* ------------------------------------------------------------------ */
-export function ToggleSwitch({ enabled, onChange }: { enabled: boolean; onChange: (v: boolean) => void }) {
-  return (
-    <button
-      onClick={() => onChange(!enabled)}
-      className={`relative w-[52px] h-[28px] rounded-full transition-colors duration-200 ${
-        enabled ? 'bg-acid' : 'bg-[rgba(255,255,255,0.12)]'
-      }`}
-    >
-      <motion.div
-        animate={{ x: enabled ? 24 : 4 }}
-        transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-        className="absolute top-[3px] w-[22px] h-[22px] rounded-full bg-white shadow-md"
-      />
-    </button>
   );
 }
 

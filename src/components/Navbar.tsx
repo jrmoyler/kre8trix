@@ -12,6 +12,8 @@ import {
   Menu,
   X,
 } from 'lucide-react';
+import InitialsAvatar from './InitialsAvatar';
+import { useAuth } from '@/lib/auth-context';
 
 const navItems = [
   { label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
@@ -27,6 +29,7 @@ const navItems = [
 export default function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -127,14 +130,10 @@ export default function Navbar() {
             ${collapsed ? 'justify-center' : ''}
           `}
         >
-          <img
-            src="/avatar-creator-1.png"
-            alt="User"
-            className="w-10 h-10 rounded-full object-cover flex-shrink-0 border border-[rgba(255,255,255,0.1)]"
-          />
+          <InitialsAvatar name={user?.name ?? 'K'} size={40} />
           {!collapsed && (
             <div className="flex-1 min-w-0">
-              <p className="text-[14px] text-white font-medium truncate">Alex Chen</p>
+              <p className="text-[14px] text-white font-medium truncate">{user?.name ?? 'Creator'}</p>
               <p className="text-[12px] text-[rgba(255,255,255,0.42)] truncate">Creator</p>
             </div>
           )}

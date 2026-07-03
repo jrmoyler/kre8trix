@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -19,50 +19,24 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
-
-/* ─────────────────────────── mock data ─────────────────────────── */
-
-const cashFlowData = [
-  { date: 'Sep 1', historical: 8200, projected: null },
-  { date: 'Sep 5', historical: 9400, projected: null },
-  { date: 'Sep 10', historical: 11200, projected: null },
-  { date: 'Sep 15', historical: 10800, projected: null },
-  { date: 'Sep 20', historical: 13100, projected: null },
-  { date: 'Sep 25', historical: 14500, projected: null },
-  { date: 'Sep 30', historical: 15200, projected: null },
-  { date: 'Oct 5', historical: 16800, projected: null },
-  { date: 'Oct 10', historical: 18400, projected: null },
-  { date: 'Oct 15', historical: null, projected: 19200 },
-  { date: 'Oct 20', historical: null, projected: 21000 },
-  { date: 'Oct 25', historical: null, projected: 22800 },
-  { date: 'Oct 30', historical: null, projected: 24600 },
-  { date: 'Nov 5', historical: null, projected: 26200 },
-  { date: 'Nov 10', historical: null, projected: 28600 },
-  { date: 'Nov 15', historical: null, projected: 31200 },
-  { date: 'Nov 20', historical: null, projected: 33800 },
-  { date: 'Nov 30', historical: null, projected: 38400 },
-  { date: 'Dec 10', historical: null, projected: 41200 },
-  { date: 'Dec 20', historical: null, projected: 44800 },
-];
-
-const transactions = [
-  { id: 1, name: 'YouTube Ad Revenue', platform: 'YouTube', amount: 4850, date: 'Oct 15', status: 'completed', iconColor: '#FF0000' },
-  { id: 2, name: 'TikTok Creator Fund', platform: 'TikTok', amount: 1240, date: 'Oct 14', status: 'completed', iconColor: '#FF0050' },
-  { id: 3, name: 'Shopify Store Sales', platform: 'Shopify', amount: 2180, date: 'Oct 13', status: 'completed', iconColor: '#96BF48' },
-  { id: 4, name: 'USDC to USD Conversion', platform: 'Kre8trix', amount: -500, date: 'Oct 12', status: 'completed', iconColor: '#C8FF00' },
-  { id: 5, name: 'Equipment Purchase', platform: 'Kre8trix Card', amount: -1299, date: 'Oct 11', status: 'completed', iconColor: '#9B5DE5' },
-  { id: 6, name: 'Stripe Payout', platform: 'Stripe', amount: 3450, date: 'Oct 10', status: 'pending', iconColor: '#635BFF' },
-  { id: 7, name: 'Advance Repayment', platform: 'Kre8trix', amount: -1850, date: 'Oct 9', status: 'completed', iconColor: '#C8FF00' },
-  { id: 8, name: 'Patreon Subscriptions', platform: 'Patreon', amount: 890, date: 'Oct 8', status: 'completed', iconColor: '#FF424D' },
-];
-
-const platformRevenue = [
-  { platform: 'YouTube', amount: 4850, color: '#FF0000' },
-  { platform: 'Stripe', amount: 3450, color: '#635BFF' },
-  { platform: 'Shopify', amount: 2180, color: '#96BF48' },
-  { platform: 'TikTok', amount: 1240, color: '#FF0050' },
-  { platform: 'Patreon', amount: 890, color: '#FF424D' },
-];
+import { useApi } from '@/hooks/use-api';
+import type {
+  CashFlowForecast,
+  CcsScore,
+  ForecastWindow,
+  PlatformRevenue,
+  PlatformRevenueSummary,
+  WalletBalances,
+  WalletTransaction,
+} from '@/lib/types';
+import {
+  BalanceCardSkeleton,
+  BarListSkeleton,
+  ChartSkeleton,
+  ErrorNotice,
+  ScoreCardSkeleton,
+  TransactionListSkeleton,
+} from '@/components/Skeletons';
 
 /* ─────────────────────────── animations ─────────────────────────── */
 
@@ -91,6 +65,7 @@ function useCountUp(target: number, duration = 1200, delay = 0) {
   const rafId = useRef<number | null>(null);
 
   useEffect(() => {
+    startTime.current = null;
     const timeout = setTimeout(() => {
       const animate = (timestamp: number) => {
         if (startTime.current === null) startTime.current = timestamp;
@@ -250,17 +225,18 @@ function BalanceCard({
 }
 
 /* CCS Score Card */
-function CCSScoreCard() {
-  const targetScore = 612;
-  const maxScore = 850;
-  const count = useCountUp(targetScore, 1500, 600);
+function CCSScoreCard({ score }: { score: CcsScore }) {
+  const navigate = useNavigate();
+  const count = useCountUp(score.score, 1500, 600);
   const circumference = 2 * Math.PI * 90;
-  const progress = count / maxScore;
+  const progress = count / score.maxScore;
   const dashOffset = circumference * (1 - progress);
 
   return (
     <motion.div
       variants={itemVariants}
+      initial="hidden"
+      animate="visible"
       className="rounded-2xl p-8 bg-panel border border-[rgba(255,255,255,0.08)] flex flex-col items-center"
     >
       <div className="flex items-center gap-2 mb-6 self-start">
@@ -306,7 +282,7 @@ function CCSScoreCard() {
             {count}
           </span>
           <span className="font-mono text-[12px] text-[rgba(255,255,255,0.42)] tracking-[0.04em] mt-1">
-            out of {maxScore}
+            out of {score.maxScore}
           </span>
         </div>
       </div>
@@ -321,15 +297,15 @@ function CCSScoreCard() {
           className="inline-flex items-center px-4 py-1.5 rounded-full font-mono text-[12px] tracking-[0.04em] font-medium"
           style={{ background: 'rgba(0,212,255,0.15)', color: '#00D4FF' }}
         >
-          RISING
+          {score.tier.toUpperCase()}
         </span>
         <span className="font-mono text-[12px] text-[rgba(255,255,255,0.42)] tracking-[0.04em]">
-          Top 34% of creators
+          Top {score.percentile}% of creators
         </span>
       </motion.div>
 
       <button
-        onClick={() => window.location.href = '/credit-score'}
+        onClick={() => navigate('/credit-score')}
         className="mt-4 text-[14px] font-medium text-electric hover:text-acid transition-colors duration-200 flex items-center gap-1"
       >
         View Full Breakdown
@@ -385,14 +361,14 @@ function TransactionRow({
   tx,
   index,
 }: {
-  tx: (typeof transactions)[0];
+  tx: WalletTransaction;
   index: number;
 }) {
   const isPositive = tx.amount > 0;
   const statusColors: Record<string, string> = {
-    completed: '#00E5A0',
-    pending: '#FFD400',
-    failed: '#FF4D4D',
+    Completed: '#00E5A0',
+    Pending: '#FFD400',
+    Failed: '#FF4D4D',
   };
 
   return (
@@ -402,7 +378,7 @@ function TransactionRow({
       transition={{
         duration: 0.4,
         ease: [0.4, 0, 0.2, 1] as [number, number, number, number],
-        delay: 1.2 + index * 0.06,
+        delay: index * 0.06,
       }}
       className="flex items-center gap-4 py-3 px-4 rounded-xl hover:bg-panel2 transition-colors duration-150 cursor-pointer"
     >
@@ -415,7 +391,7 @@ function TransactionRow({
         </span>
       </div>
       <div className="flex-1 min-w-0">
-        <p className="font-body text-[14px] text-white truncate">{tx.name}</p>
+        <p className="font-body text-[14px] text-white truncate">{tx.description}</p>
         <p className="font-mono text-[12px] text-[rgba(255,255,255,0.42)] tracking-[0.04em] truncate">
           {tx.platform}
         </p>
@@ -447,7 +423,7 @@ function PlatformRevenueBar({
   index,
   maxAmount,
 }: {
-  item: (typeof platformRevenue)[0];
+  item: PlatformRevenue;
   index: number;
   maxAmount: number;
 }) {
@@ -465,7 +441,7 @@ function PlatformRevenueBar({
           transition={{
             duration: 0.6,
             ease: [0.16, 1, 0.3, 1] as [number, number, number, number],
-            delay: 1.4 + index * 0.08,
+            delay: index * 0.08,
           }}
           className="h-full rounded-lg"
           style={{ background: item.color, opacity: 0.7 }}
@@ -482,10 +458,13 @@ function PlatformRevenueBar({
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const [forecastTab, setForecastTab] = useState<'30D' | '60D' | '90D'>('30D');
+  const [forecastTab, setForecastTab] = useState<ForecastWindow>('30D');
 
-  const totalRevenue = useMemo(() => platformRevenue.reduce((sum, p) => sum + p.amount, 0), []);
-  const maxRevenue = useMemo(() => Math.max(...platformRevenue.map((p) => p.amount)), []);
+  const balancesQuery = useApi<WalletBalances>('/wallet/balances');
+  const transactionsQuery = useApi<WalletTransaction[]>('/wallet/transactions?limit=8');
+  const revenueQuery = useApi<PlatformRevenueSummary>('/revenue/platforms');
+  const scoreQuery = useApi<CcsScore>('/ccs/score');
+  const forecastQuery = useApi<CashFlowForecast>(`/cashflow/forecast?window=${forecastTab}`);
 
   const quickActions = [
     { icon: ArrowUpRight, label: 'Send Money', description: 'Transfer funds instantly', color: '#C8FF00', path: '/wallet?action=send' },
@@ -494,14 +473,10 @@ export default function Dashboard() {
     { icon: Zap, label: 'Get Advance', description: 'Revenue-backed financing', color: '#FF4D00', path: '/advances' },
   ];
 
-  const usdSparkline = [8200, 9400, 11200, 10800, 13100, 14500, 15200, 16800, 18400];
-  const usdcSparkline = [4200, 5100, 5800, 6200, 7400, 8900, 10200, 11500, 12450];
-
-  const forecastPills: Record<string, { label: string; amount: string; color: string }> = {
-    '30D': { label: '30-Day', amount: '$18,400', color: '#00D4FF' },
-    '60D': { label: '60-Day', amount: '$31,200', color: '#C8FF00' },
-    '90D': { label: '90-Day', amount: '$44,800', color: '#9B5DE5' },
-  };
+  const balances = balancesQuery.data;
+  const revenue = revenueQuery.data;
+  const maxRevenue = revenue ? Math.max(...revenue.platforms.map((p) => p.amount)) : 0;
+  const forecast = forecastQuery.data;
 
   return (
     <motion.div
@@ -517,37 +492,50 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Balance Cards - 8fr */}
         <div className="lg:col-span-8 space-y-4">
-          <BalanceCard
-            label="USD Balance"
-            balance={24850}
-            change="+$1,240"
-            changeLabel="this month"
-            delay={300}
-            accentColor="#00E5A0"
-            gradientBg="linear-gradient(135deg, #0F0F1E 0%, rgba(200,255,0,0.03) 100%)"
-            borderColor="rgba(200,255,0,0.12)"
-            sparklineData={usdSparkline}
-            sparklineColor="#00D4FF"
-          />
-          <BalanceCard
-            label="USDC Balance"
-            balance={12450}
-            change="+850 USDC"
-            changeLabel="this week"
-            prefix=""
-            suffix=" USDC"
-            delay={450}
-            accentColor="#00E5A0"
-            gradientBg="linear-gradient(135deg, #0F0F1E 0%, rgba(155,93,229,0.03) 100%)"
-            borderColor="rgba(155,93,229,0.12)"
-            sparklineData={usdcSparkline}
-            sparklineColor="#9B5DE5"
-          />
+          {balancesQuery.loading || !balances ? (
+            <>
+              <BalanceCardSkeleton />
+              <BalanceCardSkeleton />
+            </>
+          ) : (
+            <>
+              <BalanceCard
+                label="USD Balance"
+                balance={balances.usd}
+                change="+$1,240"
+                changeLabel="this month"
+                delay={300}
+                accentColor="#00E5A0"
+                gradientBg="linear-gradient(135deg, #0F0F1E 0%, rgba(200,255,0,0.03) 100%)"
+                borderColor="rgba(200,255,0,0.12)"
+                sparklineData={balances.usdSparkline}
+                sparklineColor="#00D4FF"
+              />
+              <BalanceCard
+                label="USDC Balance"
+                balance={balances.usdc}
+                change="+850 USDC"
+                changeLabel="this week"
+                prefix=""
+                suffix=" USDC"
+                delay={450}
+                accentColor="#00E5A0"
+                gradientBg="linear-gradient(135deg, #0F0F1E 0%, rgba(155,93,229,0.03) 100%)"
+                borderColor="rgba(155,93,229,0.12)"
+                sparklineData={balances.usdcSparkline}
+                sparklineColor="#9B5DE5"
+              />
+            </>
+          )}
         </div>
 
         {/* CCS Score - 4fr */}
         <div className="lg:col-span-4">
-          <CCSScoreCard />
+          {scoreQuery.loading || !scoreQuery.data ? (
+            <ScoreCardSkeleton />
+          ) : (
+            <CCSScoreCard score={scoreQuery.data} />
+          )}
         </div>
       </div>
 
@@ -606,79 +594,91 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="h-[350px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={cashFlowData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-              <defs>
-                <linearGradient id="historicalGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#C8FF00" stopOpacity="0.2" />
-                  <stop offset="100%" stopColor="#C8FF00" stopOpacity="0" />
-                </linearGradient>
-                <linearGradient id="projectedGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#00D4FF" stopOpacity="0.15" />
-                  <stop offset="100%" stopColor="#00D4FF" stopOpacity="0" />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-              <XAxis
-                dataKey="date"
-                tick={{ fontSize: 12, fill: 'rgba(255,255,255,0.42)', fontFamily: '"JetBrains Mono", monospace' }}
-                axisLine={{ stroke: 'rgba(255,255,255,0.08)' }}
-                tickLine={false}
-              />
-              <YAxis
-                tick={{ fontSize: 12, fill: 'rgba(255,255,255,0.42)', fontFamily: '"JetBrains Mono", monospace' }}
-                axisLine={{ stroke: 'rgba(255,255,255,0.08)' }}
-                tickLine={false}
-                tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`}
-              />
-              <Tooltip
-                contentStyle={{
-                  background: '#0F0F1E',
-                  border: '1px solid rgba(255,255,255,0.08)',
-                  borderRadius: '12px',
-                  fontFamily: '"JetBrains Mono", monospace',
-                  fontSize: '12px',
-                  color: '#E8E8F0',
-                }}
-                formatter={(value: number) => [`$${value?.toLocaleString()}`, '']}
-              />
-              <Area
-                type="monotone"
-                dataKey="historical"
-                stroke="#C8FF00"
-                strokeWidth={2}
-                fill="url(#historicalGrad)"
-                connectNulls={false}
-                dot={false}
-                activeDot={{ r: 4, fill: '#C8FF00' }}
-              />
-              <Area
-                type="monotone"
-                dataKey="projected"
-                stroke="#00D4FF"
-                strokeWidth={2}
-                strokeDasharray="6 4"
-                fill="url(#projectedGrad)"
-                connectNulls={false}
-                dot={false}
-                activeDot={{ r: 4, fill: '#00D4FF' }}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
+        {forecastQuery.error ? (
+          <ErrorNotice message={forecastQuery.error} onRetry={forecastQuery.refresh} />
+        ) : forecastQuery.loading || !forecast ? (
+          <ChartSkeleton height={350} />
+        ) : (
+          <div className="h-[350px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={forecast.points} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="historicalGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#C8FF00" stopOpacity="0.2" />
+                    <stop offset="100%" stopColor="#C8FF00" stopOpacity="0" />
+                  </linearGradient>
+                  <linearGradient id="projectedGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#00D4FF" stopOpacity="0.15" />
+                    <stop offset="100%" stopColor="#00D4FF" stopOpacity="0" />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+                <XAxis
+                  dataKey="label"
+                  tick={{ fontSize: 12, fill: 'rgba(255,255,255,0.42)', fontFamily: '"JetBrains Mono", monospace' }}
+                  axisLine={{ stroke: 'rgba(255,255,255,0.08)' }}
+                  tickLine={false}
+                />
+                <YAxis
+                  tick={{ fontSize: 12, fill: 'rgba(255,255,255,0.42)', fontFamily: '"JetBrains Mono", monospace' }}
+                  axisLine={{ stroke: 'rgba(255,255,255,0.08)' }}
+                  tickLine={false}
+                  tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`}
+                />
+                <Tooltip
+                  contentStyle={{
+                    background: '#0F0F1E',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    borderRadius: '12px',
+                    fontFamily: '"JetBrains Mono", monospace',
+                    fontSize: '12px',
+                    color: '#E8E8F0',
+                  }}
+                  formatter={(value: number) => [`$${value?.toLocaleString()}`, '']}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="actual"
+                  stroke="#C8FF00"
+                  strokeWidth={2}
+                  fill="url(#historicalGrad)"
+                  connectNulls={false}
+                  dot={false}
+                  activeDot={{ r: 4, fill: '#C8FF00' }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="projected"
+                  stroke="#00D4FF"
+                  strokeWidth={2}
+                  strokeDasharray="6 4"
+                  fill="url(#projectedGrad)"
+                  connectNulls={false}
+                  dot={false}
+                  activeDot={{ r: 4, fill: '#00D4FF' }}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        )}
 
         <div className="flex items-center gap-6 mt-4">
-          {Object.values(forecastPills).map((pill) => (
-            <div key={pill.label} className="flex items-center gap-2">
+          {(forecast?.summary ?? []).map((pill) => (
+            <button
+              key={pill.window}
+              onClick={() => setForecastTab(pill.window)}
+              className={`flex items-center gap-2 transition-opacity ${
+                forecastTab === pill.window ? '' : 'opacity-50 hover:opacity-80'
+              }`}
+            >
               <span className="w-2.5 h-2.5 rounded-full" style={{ background: pill.color }} />
               <span className="font-mono text-[12px] text-[rgba(255,255,255,0.42)] tracking-[0.04em]">
                 {pill.label}:
               </span>
               <span className="font-mono text-[20px] font-medium text-white tracking-[-0.02em]">
-                {pill.amount}
+                ${pill.amount.toLocaleString()}
               </span>
-            </div>
+            </button>
           ))}
         </div>
       </motion.div>
@@ -695,18 +695,24 @@ export default function Dashboard() {
               Recent Transactions
             </h4>
             <button
-              onClick={() => navigate('/wallet')}
+              onClick={() => navigate('/wallet?action=history')}
               className="text-[14px] font-medium text-electric hover:text-acid transition-colors duration-200 flex items-center gap-1"
             >
               View All
               <ChevronRight size={14} />
             </button>
           </div>
-          <div className="divide-y divide-[rgba(255,255,255,0.04)]">
-            {transactions.map((tx, i) => (
-              <TransactionRow key={tx.id} tx={tx} index={i} />
-            ))}
-          </div>
+          {transactionsQuery.error ? (
+            <ErrorNotice message={transactionsQuery.error} onRetry={transactionsQuery.refresh} />
+          ) : transactionsQuery.loading || !transactionsQuery.data ? (
+            <TransactionListSkeleton rows={8} />
+          ) : (
+            <div className="divide-y divide-[rgba(255,255,255,0.04)]">
+              {transactionsQuery.data.map((tx, i) => (
+                <TransactionRow key={tx.id} tx={tx} index={i} />
+              ))}
+            </div>
+          )}
         </motion.div>
 
         {/* Platform Revenue */}
@@ -719,29 +725,37 @@ export default function Dashboard() {
               Revenue by Platform
             </h4>
           </div>
-          <div className="space-y-4">
-            {platformRevenue.map((item, i) => (
-              <PlatformRevenueBar
-                key={item.platform}
-                item={item}
-                index={i}
-                maxAmount={maxRevenue}
-              />
-            ))}
-          </div>
-          <div className="flex items-center justify-between mt-6 pt-4 border-t border-[rgba(255,255,255,0.08)]">
-            <div>
-              <span className="font-mono text-[12px] text-[rgba(255,255,255,0.42)] tracking-[0.04em]">
-                Total Monthly
-              </span>
-              <p className="font-mono text-[20px] font-medium tracking-[-0.02em]" style={{ color: '#C8FF00' }}>
-                ${totalRevenue.toLocaleString()}
-              </p>
-            </div>
-            <span className="font-mono text-[12px] tracking-[0.04em]" style={{ color: '#00E5A0' }}>
-              +12% vs last month
-            </span>
-          </div>
+          {revenueQuery.error ? (
+            <ErrorNotice message={revenueQuery.error} onRetry={revenueQuery.refresh} />
+          ) : revenueQuery.loading || !revenue ? (
+            <BarListSkeleton rows={5} />
+          ) : (
+            <>
+              <div className="space-y-4">
+                {revenue.platforms.map((item, i) => (
+                  <PlatformRevenueBar
+                    key={item.platform}
+                    item={item}
+                    index={i}
+                    maxAmount={maxRevenue}
+                  />
+                ))}
+              </div>
+              <div className="flex items-center justify-between mt-6 pt-4 border-t border-[rgba(255,255,255,0.08)]">
+                <div>
+                  <span className="font-mono text-[12px] text-[rgba(255,255,255,0.42)] tracking-[0.04em]">
+                    Total Monthly
+                  </span>
+                  <p className="font-mono text-[20px] font-medium tracking-[-0.02em]" style={{ color: '#C8FF00' }}>
+                    ${revenue.total.toLocaleString()}
+                  </p>
+                </div>
+                <span className="font-mono text-[12px] tracking-[0.04em]" style={{ color: '#00E5A0' }}>
+                  +{revenue.changePercent}% vs last month
+                </span>
+              </div>
+            </>
+          )}
         </motion.div>
       </div>
     </motion.div>

@@ -28,55 +28,41 @@ const PLATFORM_REVENUE = [
   { month: 'Oct', YouTube: 4200, Stripe: 3800, Shopify: 2400, TikTok: 1500, Patreon: 710 },
 ];
 
+const TIME_RANGES = [
+  { label: 'This Month', months: 1 },
+  { label: 'Last 3M', months: 3 },
+  { label: 'This Year', months: PLATFORM_REVENUE.length },
+] as const;
+
 const CURRENT_MONTH = { YouTube: 4200, Stripe: 3800, Shopify: 2400, TikTok: 1500, Patreon: 710 };
 const PREV_MONTH = { YouTube: 4480, Stripe: 3280, Shopify: 1770, TikTok: 1100, Patreon: 610 };
-
-export const PLATFORM_TOTALS = [
-  { name: 'YouTube', current: 4200, prev: 4480, change: -6, color: '#FF0000' },
-  { name: 'Stripe', current: 3800, prev: 3280, change: 16, color: '#635BFF' },
-  { name: 'Shopify', current: 2400, prev: 1770, change: 36, color: '#96BF48' },
-  { name: 'TikTok', current: 1500, prev: 1100, change: 36, color: '#FF0050' },
-  { name: 'Patreon', current: 710, prev: 610, change: 16, color: '#FF424D' },
-];
-
-export const SIX_MONTH_TREND = [
-  { month: 'May', revenue: 9520 },
-  { month: 'Jun', revenue: 9990 },
-  { month: 'Jul', revenue: 9380 },
-  { month: 'Aug', revenue: 10870 },
-  { month: 'Sep', revenue: 11240 },
-  { month: 'Oct', revenue: 12610 },
-];
-
-export const TOP_CONTENT = [
-  { name: 'Summer Vlog Series #3', platform: 'YouTube', platformColor: '#FF0000', revenue: 1240, views: '2.4M' },
-  { name: 'Setup Tour 2024', platform: 'YouTube', platformColor: '#FF0000', revenue: 890, views: '1.8M' },
-  { name: 'New Merch Drop', platform: 'Shopify', platformColor: '#96BF48', revenue: 650, views: '340 orders' },
-  { name: 'Brand Deal: Lumina', platform: 'Stripe', platformColor: '#635BFF', revenue: 580, views: 'Sponsored' },
-  { name: 'Tutorial Series', platform: 'TikTok', platformColor: '#FF0050', revenue: 420, views: '1.2M' },
-];
-
-export const PAYOUTS = [
-  { platform: 'YouTube', date: 'Oct 22', amount: 4850, color: '#FF0000' },
-  { platform: 'Shopify', date: 'Oct 25', amount: 2180, color: '#96BF48' },
-  { platform: 'Patreon', date: 'Oct 28', amount: 890, color: '#FF424D' },
-  { platform: 'Stripe', date: 'Nov 3', amount: 3450, color: '#635BFF' },
-  { platform: 'TikTok', date: 'Nov 10', amount: 1240, color: '#FF0050' },
-];
 
 /* ═══════════════════════════════════════════════════════════ */
 /*  SECTION 1 — REVENUE OVERVIEW                              */
 /* ═══════════════════════════════════════════════════════════ */
-function RevenueOverview() {
-  const total = Object.values(CURRENT_MONTH).reduce((a, b) => a + b, 0);
+function RevenueOverview({
+  range,
+  onRangeChange,
+}: {
+  range: (typeof TIME_RANGES)[number];
+  onRangeChange: (range: (typeof TIME_RANGES)[number]) => void;
+}) {
+  const visibleMonths = PLATFORM_REVENUE.slice(-range.months);
+  const sumKey = (key: keyof typeof CURRENT_MONTH) =>
+    visibleMonths.reduce((acc, m) => acc + m[key], 0);
+
+  const total = visibleMonths.reduce(
+    (acc, m) => acc + m.YouTube + m.Stripe + m.Shopify + m.TikTok + m.Patreon,
+    0,
+  );
   const prevTotal = Object.values(PREV_MONTH).reduce((a, b) => a + b, 0);
-  const change = Math.round(((total - prevTotal) / prevTotal) * 100);
+  const change = Math.round(((Object.values(CURRENT_MONTH).reduce((a, b) => a + b, 0) - prevTotal) / prevTotal) * 100);
 
   const metrics = [
     { label: 'Total Revenue', value: `$${total.toLocaleString()}`, change: `+${change}% vs last month`, positive: true },
-    { label: 'YouTube', value: `$${CURRENT_MONTH.YouTube.toLocaleString()}`, change: '-6%', positive: false },
-    { label: 'Stripe', value: `$${CURRENT_MONTH.Stripe.toLocaleString()}`, change: '+16%', positive: true },
-    { label: 'Other', value: `$${(CURRENT_MONTH.Shopify + CURRENT_MONTH.TikTok + CURRENT_MONTH.Patreon).toLocaleString()}`, change: '+31%', positive: true },
+    { label: 'YouTube', value: `$${sumKey('YouTube').toLocaleString()}`, change: '-6%', positive: false },
+    { label: 'Stripe', value: `$${sumKey('Stripe').toLocaleString()}`, change: '+16%', positive: true },
+    { label: 'Other', value: `$${(sumKey('Shopify') + sumKey('TikTok') + sumKey('Patreon')).toLocaleString()}`, change: '+31%', positive: true },
   ];
 
   return (
@@ -88,12 +74,13 @@ function RevenueOverview() {
       <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
         <h3 className="font-display text-[36px] tracking-[0.02em] text-white">Revenue Overview</h3>
         <div className="flex bg-[rgba(255,255,255,0.06)] rounded-xl p-1">
-          {['This Month', 'Last 3M', 'This Year'].map((r, i) => (
+          {TIME_RANGES.map((r) => (
             <button
-              key={r}
-              className={`px-4 py-2 rounded-lg font-body text-[14px] font-medium transition-all ${i === 0 ? 'bg-acid text-void' : 'text-[rgba(255,255,255,0.42)] hover:text-white'}`}
+              key={r.label}
+              onClick={() => onRangeChange(r)}
+              className={`px-4 py-2 rounded-lg font-body text-[14px] font-medium transition-all ${range.label === r.label ? 'bg-acid text-void' : 'text-[rgba(255,255,255,0.42)] hover:text-white'}`}
             >
-              {r}
+              {r.label}
             </button>
           ))}
         </div>
@@ -130,8 +117,9 @@ function RevenueOverview() {
 /* ═══════════════════════════════════════════════════════════ */
 /*  SECTION 2 — REVENUE BY PLATFORM (STACKED BAR)             */
 /* ═══════════════════════════════════════════════════════════ */
-function RevenueByPlatform() {
+function RevenueByPlatform({ months }: { months: number }) {
   const [chartMode, setChartMode] = useState<'stacked' | 'grouped'>('stacked');
+  const data = PLATFORM_REVENUE.slice(-months);
 
   return (
     <motion.section
@@ -158,7 +146,7 @@ function RevenueByPlatform() {
 
       <div style={{ height: 400 }}>
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={PLATFORM_REVENUE}>
+          <BarChart data={data}>
             <CartesianGrid stroke="rgba(255,255,255,0.04)" vertical={false} />
             <XAxis dataKey="month" tick={{ fill: 'rgba(255,255,255,0.42)', fontSize: 12, fontFamily: 'JetBrains Mono' }} axisLine={false} tickLine={false} />
             <YAxis tick={{ fill: 'rgba(255,255,255,0.42)', fontSize: 12, fontFamily: 'JetBrains Mono' }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `$${v.toLocaleString()}`} />
@@ -190,10 +178,12 @@ function RevenueByPlatform() {
 }
 
 export default function Analytics() {
+  const [range, setRange] = useState<(typeof TIME_RANGES)[number]>(TIME_RANGES[0]);
+
   return (
     <div className="space-y-8">
-      <RevenueOverview />
-      <RevenueByPlatform />
+      <RevenueOverview range={range} onRangeChange={setRange} />
+      <RevenueByPlatform months={range.months} />
     </div>
   );
 }
