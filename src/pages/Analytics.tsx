@@ -9,19 +9,10 @@ import {
   Tooltip,
   ResponsiveContainer,
   Legend,
-  Area,
-  AreaChart,
 } from 'recharts';
 import {
   TrendingUp,
   TrendingDown,
-  ArrowUpRight,
-  DollarSign,
-  Calendar,
-  BarChart3,
-  Activity,
-  Layers,
-  Clock,
 } from 'lucide-react';
 
 /* ── constants ────────────────────────────────────────────── */
@@ -40,7 +31,7 @@ const PLATFORM_REVENUE = [
 const CURRENT_MONTH = { YouTube: 4200, Stripe: 3800, Shopify: 2400, TikTok: 1500, Patreon: 710 };
 const PREV_MONTH = { YouTube: 4480, Stripe: 3280, Shopify: 1770, TikTok: 1100, Patreon: 610 };
 
-const PLATFORM_TOTALS = [
+export const PLATFORM_TOTALS = [
   { name: 'YouTube', current: 4200, prev: 4480, change: -6, color: '#FF0000' },
   { name: 'Stripe', current: 3800, prev: 3280, change: 16, color: '#635BFF' },
   { name: 'Shopify', current: 2400, prev: 1770, change: 36, color: '#96BF48' },
@@ -48,7 +39,7 @@ const PLATFORM_TOTALS = [
   { name: 'Patreon', current: 710, prev: 610, change: 16, color: '#FF424D' },
 ];
 
-const SIX_MONTH_TREND = [
+export const SIX_MONTH_TREND = [
   { month: 'May', revenue: 9520 },
   { month: 'Jun', revenue: 9990 },
   { month: 'Jul', revenue: 9380 },
@@ -57,7 +48,7 @@ const SIX_MONTH_TREND = [
   { month: 'Oct', revenue: 12610 },
 ];
 
-const TOP_CONTENT = [
+export const TOP_CONTENT = [
   { name: 'Summer Vlog Series #3', platform: 'YouTube', platformColor: '#FF0000', revenue: 1240, views: '2.4M' },
   { name: 'Setup Tour 2024', platform: 'YouTube', platformColor: '#FF0000', revenue: 890, views: '1.8M' },
   { name: 'New Merch Drop', platform: 'Shopify', platformColor: '#96BF48', revenue: 650, views: '340 orders' },
@@ -65,7 +56,7 @@ const TOP_CONTENT = [
   { name: 'Tutorial Series', platform: 'TikTok', platformColor: '#FF0050', revenue: 420, views: '1.2M' },
 ];
 
-const PAYOUTS = [
+export const PAYOUTS = [
   { platform: 'YouTube', date: 'Oct 22', amount: 4850, color: '#FF0000' },
   { platform: 'Shopify', date: 'Oct 25', amount: 2180, color: '#96BF48' },
   { platform: 'Patreon', date: 'Oct 28', amount: 890, color: '#FF424D' },

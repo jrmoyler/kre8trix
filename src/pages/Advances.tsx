@@ -1,14 +1,10 @@
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   CheckCircle2,
   AlertTriangle,
   Lock,
   Upload,
-  ShieldCheck,
-  DollarSign,
-  ChevronRight,
-  Info,
   ShoppingBag,
 } from 'lucide-react';
 

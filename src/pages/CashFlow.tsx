@@ -8,19 +8,8 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  ReferenceLine,
 } from 'recharts';
-import {
-  BrainCircuit,
-  AlertTriangle,
-  Info,
-  CheckCircle2,
-  TrendingUp,
-  TrendingDown,
-  DollarSign,
-  Shield,
-  Zap,
-} from 'lucide-react';
+import { BrainCircuit } from 'lucide-react';
 
 /* ── constants ────────────────────────────────────────────── */
 const easeOutExpo = [0.16, 1, 0.3, 1] as [number, number, number, number];
