@@ -6,15 +6,12 @@ import {
   Copy,
   Check,
   Snowflake,
-  Lock,
-  AlertTriangle,
   Monitor,
   Code,
   Plane,
   UtensilsCrossed,
   Megaphone,
   ShoppingBag,
-  CheckCircle2,
   CreditCard,
   Wifi,
 } from 'lucide-react';
@@ -44,8 +41,8 @@ const SPEND_CATEGORIES: SpendCategory[] = [
   { name: 'Daily Spend', icon: ShoppingBag, current: 280, limit: 500, color: '#00D4FF' },
 ];
 
-const MONTHLY_TOTAL = 2578;
-const MONTHLY_LIMIT = 4500;
+export const MONTHLY_TOTAL = 2578;
+export const MONTHLY_LIMIT = 4500;
 
 interface CardTransaction {
   id: string;
@@ -58,7 +55,7 @@ interface CardTransaction {
   status: 'Completed' | 'Pending';
 }
 
-const CARD_TRANSACTIONS: CardTransaction[] = [
+export const CARD_TRANSACTIONS: CardTransaction[] = [
   { id: '1', date: 'Oct 15', merchant: 'B&H Photo', category: 'Equipment', amount: -1299.00, cashback: 38.97, cashbackRate: 3, status: 'Completed' },
   { id: '2', date: 'Oct 14', merchant: 'Adobe CC', category: 'Software', amount: -59.99, cashback: 1.20, cashbackRate: 2, status: 'Completed' },
   { id: '3', date: 'Oct 12', merchant: 'Delta Airlines', category: 'Travel', amount: -450.00, cashback: 9.00, cashbackRate: 2, status: 'Completed' },
@@ -67,14 +64,14 @@ const CARD_TRANSACTIONS: CardTransaction[] = [
   { id: '6', date: 'Oct 5', merchant: 'Starbucks', category: 'Dining', amount: -12.50, cashback: 0.13, cashbackRate: 1, status: 'Completed' },
 ];
 
-const CASHBACK_RATES = [
+export const CASHBACK_RATES = [
   { category: 'Equipment', rate: 3, color: '#C8FF00', width: '40%' },
   { category: 'Software', rate: 2, color: '#00D4FF', width: '25%' },
   { category: 'Advertising', rate: 2, color: '#00D4FF', width: '20%' },
   { category: 'Other', rate: 1, color: 'rgba(255,255,255,0.2)', width: '15%' },
 ];
 
-const CASHBACK_STATS: { label: string; value?: number; valueStr?: string; detail: string }[] = [
+export const CASHBACK_STATS: { label: string; value?: number; valueStr?: string; detail: string }[] = [
   { label: 'This Month', value: 24.70, detail: '2.1% avg rate' },
   { label: 'Total Earned', value: 342.80, detail: 'Since Jan 2024' },
   { label: 'Next Payout', valueStr: 'Nov 1', detail: '$24.70 pending' },
@@ -181,7 +178,7 @@ function TiltCard({ src, alt, frozen, showDetails }: { src: string; alt: string;
 /* ------------------------------------------------------------------ */
 /*  Toggle Switch                                                      */
 /* ------------------------------------------------------------------ */
-function ToggleSwitch({ enabled, onChange }: { enabled: boolean; onChange: (v: boolean) => void }) {
+export function ToggleSwitch({ enabled, onChange }: { enabled: boolean; onChange: (v: boolean) => void }) {
   return (
     <button
       onClick={() => onChange(!enabled)}
@@ -205,16 +202,12 @@ export default function CardManager() {
   const [frozen, setFrozen] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [categories, setCategories] = useState(SPEND_CATEGORIES);
+  const [categories] = useState(SPEND_CATEGORIES);
 
   const handleCopyNumber = () => {
     navigator.clipboard.writeText(CARD_NUMBER);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-  };
-
-  const updateLimit = (index: number, newLimit: number) => {
-    setCategories((prev) => prev.map((c, i) => (i === index ? { ...c, limit: newLimit } : c)));
   };
 
   return (

@@ -1,29 +1,8 @@
-import { useState, useEffect, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import {
-  RadarChart,
-  Radar,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
-  ResponsiveContainer,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Area,
-  AreaChart,
-} from 'recharts';
+import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import {
   TrendingUp,
-  Layers,
-  Shield,
-  TrendingDown,
   ChevronUp,
-  CheckCircle2,
-  Star,
-  ArrowRight,
-  Sparkles,
 } from 'lucide-react';
 
 /* ── constants ────────────────────────────────────────────── */
@@ -32,7 +11,7 @@ const CURRENT_SCORE = 612;
 const RADIUS = 120;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
-const SIGNALS = [
+export const SIGNALS = [
   { name: 'Income Consistency', weight: 22, score: 720, color: '#C8FF00' },
   { name: 'Monetization Diversification', weight: 18, score: 580, color: '#00D4FF' },
   { name: 'Audience Durability', weight: 17, score: 640, color: '#9B5DE5' },
@@ -42,7 +21,7 @@ const SIGNALS = [
   { name: 'Growth Trajectory', weight: 4, score: 620, color: '#00E5A0' },
 ];
 
-const SCORE_HISTORY = [
+export const SCORE_HISTORY = [
   { month: 'May', score: 550 },
   { month: 'Jun', score: 565 },
   { month: 'Jul', score: 558 },
@@ -51,7 +30,7 @@ const SCORE_HISTORY = [
   { month: 'Oct', score: 612 },
 ];
 
-const TIERS = [
+export const TIERS = [
   { name: 'Emerging', range: '300-499', color: '#9B5DE5', benefits: ['Basic wallet', 'Standard advances up to $1K'] },
   { name: 'Rising', range: '500-649', color: '#00D4FF', benefits: ['Priority payouts', 'Advances up to $5K', '1% cashback'] },
   { name: 'Stable', range: '650-749', color: '#C8FF00', benefits: ['Instant advances up to $15K', '2% cashback', 'Lower fees'] },
