@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -19,50 +19,21 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
-
-/* ─────────────────────────── mock data ─────────────────────────── */
-
-const cashFlowData = [
-  { date: 'Sep 1', historical: 8200, projected: null },
-  { date: 'Sep 5', historical: 9400, projected: null },
-  { date: 'Sep 10', historical: 11200, projected: null },
-  { date: 'Sep 15', historical: 10800, projected: null },
-  { date: 'Sep 20', historical: 13100, projected: null },
-  { date: 'Sep 25', historical: 14500, projected: null },
-  { date: 'Sep 30', historical: 15200, projected: null },
-  { date: 'Oct 5', historical: 16800, projected: null },
-  { date: 'Oct 10', historical: 18400, projected: null },
-  { date: 'Oct 15', historical: null, projected: 19200 },
-  { date: 'Oct 20', historical: null, projected: 21000 },
-  { date: 'Oct 25', historical: null, projected: 22800 },
-  { date: 'Oct 30', historical: null, projected: 24600 },
-  { date: 'Nov 5', historical: null, projected: 26200 },
-  { date: 'Nov 10', historical: null, projected: 28600 },
-  { date: 'Nov 15', historical: null, projected: 31200 },
-  { date: 'Nov 20', historical: null, projected: 33800 },
-  { date: 'Nov 30', historical: null, projected: 38400 },
-  { date: 'Dec 10', historical: null, projected: 41200 },
-  { date: 'Dec 20', historical: null, projected: 44800 },
-];
-
-const transactions = [
-  { id: 1, name: 'YouTube Ad Revenue', platform: 'YouTube', amount: 4850, date: 'Oct 15', status: 'completed', iconColor: '#FF0000' },
-  { id: 2, name: 'TikTok Creator Fund', platform: 'TikTok', amount: 1240, date: 'Oct 14', status: 'completed', iconColor: '#FF0050' },
-  { id: 3, name: 'Shopify Store Sales', platform: 'Shopify', amount: 2180, date: 'Oct 13', status: 'completed', iconColor: '#96BF48' },
-  { id: 4, name: 'USDC to USD Conversion', platform: 'Kre8trix', amount: -500, date: 'Oct 12', status: 'completed', iconColor: '#C8FF00' },
-  { id: 5, name: 'Equipment Purchase', platform: 'Kre8trix Card', amount: -1299, date: 'Oct 11', status: 'completed', iconColor: '#9B5DE5' },
-  { id: 6, name: 'Stripe Payout', platform: 'Stripe', amount: 3450, date: 'Oct 10', status: 'pending', iconColor: '#635BFF' },
-  { id: 7, name: 'Advance Repayment', platform: 'Kre8trix', amount: -1850, date: 'Oct 9', status: 'completed', iconColor: '#C8FF00' },
-  { id: 8, name: 'Patreon Subscriptions', platform: 'Patreon', amount: 890, date: 'Oct 8', status: 'completed', iconColor: '#FF424D' },
-];
-
-const platformRevenue = [
-  { platform: 'YouTube', amount: 4850, color: '#FF0000' },
-  { platform: 'Stripe', amount: 3450, color: '#635BFF' },
-  { platform: 'Shopify', amount: 2180, color: '#96BF48' },
-  { platform: 'TikTok', amount: 1240, color: '#FF0050' },
-  { platform: 'Patreon', amount: 890, color: '#FF424D' },
-];
+import {
+  fetchDashboardSummary,
+  fetchDashboardTransactions,
+  fetchPlatformRevenue,
+  fetchCashFlow,
+} from '@/lib/api/dashboard';
+import type {
+  DashboardSummary,
+  DashboardTransaction,
+  DashboardCCS,
+  PlatformRevenueSummary,
+  PlatformRevenueItem,
+  CashFlowPoint,
+} from '@/lib/api/dashboard';
+import type { ForecastRange } from '@/lib/api/types';
 
 /* ─────────────────────────── animations ─────────────────────────── */
 
@@ -250,9 +221,10 @@ function BalanceCard({
 }
 
 /* CCS Score Card */
-function CCSScoreCard() {
-  const targetScore = 612;
-  const maxScore = 850;
+function CCSScoreCard({ ccs }: { ccs: DashboardCCS }) {
+  const navigate = useNavigate();
+  const targetScore = ccs.score;
+  const maxScore = ccs.maxScore;
   const count = useCountUp(targetScore, 1500, 600);
   const circumference = 2 * Math.PI * 90;
   const progress = count / maxScore;
@@ -321,15 +293,15 @@ function CCSScoreCard() {
           className="inline-flex items-center px-4 py-1.5 rounded-full font-mono text-[12px] tracking-[0.04em] font-medium"
           style={{ background: 'rgba(0,212,255,0.15)', color: '#00D4FF' }}
         >
-          RISING
+          {ccs.tier.toUpperCase()}
         </span>
         <span className="font-mono text-[12px] text-[rgba(255,255,255,0.42)] tracking-[0.04em]">
-          Top 34% of creators
+          {ccs.percentile}
         </span>
       </motion.div>
 
       <button
-        onClick={() => window.location.href = '/credit-score'}
+        onClick={() => navigate('/credit-score')}
         className="mt-4 text-[14px] font-medium text-electric hover:text-acid transition-colors duration-200 flex items-center gap-1"
       >
         View Full Breakdown
@@ -384,9 +356,11 @@ function QuickActionButton({
 function TransactionRow({
   tx,
   index,
+  onClick,
 }: {
-  tx: (typeof transactions)[0];
+  tx: DashboardTransaction;
   index: number;
+  onClick: () => void;
 }) {
   const isPositive = tx.amount > 0;
   const statusColors: Record<string, string> = {
@@ -404,6 +378,7 @@ function TransactionRow({
         ease: [0.4, 0, 0.2, 1] as [number, number, number, number],
         delay: 1.2 + index * 0.06,
       }}
+      onClick={onClick}
       className="flex items-center gap-4 py-3 px-4 rounded-xl hover:bg-panel2 transition-colors duration-150 cursor-pointer"
     >
       <div
@@ -447,7 +422,7 @@ function PlatformRevenueBar({
   index,
   maxAmount,
 }: {
-  item: (typeof platformRevenue)[0];
+  item: PlatformRevenueItem;
   index: number;
   maxAmount: number;
 }) {
@@ -478,14 +453,108 @@ function PlatformRevenueBar({
   );
 }
 
+/* ─────────────────────────── loading / error ─────────────────────────── */
+
+function DashboardSkeleton() {
+  return (
+    <div className="space-y-6" aria-busy="true">
+      <div className="animate-pulse bg-surface rounded-2xl h-[58px]" />
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="lg:col-span-8 space-y-4">
+          <div className="animate-pulse bg-surface rounded-2xl h-[152px]" />
+          <div className="animate-pulse bg-surface rounded-2xl h-[152px]" />
+        </div>
+        <div className="lg:col-span-4">
+          <div className="animate-pulse bg-surface rounded-2xl h-full min-h-[320px]" />
+        </div>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="animate-pulse bg-surface rounded-2xl h-[88px]" />
+        ))}
+      </div>
+      <div className="animate-pulse bg-surface rounded-2xl h-[470px]" />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="animate-pulse bg-surface rounded-2xl h-[420px]" />
+        <div className="animate-pulse bg-surface rounded-2xl h-[420px]" />
+      </div>
+    </div>
+  );
+}
+
+function DashboardError({ message, onRetry }: { message: string; onRetry: () => void }) {
+  return (
+    <div className="bg-panel border border-[rgba(255,77,0,0.25)] rounded-2xl p-12 flex flex-col items-center text-center gap-4">
+      <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: 'rgba(255,77,0,0.12)' }}>
+        <Info size={22} className="text-ember" />
+      </div>
+      <div>
+        <p className="font-display text-[28px] tracking-[0.02em] text-white">
+          Couldn't load your dashboard
+        </p>
+        <p className="font-body text-[14px] text-[rgba(255,255,255,0.42)] mt-1">{message}</p>
+      </div>
+      <button
+        onClick={onRetry}
+        className="mt-2 px-6 py-2.5 rounded-xl bg-acid text-black font-body text-[14px] font-semibold hover:opacity-90 transition-opacity duration-200 flex items-center gap-2"
+      >
+        <RefreshCw size={16} />
+        Retry
+      </button>
+    </div>
+  );
+}
+
 /* ─────────────────────────── main page ─────────────────────────── */
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const [forecastTab, setForecastTab] = useState<'30D' | '60D' | '90D'>('30D');
+  const [forecastTab, setForecastTab] = useState<ForecastRange>('30D');
 
-  const totalRevenue = useMemo(() => platformRevenue.reduce((sum, p) => sum + p.amount, 0), []);
-  const maxRevenue = useMemo(() => Math.max(...platformRevenue.map((p) => p.amount)), []);
+  const [summary, setSummary] = useState<DashboardSummary | null>(null);
+  const [transactions, setTransactions] = useState<DashboardTransaction[] | null>(null);
+  const [platformRevenue, setPlatformRevenue] = useState<PlatformRevenueSummary | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadKey, setLoadKey] = useState(0);
+
+  const [cashFlowData, setCashFlowData] = useState<CashFlowPoint[] | null>(null);
+  const [cashFlowError, setCashFlowError] = useState<string | null>(null);
+  const [cashFlowKey, setCashFlowKey] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoadError(null);
+    Promise.all([fetchDashboardSummary(), fetchDashboardTransactions(), fetchPlatformRevenue()])
+      .then(([summaryRes, txRes, revenueRes]) => {
+        if (cancelled) return;
+        setSummary(summaryRes);
+        setTransactions(txRes);
+        setPlatformRevenue(revenueRes);
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        setLoadError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [loadKey]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setCashFlowError(null);
+    fetchCashFlow(forecastTab)
+      .then((points) => {
+        if (!cancelled) setCashFlowData(points);
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        setCashFlowError(err instanceof Error ? err.message : 'Failed to load forecast.');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [forecastTab, cashFlowKey]);
 
   const quickActions = [
     { icon: ArrowUpRight, label: 'Send Money', description: 'Transfer funds instantly', color: '#C8FF00', path: '/wallet?action=send' },
@@ -494,14 +563,24 @@ export default function Dashboard() {
     { icon: Zap, label: 'Get Advance', description: 'Revenue-backed financing', color: '#FF4D00', path: '/advances' },
   ];
 
-  const usdSparkline = [8200, 9400, 11200, 10800, 13100, 14500, 15200, 16800, 18400];
-  const usdcSparkline = [4200, 5100, 5800, 6200, 7400, 8900, 10200, 11500, 12450];
-
   const forecastPills: Record<string, { label: string; amount: string; color: string }> = {
-    '30D': { label: '30-Day', amount: '$18,400', color: '#00D4FF' },
-    '60D': { label: '60-Day', amount: '$31,200', color: '#C8FF00' },
-    '90D': { label: '90-Day', amount: '$44,800', color: '#9B5DE5' },
+    '30D': { label: '30-Day', amount: '$28,600', color: '#00D4FF' },
+    '60D': { label: '60-Day', amount: '$41,200', color: '#C8FF00' },
+    '90D': { label: '90-Day', amount: '$51,600', color: '#9B5DE5' },
   };
+
+  if (loadError) {
+    return <DashboardError message={loadError} onRetry={() => setLoadKey((k) => k + 1)} />;
+  }
+
+  if (!summary || !transactions || !platformRevenue) {
+    return <DashboardSkeleton />;
+  }
+
+  const usdBalance = summary.balances.find((b) => b.currency === 'USD');
+  const usdcBalance = summary.balances.find((b) => b.currency === 'USDC');
+  const totalRevenue = platformRevenue.platforms.reduce((sum, p) => sum + p.amount, 0);
+  const maxRevenue = Math.max(...platformRevenue.platforms.map((p) => p.amount));
 
   return (
     <motion.div
@@ -517,37 +596,41 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Balance Cards - 8fr */}
         <div className="lg:col-span-8 space-y-4">
-          <BalanceCard
-            label="USD Balance"
-            balance={24850}
-            change="+$1,240"
-            changeLabel="this month"
-            delay={300}
-            accentColor="#00E5A0"
-            gradientBg="linear-gradient(135deg, #0F0F1E 0%, rgba(200,255,0,0.03) 100%)"
-            borderColor="rgba(200,255,0,0.12)"
-            sparklineData={usdSparkline}
-            sparklineColor="#00D4FF"
-          />
-          <BalanceCard
-            label="USDC Balance"
-            balance={12450}
-            change="+850 USDC"
-            changeLabel="this week"
-            prefix=""
-            suffix=" USDC"
-            delay={450}
-            accentColor="#00E5A0"
-            gradientBg="linear-gradient(135deg, #0F0F1E 0%, rgba(155,93,229,0.03) 100%)"
-            borderColor="rgba(155,93,229,0.12)"
-            sparklineData={usdcSparkline}
-            sparklineColor="#9B5DE5"
-          />
+          {usdBalance && (
+            <BalanceCard
+              label="USD Balance"
+              balance={usdBalance.amount}
+              change={usdBalance.change}
+              changeLabel={usdBalance.changeLabel}
+              delay={300}
+              accentColor="#00E5A0"
+              gradientBg="linear-gradient(135deg, #0F0F1E 0%, rgba(200,255,0,0.03) 100%)"
+              borderColor="rgba(200,255,0,0.12)"
+              sparklineData={usdBalance.sparkline}
+              sparklineColor="#00D4FF"
+            />
+          )}
+          {usdcBalance && (
+            <BalanceCard
+              label="USDC Balance"
+              balance={usdcBalance.amount}
+              change={usdcBalance.change}
+              changeLabel={usdcBalance.changeLabel}
+              prefix=""
+              suffix=" USDC"
+              delay={450}
+              accentColor="#00E5A0"
+              gradientBg="linear-gradient(135deg, #0F0F1E 0%, rgba(155,93,229,0.03) 100%)"
+              borderColor="rgba(155,93,229,0.12)"
+              sparklineData={usdcBalance.sparkline}
+              sparklineColor="#9B5DE5"
+            />
+          )}
         </div>
 
         {/* CCS Score - 4fr */}
         <div className="lg:col-span-4">
-          <CCSScoreCard />
+          <CCSScoreCard ccs={summary.ccs} />
         </div>
       </div>
 
@@ -607,6 +690,20 @@ export default function Dashboard() {
         </div>
 
         <div className="h-[350px]">
+          {cashFlowError ? (
+            <div className="h-full flex flex-col items-center justify-center gap-3">
+              <p className="font-body text-[14px] text-[rgba(255,255,255,0.42)]">{cashFlowError}</p>
+              <button
+                onClick={() => setCashFlowKey((k) => k + 1)}
+                className="px-5 py-2 rounded-xl bg-acid text-black font-body text-[14px] font-semibold hover:opacity-90 transition-opacity duration-200 flex items-center gap-2"
+              >
+                <RefreshCw size={14} />
+                Retry
+              </button>
+            </div>
+          ) : cashFlowData === null ? (
+            <div className="h-full animate-pulse bg-surface rounded-xl" />
+          ) : (
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={cashFlowData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
               <defs>
@@ -666,6 +763,7 @@ export default function Dashboard() {
               />
             </AreaChart>
           </ResponsiveContainer>
+          )}
         </div>
 
         <div className="flex items-center gap-6 mt-4">
@@ -704,7 +802,12 @@ export default function Dashboard() {
           </div>
           <div className="divide-y divide-[rgba(255,255,255,0.04)]">
             {transactions.map((tx, i) => (
-              <TransactionRow key={tx.id} tx={tx} index={i} />
+              <TransactionRow
+                key={tx.id}
+                tx={tx}
+                index={i}
+                onClick={() => navigate('/wallet?action=history')}
+              />
             ))}
           </div>
         </motion.div>
@@ -720,7 +823,7 @@ export default function Dashboard() {
             </h4>
           </div>
           <div className="space-y-4">
-            {platformRevenue.map((item, i) => (
+            {platformRevenue.platforms.map((item, i) => (
               <PlatformRevenueBar
                 key={item.platform}
                 item={item}
@@ -739,7 +842,7 @@ export default function Dashboard() {
               </p>
             </div>
             <span className="font-mono text-[12px] tracking-[0.04em]" style={{ color: '#00E5A0' }}>
-              +12% vs last month
+              {platformRevenue.changeLabel}
             </span>
           </div>
         </motion.div>
