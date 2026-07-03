@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { toast } from 'sonner';
 import {
   User,
   Bell,
@@ -22,13 +23,57 @@ const SETTINGS_TABS = [
   { key: 'connections', label: 'Connected Accounts', icon: Link },
 ];
 
+const INITIAL_ACCOUNTS = [
+  { name: 'YouTube', user: 'Alex Creates', connected: true },
+  { name: 'TikTok', user: '@alexcreates', connected: true },
+  { name: 'Shopify', user: 'alexcreates.store', connected: true },
+  { name: 'Stripe', user: 'alex@kre8trix.app', connected: false },
+  { name: 'Patreon', user: '', connected: false },
+];
+
+const PAYOUT_WALLETS = ['USDC (Solana)', 'USD (Bank ···· 4821)'];
+
 export default function Settings() {
   const [activeTab, setActiveTab] = useState('profile');
   const [saved, setSaved] = useState(false);
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(true);
+  const [payoutWalletIndex, setPayoutWalletIndex] = useState(0);
+  const [accounts, setAccounts] = useState(INITIAL_ACCOUNTS);
 
   const handleSave = () => {
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
+  };
+
+  const handleChangePassword = () => {
+    toast.success('Password reset link sent to alex@kre8trix.app');
+  };
+
+  const handleToggleTwoFactor = () => {
+    setTwoFactorEnabled((prev) => {
+      const next = !prev;
+      toast.success(next ? 'Two-factor authentication enabled' : 'Two-factor authentication disabled');
+      return next;
+    });
+  };
+
+  const handleCyclePayoutWallet = () => {
+    setPayoutWalletIndex((prev) => {
+      const next = (prev + 1) % PAYOUT_WALLETS.length;
+      toast.success(`Default payout wallet set to ${PAYOUT_WALLETS[next]}`);
+      return next;
+    });
+  };
+
+  const handleToggleAccount = (name: string) => {
+    setAccounts((prev) =>
+      prev.map((a) => {
+        if (a.name !== name) return a;
+        const connected = !a.connected;
+        toast.success(connected ? `${a.name} connected` : `${a.name} disconnected`);
+        return { ...a, connected };
+      })
+    );
   };
 
   return (
@@ -124,19 +169,29 @@ export default function Settings() {
             <div className="space-y-6">
               <h3 className="font-display text-[28px] tracking-[0.02em] text-white">Security</h3>
               <div className="space-y-4">
-                <button className="w-full flex items-center justify-between p-4 rounded-xl bg-panel2 border border-[rgba(255,255,255,0.08)] hover:border-[rgba(255,255,255,0.14)] transition-colors">
+                <button
+                  onClick={handleChangePassword}
+                  className="w-full flex items-center justify-between p-4 rounded-xl bg-panel2 border border-[rgba(255,255,255,0.08)] hover:border-[rgba(255,255,255,0.14)] transition-colors"
+                >
                   <div className="text-left">
                     <p className="font-body text-[14px] text-white">Change Password</p>
                     <p className="font-mono text-[12px] text-[rgba(255,255,255,0.42)]">Last changed 30 days ago</p>
                   </div>
                   <ChevronRight size={16} className="text-[rgba(255,255,255,0.42)]" />
                 </button>
-                <button className="w-full flex items-center justify-between p-4 rounded-xl bg-panel2 border border-[rgba(255,255,255,0.08)] hover:border-[rgba(255,255,255,0.14)] transition-colors">
+                <button
+                  onClick={handleToggleTwoFactor}
+                  className="w-full flex items-center justify-between p-4 rounded-xl bg-panel2 border border-[rgba(255,255,255,0.08)] hover:border-[rgba(255,255,255,0.14)] transition-colors"
+                >
                   <div className="text-left">
                     <p className="font-body text-[14px] text-white">Two-Factor Authentication</p>
-                    <p className="font-mono text-[12px] text-[rgba(255,255,255,0.42)]">Enabled via authenticator app</p>
+                    <p className="font-mono text-[12px] text-[rgba(255,255,255,0.42)]">
+                      {twoFactorEnabled ? 'Enabled via authenticator app' : 'Tap to re-enable'}
+                    </p>
                   </div>
-                  <span className="text-positive font-mono text-[12px]">Enabled</span>
+                  <span className={`font-mono text-[12px] ${twoFactorEnabled ? 'text-positive' : 'text-negative'}`}>
+                    {twoFactorEnabled ? 'Enabled' : 'Disabled'}
+                  </span>
                 </button>
               </div>
             </div>
@@ -153,13 +208,16 @@ export default function Settings() {
                   </div>
                   <Toggle defaultOn={true} />
                 </div>
-                <div className="flex items-center justify-between p-4 rounded-xl bg-panel2">
-                  <div>
+                <button
+                  onClick={handleCyclePayoutWallet}
+                  className="w-full flex items-center justify-between p-4 rounded-xl bg-panel2 hover:bg-panel transition-colors"
+                >
+                  <div className="text-left">
                     <p className="font-body text-[14px] text-white">Default Payout Wallet</p>
-                    <p className="font-mono text-[12px] text-[rgba(255,255,255,0.42)]">USDC (Solana)</p>
+                    <p className="font-mono text-[12px] text-[rgba(255,255,255,0.42)]">{PAYOUT_WALLETS[payoutWalletIndex]}</p>
                   </div>
                   <ChevronRight size={16} className="text-[rgba(255,255,255,0.42)]" />
-                </div>
+                </button>
               </div>
             </div>
           )}
@@ -168,13 +226,7 @@ export default function Settings() {
             <div className="space-y-6">
               <h3 className="font-display text-[28px] tracking-[0.02em] text-white">Connected Accounts</h3>
               <div className="space-y-3">
-                {[
-                  { name: 'YouTube', user: 'Alex Creates', connected: true },
-                  { name: 'TikTok', user: '@alexcreates', connected: true },
-                  { name: 'Shopify', user: 'alexcreates.store', connected: true },
-                  { name: 'Stripe', user: 'alex@kre8trix.app', connected: false },
-                  { name: 'Patreon', user: '', connected: false },
-                ].map((account) => (
+                {accounts.map((account) => (
                   <div key={account.name} className="flex items-center justify-between p-4 rounded-xl bg-panel2">
                     <div className="flex items-center gap-3">
                       <span className="w-8 h-8 rounded-full bg-panel flex items-center justify-center font-body text-[12px] text-white">
@@ -186,6 +238,7 @@ export default function Settings() {
                       </div>
                     </div>
                     <button
+                      onClick={() => handleToggleAccount(account.name)}
                       className={`px-4 py-2 rounded-lg font-mono text-[12px] transition-all ${
                         account.connected
                           ? 'bg-[rgba(255,77,77,0.1)] text-negative hover:bg-[rgba(255,77,77,0.2)]'

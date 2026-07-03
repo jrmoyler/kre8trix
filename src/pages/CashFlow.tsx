@@ -1,5 +1,7 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
+import { toast } from 'sonner';
 import {
   AreaChart,
   Area,
@@ -64,6 +66,8 @@ const FORECAST_TABS = [
 /*  SECTION 1 — AI INSIGHT BANNER                             */
 /* ═══════════════════════════════════════════════════════════ */
 function AIInsightBanner() {
+  const navigate = useNavigate();
+
   return (
     <motion.section
       initial={{ opacity: 0, y: 20 }}
@@ -96,12 +100,25 @@ function AIInsightBanner() {
           </div>
           <div className="mt-4 flex flex-wrap gap-2">
             {[
-              { label: 'Apply for a $5K advance', style: 'bg-[rgba(255,77,0,0.15)] text-[#FF4D00]' },
-              { label: 'Defer equipment purchase', style: 'bg-panel2 text-white' },
-              { label: 'Adjust tax withholding', style: 'bg-[rgba(0,212,255,0.15)] text-[#00D4FF]' },
+              {
+                label: 'Apply for a $5K advance',
+                style: 'bg-[rgba(255,77,0,0.15)] text-[#FF4D00]',
+                action: () => navigate('/advances'),
+              },
+              {
+                label: 'Defer equipment purchase',
+                style: 'bg-panel2 text-white',
+                action: () => toast.success('Got it — equipment purchase deferred in your forecast'),
+              },
+              {
+                label: 'Adjust tax withholding',
+                style: 'bg-[rgba(0,212,255,0.15)] text-[#00D4FF]',
+                action: () => toast.info('Tax withholding tools coming soon'),
+              },
             ].map((chip) => (
               <button
                 key={chip.label}
+                onClick={chip.action}
                 className={`px-4 py-2 rounded-full font-body text-[14px] font-medium transition-all hover:scale-105 ${chip.style}`}
               >
                 {chip.label}

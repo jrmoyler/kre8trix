@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
+import { toast } from 'sonner';
 import {
   CheckCircle2,
   AlertTriangle,
@@ -112,6 +113,9 @@ export default function Advances() {
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [customAmount, setCustomAmount] = useState('');
   const [historyFilter, setHistoryFilter] = useState('All');
+  const [activeAdvances, setActiveAdvances] = useState<ActiveAdvance[]>(ACTIVE_ADVANCES);
+  const [sponsorshipDeals, setSponsorshipDeals] = useState<SponsorshipDeal[]>(SPONSORSHIP_DEALS);
+  const contractInputRef = useRef<HTMLInputElement>(null);
 
   const advanceAmount = selectedAmount || parseFloat(customAmount) || 0;
   const feePercent = 2.5;
@@ -128,6 +132,35 @@ export default function Advances() {
   const filteredHistory = historyFilter === 'All'
     ? ADVANCE_HISTORY
     : ADVANCE_HISTORY.filter((h) => h.status === historyFilter);
+
+  const handleApply = () => {
+    const newAdvance: ActiveAdvance = {
+      id: `KRA-${Math.floor(2900 + Math.random() * 100)}`,
+      amount: advanceAmount,
+      fee: Math.round(fee),
+      feePercent,
+      repaid: 0,
+      total: Math.round(totalRepay),
+      percentRepaid: 0,
+      issued: 'Today',
+      repaymentRate: `${repaymentPercent}% of monthly income`,
+      estCompletion: `~${payoffMonths} month${payoffMonths !== 1 ? 's' : ''}`,
+      status: 'Pending',
+    };
+    setActiveAdvances((prev) => [newAdvance, ...prev]);
+    setSelectedAmount(null);
+    setCustomAmount('');
+    toast.success(`Advance request for $${advanceAmount.toLocaleString()} submitted — funds typically arrive within minutes`);
+  };
+
+  const handleContractUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const brand = file.name.replace(/\.[^.]+$/, '');
+    setSponsorshipDeals((prev) => [...prev, { brand, amount: 0, status: 'Pending verification' }]);
+    toast.success(`${file.name} uploaded — we'll verify the contract within 24 hours`);
+    e.target.value = '';
+  };
 
   return (
     <div className="space-y-8">
@@ -237,6 +270,7 @@ export default function Advances() {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             disabled={!isEligible || advanceAmount <= 0 || advanceAmount > MAX_ADVANCE - USED_ADVANCE}
+            onClick={handleApply}
             className="bg-ember text-white font-body text-[16px] font-semibold px-8 py-4 rounded-2xl transition-all hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             Apply for ${advanceAmount > 0 ? advanceAmount.toLocaleString() : '...'}
@@ -245,10 +279,10 @@ export default function Advances() {
       </motion.div>
 
       {/* ── Section 3: Active Advances ── */}
-      {ACTIVE_ADVANCES.length > 0 && (
+      {activeAdvances.length > 0 && (
         <div className="space-y-4">
           <h3 className="font-display text-[36px] tracking-[0.02em] text-white">Active Advances</h3>
-          {ACTIVE_ADVANCES.map((advance) => (
+          {activeAdvances.map((advance) => (
             <motion.div
               key={advance.id}
               initial={{ opacity: 0, y: 20 }}
@@ -308,13 +342,15 @@ export default function Advances() {
           </div>
         </div>
 
-        {SPONSORSHIP_DEALS.length > 0 ? (
+        {sponsorshipDeals.length > 0 ? (
           <div className="space-y-3 mb-6">
-            {SPONSORSHIP_DEALS.map((deal) => (
+            {sponsorshipDeals.map((deal) => (
               <div key={deal.brand} className="flex items-center justify-between py-3 px-4 rounded-xl bg-panel2">
                 <div>
                   <p className="font-body text-[14px] text-white">{deal.brand}</p>
-                  <p className="font-mono text-[12px] text-[rgba(255,255,255,0.42)]">${deal.amount.toLocaleString()}</p>
+                  <p className="font-mono text-[12px] text-[rgba(255,255,255,0.42)]">
+                    {deal.amount > 0 ? `$${deal.amount.toLocaleString()}` : 'Amount under review'}
+                  </p>
                 </div>
                 <StatusBadge status={deal.status} />
               </div>
@@ -326,9 +362,17 @@ export default function Advances() {
           </div>
         )}
 
+        <input
+          ref={contractInputRef}
+          type="file"
+          accept=".pdf,.doc,.docx,image/*"
+          onChange={handleContractUpload}
+          className="hidden"
+        />
         <motion.button
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
+          onClick={() => contractInputRef.current?.click()}
           className="w-full py-3 rounded-xl border border-dashed border-[rgba(255,255,255,0.2)] text-[rgba(255,255,255,0.42)] hover:text-white hover:border-[rgba(255,255,255,0.4)] transition-all font-body text-[14px]"
         >
           + Upload Signed Contract

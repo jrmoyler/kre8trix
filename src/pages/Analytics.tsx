@@ -28,8 +28,14 @@ const PLATFORM_REVENUE = [
   { month: 'Oct', YouTube: 4200, Stripe: 3800, Shopify: 2400, TikTok: 1500, Patreon: 710 },
 ];
 
-const CURRENT_MONTH = { YouTube: 4200, Stripe: 3800, Shopify: 2400, TikTok: 1500, Patreon: 710 };
-const PREV_MONTH = { YouTube: 4480, Stripe: 3280, Shopify: 1770, TikTok: 1100, Patreon: 610 };
+const PLATFORM_KEYS = ['YouTube', 'Stripe', 'Shopify', 'TikTok', 'Patreon'] as const;
+type PlatformKey = (typeof PLATFORM_KEYS)[number];
+
+const RANGE_OPTIONS = [
+  { label: 'This Month', months: 1 },
+  { label: 'Last 3M', months: 3 },
+  { label: 'This Year', months: 6 },
+] as const;
 
 export const PLATFORM_TOTALS = [
   { name: 'YouTube', current: 4200, prev: 4480, change: -6, color: '#FF0000' },
@@ -68,15 +74,31 @@ export const PAYOUTS = [
 /*  SECTION 1 — REVENUE OVERVIEW                              */
 /* ═══════════════════════════════════════════════════════════ */
 function RevenueOverview() {
-  const total = Object.values(CURRENT_MONTH).reduce((a, b) => a + b, 0);
-  const prevTotal = Object.values(PREV_MONTH).reduce((a, b) => a + b, 0);
-  const change = Math.round(((total - prevTotal) / prevTotal) * 100);
+  const [rangeIndex, setRangeIndex] = useState(0);
+  const { months } = RANGE_OPTIONS[rangeIndex];
 
+  const currentWindow = PLATFORM_REVENUE.slice(-months);
+  const prevWindow = PLATFORM_REVENUE.slice(-(months * 2), -months);
+  const hasPrev = prevWindow.length === months;
+
+  const sumFor = (rows: typeof PLATFORM_REVENUE, keys: readonly PlatformKey[]) =>
+    rows.reduce((acc, row) => acc + keys.reduce((a, k) => a + row[k], 0), 0);
+
+  const changeText = (keys: readonly PlatformKey[]): { change: string | null; positive: boolean } => {
+    if (!hasPrev) return { change: null, positive: true };
+    const cur = sumFor(currentWindow, keys);
+    const prev = sumFor(prevWindow, keys);
+    const pct = Math.round(((cur - prev) / prev) * 100);
+    const vs = months === 1 ? 'vs last month' : `vs prev ${months}M`;
+    return { change: `${pct >= 0 ? '+' : ''}${pct}% ${vs}`, positive: pct >= 0 };
+  };
+
+  const otherKeys: readonly PlatformKey[] = ['Shopify', 'TikTok', 'Patreon'];
   const metrics = [
-    { label: 'Total Revenue', value: `$${total.toLocaleString()}`, change: `+${change}% vs last month`, positive: true },
-    { label: 'YouTube', value: `$${CURRENT_MONTH.YouTube.toLocaleString()}`, change: '-6%', positive: false },
-    { label: 'Stripe', value: `$${CURRENT_MONTH.Stripe.toLocaleString()}`, change: '+16%', positive: true },
-    { label: 'Other', value: `$${(CURRENT_MONTH.Shopify + CURRENT_MONTH.TikTok + CURRENT_MONTH.Patreon).toLocaleString()}`, change: '+31%', positive: true },
+    { label: 'Total Revenue', value: `$${sumFor(currentWindow, PLATFORM_KEYS).toLocaleString()}`, ...changeText(PLATFORM_KEYS) },
+    { label: 'YouTube', value: `$${sumFor(currentWindow, ['YouTube']).toLocaleString()}`, ...changeText(['YouTube']) },
+    { label: 'Stripe', value: `$${sumFor(currentWindow, ['Stripe']).toLocaleString()}`, ...changeText(['Stripe']) },
+    { label: 'Other', value: `$${sumFor(currentWindow, otherKeys).toLocaleString()}`, ...changeText(otherKeys) },
   ];
 
   return (
@@ -88,12 +110,13 @@ function RevenueOverview() {
       <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
         <h3 className="font-display text-[36px] tracking-[0.02em] text-white">Revenue Overview</h3>
         <div className="flex bg-[rgba(255,255,255,0.06)] rounded-xl p-1">
-          {['This Month', 'Last 3M', 'This Year'].map((r, i) => (
+          {RANGE_OPTIONS.map((r, i) => (
             <button
-              key={r}
-              className={`px-4 py-2 rounded-lg font-body text-[14px] font-medium transition-all ${i === 0 ? 'bg-acid text-void' : 'text-[rgba(255,255,255,0.42)] hover:text-white'}`}
+              key={r.label}
+              onClick={() => setRangeIndex(i)}
+              className={`px-4 py-2 rounded-lg font-body text-[14px] font-medium transition-all ${i === rangeIndex ? 'bg-acid text-void' : 'text-[rgba(255,255,255,0.42)] hover:text-white'}`}
             >
-              {r}
+              {r.label}
             </button>
           ))}
         </div>
@@ -111,14 +134,22 @@ function RevenueOverview() {
             <p className="font-mono text-[12px] text-[rgba(255,255,255,0.42)] tracking-[0.04em] mb-2">{m.label}</p>
             <p className="font-mono text-[20px] font-medium text-white mb-2">{m.value}</p>
             <div className="flex items-center gap-1">
-              {m.positive ? (
-                <TrendingUp size={12} className="text-positive" />
+              {m.change !== null ? (
+                <>
+                  {m.positive ? (
+                    <TrendingUp size={12} className="text-positive" />
+                  ) : (
+                    <TrendingDown size={12} className="text-negative" />
+                  )}
+                  <span className={`font-mono text-[11px] ${m.positive ? 'text-positive' : 'text-negative'}`}>
+                    {m.change}
+                  </span>
+                </>
               ) : (
-                <TrendingDown size={12} className="text-negative" />
+                <span className="font-mono text-[11px] text-[rgba(255,255,255,0.42)]">
+                  {months}-month total
+                </span>
               )}
-              <span className={`font-mono text-[11px] ${m.positive ? 'text-positive' : 'text-negative'}`}>
-                {m.change}
-              </span>
             </div>
           </motion.div>
         ))}

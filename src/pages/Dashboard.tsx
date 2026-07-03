@@ -260,6 +260,7 @@ function BalanceCard({
 
 /* CCS Score Card */
 function CCSScoreCard() {
+  const navigate = useNavigate();
   const targetScore = 612;
   const maxScore = 850;
   const count = useCountUp(targetScore, 1500, 600);
@@ -338,7 +339,7 @@ function CCSScoreCard() {
       </motion.div>
 
       <button
-        onClick={() => window.location.href = '/credit-score'}
+        onClick={() => navigate('/credit-score')}
         className="mt-4 text-[14px] font-medium text-electric hover:text-acid transition-colors duration-200 flex items-center gap-1"
       >
         View Full Breakdown
@@ -393,9 +394,11 @@ function QuickActionButton({
 function TransactionRow({
   tx,
   index,
+  onClick,
 }: {
   tx: (typeof transactions)[0];
   index: number;
+  onClick: () => void;
 }) {
   const isPositive = tx.amount > 0;
   const statusColors: Record<string, string> = {
@@ -413,6 +416,7 @@ function TransactionRow({
         ease: [0.4, 0, 0.2, 1] as [number, number, number, number],
         delay: 1.2 + index * 0.06,
       }}
+      onClick={onClick}
       className="flex items-center gap-4 py-3 px-4 rounded-xl hover:bg-panel2 transition-colors duration-150 cursor-pointer"
     >
       <div
@@ -718,7 +722,12 @@ export default function Dashboard() {
           </div>
           <div className="divide-y divide-[rgba(255,255,255,0.04)]">
             {transactions.map((tx, i) => (
-              <TransactionRow key={tx.id} tx={tx} index={i} />
+              <TransactionRow
+                key={tx.id}
+                tx={tx}
+                index={i}
+                onClick={() => navigate('/wallet?action=history')}
+              />
             ))}
           </div>
         </motion.div>
