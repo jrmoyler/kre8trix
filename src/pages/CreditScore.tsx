@@ -1,36 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import {
-  TrendingUp,
-  ChevronUp,
-} from 'lucide-react';
+import { FlaskConical, Loader2, RotateCcw, TrendingUp, ChevronUp } from 'lucide-react';
+import { api, ApiError } from '@/lib/api';
+import { useApi } from '@/hooks/use-api';
+import type { CcsScore, CcsSimulationResult } from '@/lib/types';
+import { ErrorNotice, ScoreCardSkeleton, SkeletonBlock } from '@/components/Skeletons';
 
 /* ── constants ────────────────────────────────────────────── */
-const TARGET_SCORE = 850;
-const CURRENT_SCORE = 612;
 const RADIUS = 120;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
+const easeOutExpo = [0.16, 1, 0.3, 1] as [number, number, number, number];
 
-export const SIGNALS = [
-  { name: 'Income Consistency', weight: 22, score: 720, color: '#C8FF00' },
-  { name: 'Monetization Diversification', weight: 18, score: 580, color: '#00D4FF' },
-  { name: 'Audience Durability', weight: 17, score: 640, color: '#9B5DE5' },
-  { name: 'Financial Behavior', weight: 16, score: 510, color: '#FF4D00' },
-  { name: 'Platform Risk', weight: 13, score: 680, color: '#FF4D4D' },
-  { name: 'Business Maturity', weight: 10, score: 490, color: '#FFD400' },
-  { name: 'Growth Trajectory', weight: 4, score: 620, color: '#00E5A0' },
-];
-
-export const SCORE_HISTORY = [
-  { month: 'May', score: 550 },
-  { month: 'Jun', score: 565 },
-  { month: 'Jul', score: 558 },
-  { month: 'Aug', score: 578 },
-  { month: 'Sep', score: 595 },
-  { month: 'Oct', score: 612 },
-];
-
-export const TIERS = [
+const TIERS = [
   { name: 'Emerging', range: '300-499', color: '#9B5DE5', benefits: ['Basic wallet', 'Standard advances up to $1K'] },
   { name: 'Rising', range: '500-649', color: '#00D4FF', benefits: ['Priority payouts', 'Advances up to $5K', '1% cashback'] },
   { name: 'Stable', range: '650-749', color: '#C8FF00', benefits: ['Instant advances up to $15K', '2% cashback', 'Lower fees'] },
@@ -59,14 +40,12 @@ function useAnimatedValue(target: number, duration: number, delay = 0) {
   return value;
 }
 
-const easeOutExpo = [0.16, 1, 0.3, 1] as [number, number, number, number];
-
 /* ═══════════════════════════════════════════════════════════ */
 /*  SECTION 1 — HERO SCORE RING                               */
 /* ═══════════════════════════════════════════════════════════ */
-function HeroScoreRing() {
-  const animatedScore = useAnimatedValue(CURRENT_SCORE, 1800, 200);
-  const progress = CURRENT_SCORE / TARGET_SCORE;
+function HeroScoreRing({ score }: { score: CcsScore }) {
+  const animatedScore = useAnimatedValue(score.score, 1800, 200);
+  const progress = score.score / score.maxScore;
   const dashOffset = CIRCUMFERENCE * (1 - progress);
 
   return (
@@ -119,7 +98,7 @@ function HeroScoreRing() {
             </span>
             <div className="w-10 h-px bg-[rgba(255,255,255,0.1)] my-2" />
             <span className="font-mono text-[12px] text-[rgba(255,255,255,0.42)] tracking-[0.04em]">
-              out of {TARGET_SCORE}
+              out of {score.maxScore}
             </span>
           </div>
         </motion.div>
@@ -133,7 +112,7 @@ function HeroScoreRing() {
         >
           <ChevronUp size={16} style={{ color: '#00D4FF' }} />
           <span className="font-mono text-[12px] font-medium tracking-[0.04em]" style={{ color: '#00D4FF' }}>
-            RISING CREATOR
+            {score.tier.toUpperCase()} CREATOR
           </span>
         </motion.div>
 
@@ -143,7 +122,7 @@ function HeroScoreRing() {
           transition={{ delay: 2.2, duration: 0.3 }}
           className="mt-3 font-body text-[14px] text-[rgba(255,255,255,0.42)]"
         >
-          Top 34% of creators on Kre8trix
+          Top {score.percentile}% of creators on Kre8trix
         </motion.p>
 
         <motion.div
@@ -153,17 +132,320 @@ function HeroScoreRing() {
           className="mt-2 flex items-center gap-1 text-[#00E5A0]"
         >
           <TrendingUp size={14} />
-          <span className="font-body text-[14px] font-medium">+47 points this quarter</span>
+          <span className="font-body text-[14px] font-medium">+{score.quarterDelta} points this quarter</span>
         </motion.div>
       </div>
     </section>
   );
 }
 
+/* ═══════════════════════════════════════════════════════════ */
+/*  SECTION 2 — SIGNAL BREAKDOWN                              */
+/* ═══════════════════════════════════════════════════════════ */
+function SignalBreakdown({ score }: { score: CcsScore }) {
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.15 }}
+      transition={{ duration: 0.5, ease: easeOutExpo }}
+      className="bg-panel border border-[rgba(255,255,255,0.08)] rounded-2xl p-6"
+    >
+      <h3 className="font-display text-[36px] tracking-[0.02em] text-white mb-1">Signal Breakdown</h3>
+      <p className="font-mono text-[12px] text-[rgba(255,255,255,0.42)] tracking-[0.04em] mb-6">
+        Seven weighted signals drive your CCS
+      </p>
+      <div className="space-y-5">
+        {score.signals.map((signal, i) => (
+          <div key={signal.name}>
+            <div className="flex items-center justify-between mb-1.5">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full" style={{ background: signal.color }} />
+                <span className="font-body text-[14px] text-white">{signal.name}</span>
+                <span className="font-mono text-[11px] text-[rgba(255,255,255,0.42)]">{signal.weight}%</span>
+              </div>
+              <span className="font-mono text-[14px] text-white">{signal.score}</span>
+            </div>
+            <div className="h-2 bg-[rgba(255,255,255,0.06)] rounded-full overflow-hidden">
+              <motion.div
+                initial={{ width: 0 }}
+                whileInView={{ width: `${((signal.score - 300) / 550) * 100}%` }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.7, ease: easeOutExpo, delay: i * 0.06 }}
+                className="h-full rounded-full"
+                style={{ background: signal.color, opacity: 0.8 }}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+    </motion.section>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════ */
+/*  SECTION 3 — SCORE HISTORY                                 */
+/* ═══════════════════════════════════════════════════════════ */
+function ScoreHistory({ score }: { score: CcsScore }) {
+  const min = Math.min(...score.history.map((h) => h.score)) - 20;
+  const max = Math.max(...score.history.map((h) => h.score)) + 20;
+  const range = max - min;
+
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.15 }}
+      transition={{ duration: 0.5, ease: easeOutExpo }}
+      className="bg-panel border border-[rgba(255,255,255,0.08)] rounded-2xl p-6"
+    >
+      <h3 className="font-display text-[36px] tracking-[0.02em] text-white mb-6">Score History</h3>
+      <div className="flex items-end justify-between gap-3 h-[180px]">
+        {score.history.map((point, i) => (
+          <div key={point.month} className="flex-1 flex flex-col items-center gap-2 h-full justify-end">
+            <span className="font-mono text-[12px] text-white">{point.score}</span>
+            <motion.div
+              initial={{ height: 0 }}
+              whileInView={{ height: `${((point.score - min) / range) * 100}%` }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, ease: easeOutExpo, delay: i * 0.07 }}
+              className="w-full max-w-[48px] rounded-t-lg"
+              style={{
+                background:
+                  i === score.history.length - 1
+                    ? 'linear-gradient(180deg, #C8FF00, rgba(200,255,0,0.2))'
+                    : 'rgba(0,212,255,0.25)',
+              }}
+            />
+            <span className="font-mono text-[11px] text-[rgba(255,255,255,0.42)]">{point.month}</span>
+          </div>
+        ))}
+      </div>
+    </motion.section>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════ */
+/*  SECTION 4 — WHAT-IF SIMULATOR                             */
+/* ═══════════════════════════════════════════════════════════ */
+function WhatIfSimulator({ score }: { score: CcsScore }) {
+  const baseline = useMemo(
+    () => Object.fromEntries(score.signals.map((s) => [s.name, s.score])),
+    [score],
+  );
+  const [adjustments, setAdjustments] = useState<Record<string, number>>(baseline);
+  const [result, setResult] = useState<CcsSimulationResult | null>(null);
+  const [simulating, setSimulating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const dirty = score.signals.some((s) => adjustments[s.name] !== s.score);
+
+  useEffect(() => {
+    // When adjustments return to baseline, stale results are simply ignored
+    // in render (see `projected` below) — no state reset needed.
+    if (!dirty) return;
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(async () => {
+      setSimulating(true);
+      setError(null);
+      try {
+        const changed: Record<string, number> = {};
+        for (const s of score.signals) {
+          if (adjustments[s.name] !== s.score) changed[s.name] = adjustments[s.name];
+        }
+        const simulation = await api.post<CcsSimulationResult>('/ccs/simulate', {
+          adjustments: changed,
+        });
+        setResult(simulation);
+      } catch (err) {
+        setError(err instanceof ApiError ? err.message : 'Simulation failed');
+      } finally {
+        setSimulating(false);
+      }
+    }, 350);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [adjustments, dirty, score.signals]);
+
+  const reset = () => {
+    setAdjustments(baseline);
+    setResult(null);
+    setError(null);
+  };
+
+  const projected = dirty && result ? result.projectedScore : score.score;
+  const delta = dirty && result ? result.delta : 0;
+  const visibleError = dirty ? error : null;
+
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.1 }}
+      transition={{ duration: 0.5, ease: easeOutExpo }}
+      className="rounded-2xl p-6 border border-[rgba(0,212,255,0.15)]"
+      style={{ background: 'linear-gradient(135deg, #0F0F1E 0%, rgba(0,212,255,0.04) 100%)' }}
+    >
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-[rgba(0,212,255,0.15)] flex items-center justify-center">
+            <FlaskConical size={20} className="text-electric" />
+          </div>
+          <div>
+            <h3 className="font-display text-[36px] tracking-[0.02em] text-white">What-If Simulator</h3>
+            <p className="font-mono text-[12px] text-[rgba(255,255,255,0.42)] tracking-[0.04em]">
+              Drag signals to see how your score would respond
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-4">
+          {dirty && (
+            <button
+              onClick={reset}
+              className="flex items-center gap-1.5 font-mono text-[12px] tracking-[0.04em] text-[rgba(255,255,255,0.42)] hover:text-white transition-colors"
+            >
+              <RotateCcw size={13} />
+              Reset
+            </button>
+          )}
+          <div className="text-right">
+            <div className="flex items-center gap-2 justify-end">
+              {simulating && <Loader2 size={16} className="animate-spin text-electric" />}
+              <span className="font-mono text-[36px] font-medium text-white tracking-[-0.02em] leading-none">
+                {projected}
+              </span>
+            </div>
+            <span
+              className="font-mono text-[12px] tracking-[0.04em]"
+              style={{ color: delta > 0 ? '#00E5A0' : delta < 0 ? '#FF4D4D' : 'rgba(255,255,255,0.42)' }}
+            >
+              {delta > 0 ? `+${delta}` : delta} pts · {(dirty && result?.projectedTier) || score.tier}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {visibleError && <p className="font-body text-[13px] text-negative mb-4">{visibleError}</p>}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5">
+        {score.signals.map((signal) => (
+          <div key={signal.name}>
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="font-body text-[13px] text-white">{signal.name}</span>
+              <span className="font-mono text-[13px]" style={{ color: signal.color }}>
+                {adjustments[signal.name]}
+                {adjustments[signal.name] !== signal.score && (
+                  <span className="text-[rgba(255,255,255,0.42)]"> (was {signal.score})</span>
+                )}
+              </span>
+            </div>
+            <input
+              type="range"
+              min={300}
+              max={850}
+              step={5}
+              value={adjustments[signal.name]}
+              onChange={(e) =>
+                setAdjustments((prev) => ({ ...prev, [signal.name]: Number(e.target.value) }))
+              }
+              className="w-full accent-acid cursor-pointer"
+            />
+          </div>
+        ))}
+      </div>
+    </motion.section>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════ */
+/*  SECTION 5 — TIERS                                         */
+/* ═══════════════════════════════════════════════════════════ */
+function TierLadder({ currentTier }: { currentTier: string }) {
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.1 }}
+      transition={{ duration: 0.5, ease: easeOutExpo }}
+    >
+      <h3 className="font-display text-[36px] tracking-[0.02em] text-white mb-6">Creator Tiers</h3>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {TIERS.map((tier) => {
+          const isCurrent = tier.name === currentTier;
+          return (
+            <div
+              key={tier.name}
+              className={`rounded-2xl p-5 border transition-all ${
+                isCurrent ? 'bg-panel' : 'bg-panel2 border-[rgba(255,255,255,0.08)]'
+              }`}
+              style={isCurrent ? { borderColor: `${tier.color}50` } : undefined}
+            >
+              <div className="flex items-center justify-between mb-3">
+                <span className="font-body text-[16px] font-semibold" style={{ color: tier.color }}>
+                  {tier.name}
+                </span>
+                {isCurrent && (
+                  <span
+                    className="font-mono text-[10px] tracking-[0.08em] px-2 py-0.5 rounded-full"
+                    style={{ background: `${tier.color}20`, color: tier.color }}
+                  >
+                    CURRENT
+                  </span>
+                )}
+              </div>
+              <p className="font-mono text-[12px] text-[rgba(255,255,255,0.42)] mb-3">{tier.range}</p>
+              <ul className="space-y-1.5">
+                {tier.benefits.map((benefit) => (
+                  <li key={benefit} className="font-body text-[13px] text-[rgba(255,255,255,0.7)]">
+                    · {benefit}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          );
+        })}
+      </div>
+    </motion.section>
+  );
+}
+
 export default function CreditScore() {
+  const { data: score, loading, error, refresh } = useApi<CcsScore>('/ccs/score');
+
+  if (error) {
+    return (
+      <div className="bg-panel border border-[rgba(255,255,255,0.08)] rounded-2xl">
+        <ErrorNotice message={error} onRetry={refresh} />
+      </div>
+    );
+  }
+
+  if (loading || !score) {
+    return (
+      <div className="space-y-8">
+        <div className="flex justify-center py-12">
+          <ScoreCardSkeleton />
+        </div>
+        <div className="bg-panel border border-[rgba(255,255,255,0.08)] rounded-2xl p-6 space-y-4">
+          {Array.from({ length: 7 }).map((_, i) => (
+            <SkeletonBlock key={i} className="h-8 w-full" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
-      <HeroScoreRing />
+      <HeroScoreRing score={score} />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <SignalBreakdown score={score} />
+        <ScoreHistory score={score} />
+      </div>
+      <WhatIfSimulator score={score} />
+      <TierLadder currentTier={score.tier} />
     </div>
   );
 }
