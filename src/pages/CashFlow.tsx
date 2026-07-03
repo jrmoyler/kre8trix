@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
 import {
   AreaChart,
@@ -9,61 +10,49 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
-import { BrainCircuit } from 'lucide-react';
+import { BrainCircuit, Landmark, Loader2, PiggyBank } from 'lucide-react';
+import { toast } from 'sonner';
+import { api, ApiError } from '@/lib/api';
+import { useApi } from '@/hooks/use-api';
+import type {
+  CashFlowForecast,
+  ForecastWindow,
+  ReserveBuilder,
+  SeasonalityMonth,
+  TaxTracker,
+} from '@/lib/types';
+import { ChartSkeleton, ErrorNotice, SkeletonBlock } from '@/components/Skeletons';
 
 /* ── constants ────────────────────────────────────────────── */
 const easeOutExpo = [0.16, 1, 0.3, 1] as [number, number, number, number];
-
-/* ── forecast data (30/60/90) ────────────────────────────── */
-const FORECAST_30 = Array.from({ length: 30 }, (_, i) => {
-  const day = i + 1;
-  const isProjected = day > 18;
-  const base = 420 + Math.sin(day * 0.3) * 150 + day * 12;
-  return {
-    day: `${day}`,
-    actual: isProjected ? undefined : Math.round(base),
-    projected: isProjected ? Math.round(base) : undefined,
-    projectedLow: isProjected ? Math.round(base * 0.85) : undefined,
-    projectedHigh: isProjected ? Math.round(base * 1.15) : undefined,
-  };
-});
-
-const FORECAST_60 = Array.from({ length: 8 }, (_, i) => {
-  const week = i + 1;
-  const isProjected = week > 3;
-  const base = 3200 + Math.sin(week * 0.8) * 800 + week * 300;
-  return {
-    day: `W${week}`,
-    actual: isProjected ? undefined : Math.round(base),
-    projected: isProjected ? Math.round(base) : undefined,
-    projectedLow: isProjected ? Math.round(base * 0.8) : undefined,
-    projectedHigh: isProjected ? Math.round(base * 1.2) : undefined,
-  };
-});
-
-const FORECAST_90 = Array.from({ length: 12 }, (_, i) => {
-  const week = i + 1;
-  const isProjected = week > 5;
-  const base = 2800 + Math.sin(week * 0.6) * 1000 + week * 200;
-  return {
-    day: `W${week}`,
-    actual: isProjected ? undefined : Math.round(base),
-    projected: isProjected ? Math.round(base) : undefined,
-    projectedLow: isProjected ? Math.round(base * 0.75) : undefined,
-    projectedHigh: isProjected ? Math.round(base * 1.25) : undefined,
-  };
-});
-
-const FORECAST_TABS = [
-  { label: '30D', data: FORECAST_30 },
-  { label: '60D', data: FORECAST_60 },
-  { label: '90D', data: FORECAST_90 },
-];
+const FORECAST_WINDOWS: ForecastWindow[] = ['30D', '60D', '90D'];
 
 /* ═══════════════════════════════════════════════════════════ */
 /*  SECTION 1 — AI INSIGHT BANNER                             */
 /* ═══════════════════════════════════════════════════════════ */
 function AIInsightBanner() {
+  const navigate = useNavigate();
+
+  const chips = [
+    {
+      label: 'Apply for a $5K advance',
+      style: 'bg-[rgba(255,77,0,0.15)] text-[#FF4D00]',
+      action: () => navigate('/advances'),
+    },
+    {
+      label: 'Defer equipment purchase',
+      style: 'bg-panel2 text-white',
+      action: () => toast.success('Equipment purchase deferred — we moved the reminder to November'),
+    },
+    {
+      label: 'Adjust tax withholding',
+      style: 'bg-[rgba(0,212,255,0.15)] text-[#00D4FF]',
+      action: () => {
+        document.getElementById('tax-tracker')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      },
+    },
+  ];
+
   return (
     <motion.section
       initial={{ opacity: 0, y: 20 }}
@@ -95,13 +84,10 @@ function AIInsightBanner() {
             </p>
           </div>
           <div className="mt-4 flex flex-wrap gap-2">
-            {[
-              { label: 'Apply for a $5K advance', style: 'bg-[rgba(255,77,0,0.15)] text-[#FF4D00]' },
-              { label: 'Defer equipment purchase', style: 'bg-panel2 text-white' },
-              { label: 'Adjust tax withholding', style: 'bg-[rgba(0,212,255,0.15)] text-[#00D4FF]' },
-            ].map((chip) => (
+            {chips.map((chip) => (
               <button
                 key={chip.label}
+                onClick={chip.action}
                 className={`px-4 py-2 rounded-full font-body text-[14px] font-medium transition-all hover:scale-105 ${chip.style}`}
               >
                 {chip.label}
@@ -118,9 +104,11 @@ function AIInsightBanner() {
 /*  SECTION 2 — FORECAST CHART                                */
 /* ═══════════════════════════════════════════════════════════ */
 function ForecastChart() {
-  const [activeTab, setActiveTab] = useState(0);
+  const [window, setWindow] = useState<ForecastWindow>('30D');
   const [showConfidence, setShowConfidence] = useState(true);
-  const data = FORECAST_TABS[activeTab].data;
+  const { data: forecast, loading, error, refresh } = useApi<CashFlowForecast>(
+    `/cashflow/forecast?window=${window}`,
+  );
 
   return (
     <motion.section
@@ -131,16 +119,23 @@ function ForecastChart() {
       className="bg-panel border border-[rgba(255,255,255,0.08)] rounded-2xl p-6"
     >
       <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-        <h2 className="font-display text-[48px] tracking-[0.02em] text-white">Income Forecast</h2>
+        <div>
+          <h2 className="font-display text-[48px] tracking-[0.02em] text-white">Income Forecast</h2>
+          {forecast && (
+            <p className="font-mono text-[12px] text-[rgba(255,255,255,0.42)] tracking-[0.04em]">
+              {forecast.confidencePercent}% model confidence over {window}
+            </p>
+          )}
+        </div>
         <div className="flex items-center gap-3">
           <div className="flex bg-[rgba(255,255,255,0.06)] rounded-xl p-1">
-            {FORECAST_TABS.map((tab, i) => (
+            {FORECAST_WINDOWS.map((w) => (
               <button
-                key={tab.label}
-                onClick={() => setActiveTab(i)}
-                className={`px-4 py-2 rounded-lg font-mono text-[12px] font-medium transition-all ${i === activeTab ? 'bg-acid text-void' : 'text-[rgba(255,255,255,0.42)] hover:text-white'}`}
+                key={w}
+                onClick={() => setWindow(w)}
+                className={`px-4 py-2 rounded-lg font-mono text-[12px] font-medium transition-all ${w === window ? 'bg-acid text-void' : 'text-[rgba(255,255,255,0.42)] hover:text-white'}`}
               >
-                {tab.label}
+                {w}
               </button>
             ))}
           </div>
@@ -156,48 +151,333 @@ function ForecastChart() {
         </div>
       </div>
 
-      <div style={{ height: 400 }}>
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data}>
-            <defs>
-              <linearGradient id="actualFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#C8FF00" stopOpacity={0.4} />
-                <stop offset="100%" stopColor="#C8FF00" stopOpacity={0} />
-              </linearGradient>
-              <linearGradient id="projectedFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#00D4FF" stopOpacity={0.3} />
-                <stop offset="100%" stopColor="#00D4FF" stopOpacity={0} />
-              </linearGradient>
-              <linearGradient id="confidenceFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#00D4FF" stopOpacity={0.08} />
-                <stop offset="100%" stopColor="#00D4FF" stopOpacity={0.02} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid stroke="rgba(255,255,255,0.04)" vertical={false} />
-            <XAxis dataKey="day" tick={{ fill: 'rgba(255,255,255,0.42)', fontSize: 12, fontFamily: 'JetBrains Mono' }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fill: 'rgba(255,255,255,0.42)', fontSize: 12, fontFamily: 'JetBrains Mono' }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `$${v.toLocaleString()}`} />
-            <Tooltip
-              contentStyle={{
-                background: '#141428',
-                border: '1px solid rgba(255,255,255,0.08)',
-                borderRadius: '12px',
-                fontFamily: 'JetBrains Mono',
-                fontSize: '12px',
-                color: '#fff',
-              }}
-              formatter={(value: number) => [`$${value.toLocaleString()}`, '']}
-            />
-            {showConfidence && (
-              <>
-                <Area type="monotone" dataKey="projectedHigh" stroke="none" fill="url(#confidenceFill)" />
-                <Area type="monotone" dataKey="projectedLow" stroke="none" fill="#06060E" />
-              </>
-            )}
-            <Area type="monotone" dataKey="actual" stroke="#C8FF00" strokeWidth={2} fill="url(#actualFill)" connectNulls={false} dot={false} />
-            <Area type="monotone" dataKey="projected" stroke="#00D4FF" strokeWidth={2} strokeDasharray="6 4" fill="url(#projectedFill)" connectNulls={false} dot={false} />
-          </AreaChart>
-        </ResponsiveContainer>
+      {error ? (
+        <ErrorNotice message={error} onRetry={refresh} />
+      ) : loading || !forecast ? (
+        <ChartSkeleton height={400} />
+      ) : (
+        <div style={{ height: 400 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={forecast.points}>
+              <defs>
+                <linearGradient id="actualFill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#C8FF00" stopOpacity={0.4} />
+                  <stop offset="100%" stopColor="#C8FF00" stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="projectedFill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#00D4FF" stopOpacity={0.3} />
+                  <stop offset="100%" stopColor="#00D4FF" stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="confidenceFill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#00D4FF" stopOpacity={0.08} />
+                  <stop offset="100%" stopColor="#00D4FF" stopOpacity={0.02} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid stroke="rgba(255,255,255,0.04)" vertical={false} />
+              <XAxis dataKey="label" tick={{ fill: 'rgba(255,255,255,0.42)', fontSize: 12, fontFamily: 'JetBrains Mono' }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fill: 'rgba(255,255,255,0.42)', fontSize: 12, fontFamily: 'JetBrains Mono' }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `$${v.toLocaleString()}`} />
+              <Tooltip
+                contentStyle={{
+                  background: '#141428',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  borderRadius: '12px',
+                  fontFamily: 'JetBrains Mono',
+                  fontSize: '12px',
+                  color: '#fff',
+                }}
+                formatter={(value: number) => [`$${value.toLocaleString()}`, '']}
+              />
+              {showConfidence && (
+                <>
+                  <Area type="monotone" dataKey="high" stroke="none" fill="url(#confidenceFill)" />
+                  <Area type="monotone" dataKey="low" stroke="none" fill="#06060E" />
+                </>
+              )}
+              <Area type="monotone" dataKey="actual" stroke="#C8FF00" strokeWidth={2} fill="url(#actualFill)" connectNulls={false} dot={false} />
+              <Area type="monotone" dataKey="projected" stroke="#00D4FF" strokeWidth={2} strokeDasharray="6 4" fill="url(#projectedFill)" connectNulls={false} dot={false} />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+
+      {forecast && (
+        <div className="flex flex-wrap items-center gap-6 mt-4">
+          {forecast.summary.map((pill) => (
+            <button
+              key={pill.window}
+              onClick={() => setWindow(pill.window)}
+              className={`flex items-center gap-2 transition-opacity ${window === pill.window ? '' : 'opacity-50 hover:opacity-80'}`}
+            >
+              <span className="w-2.5 h-2.5 rounded-full" style={{ background: pill.color }} />
+              <span className="font-mono text-[12px] text-[rgba(255,255,255,0.42)] tracking-[0.04em]">
+                {pill.label}:
+              </span>
+              <span className="font-mono text-[18px] font-medium text-white tracking-[-0.02em]">
+                ${pill.amount.toLocaleString()}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+    </motion.section>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════ */
+/*  SECTION 3 — SEASONALITY                                   */
+/* ═══════════════════════════════════════════════════════════ */
+function Seasonality() {
+  const { data: months, loading, error, refresh } = useApi<SeasonalityMonth[]>('/cashflow/seasonality');
+
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.15 }}
+      transition={{ duration: 0.5, ease: easeOutExpo }}
+      className="bg-panel border border-[rgba(255,255,255,0.08)] rounded-2xl p-6"
+    >
+      <h3 className="font-display text-[36px] tracking-[0.02em] text-white mb-1">Seasonality</h3>
+      <p className="font-mono text-[12px] text-[rgba(255,255,255,0.42)] tracking-[0.04em] mb-6">
+        Your income index by month (100 = your average)
+      </p>
+      {error ? (
+        <ErrorNotice message={error} onRetry={refresh} />
+      ) : loading || !months ? (
+        <ChartSkeleton height={160} />
+      ) : (
+        <div className="flex items-end gap-2 h-[160px]">
+          {months.map((m, i) => {
+            const max = Math.max(...months.map((x) => x.index));
+            const isPeak = m.index >= 115;
+            const isTrough = m.index <= 85;
+            return (
+              <div key={m.month} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end">
+                <span className="font-mono text-[10px] text-[rgba(255,255,255,0.42)]">{m.index}</span>
+                <motion.div
+                  initial={{ height: 0 }}
+                  whileInView={{ height: `${(m.index / max) * 100}%` }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, ease: easeOutExpo, delay: i * 0.04 }}
+                  className="w-full rounded-t-md"
+                  style={{
+                    background: isPeak
+                      ? 'linear-gradient(180deg, #C8FF00, rgba(200,255,0,0.3))'
+                      : isTrough
+                      ? 'rgba(255,77,77,0.4)'
+                      : 'rgba(0,212,255,0.3)',
+                  }}
+                />
+                <span className="font-mono text-[10px] text-[rgba(255,255,255,0.42)]">{m.month}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </motion.section>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════ */
+/*  SECTION 4 — TAX TRACKER                                   */
+/* ═══════════════════════════════════════════════════════════ */
+function TaxTrackerCard() {
+  const { data: tax, loading, error, refresh } = useApi<TaxTracker>('/cashflow/tax');
+
+  return (
+    <motion.section
+      id="tax-tracker"
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.15 }}
+      transition={{ duration: 0.5, ease: easeOutExpo }}
+      className="bg-panel border border-[rgba(255,255,255,0.08)] rounded-2xl p-6"
+    >
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-10 h-10 rounded-full bg-[rgba(255,212,0,0.15)] flex items-center justify-center">
+          <Landmark size={20} style={{ color: '#FFD400' }} />
+        </div>
+        <div>
+          <h3 className="font-display text-[36px] tracking-[0.02em] text-white">Tax Tracker</h3>
+          <p className="font-mono text-[12px] text-[rgba(255,255,255,0.42)] tracking-[0.04em]">
+            Estimated self-employment taxes
+          </p>
+        </div>
       </div>
+
+      {error ? (
+        <ErrorNotice message={error} onRetry={refresh} />
+      ) : loading || !tax ? (
+        <div className="space-y-4">
+          <SkeletonBlock className="h-16 w-full" />
+          <SkeletonBlock className="h-3 w-full" />
+          <SkeletonBlock className="h-10 w-2/3" />
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+            {[
+              { label: 'YTD Income', value: `$${tax.ytdIncome.toLocaleString()}` },
+              { label: 'Est. Rate', value: `${tax.estimatedRatePercent}%` },
+              { label: 'Est. Owed', value: `$${tax.estimatedOwed.toLocaleString()}` },
+              { label: 'Set Aside', value: `$${tax.setAside.toLocaleString()}` },
+            ].map((stat) => (
+              <div key={stat.label} className="bg-panel2 rounded-xl p-4">
+                <p className="font-mono text-[11px] text-[rgba(255,255,255,0.42)] tracking-[0.04em] mb-1">
+                  {stat.label}
+                </p>
+                <p className="font-mono text-[18px] font-medium text-white tracking-[-0.02em]">{stat.value}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="mb-2 flex items-center justify-between">
+            <span className="font-mono text-[12px] text-[rgba(255,255,255,0.42)]">
+              {Math.round((tax.setAside / tax.estimatedOwed) * 100)}% covered
+            </span>
+            <span className="font-mono text-[12px] text-[rgba(255,255,255,0.42)]">
+              Next deadline: {tax.nextDeadline}
+            </span>
+          </div>
+          <div className="h-2.5 bg-[rgba(255,255,255,0.06)] rounded-full overflow-hidden">
+            <motion.div
+              initial={{ width: 0 }}
+              whileInView={{ width: `${Math.min(100, (tax.setAside / tax.estimatedOwed) * 100)}%` }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8, ease: easeOutExpo }}
+              className="h-full rounded-full"
+              style={{ background: 'linear-gradient(90deg, #FFD400, #C8FF00)' }}
+            />
+          </div>
+        </>
+      )}
+    </motion.section>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════ */
+/*  SECTION 5 — RESERVE BUILDER                               */
+/* ═══════════════════════════════════════════════════════════ */
+function ReserveBuilderCard() {
+  const { data: reserve, loading, error, refresh, setData } = useApi<ReserveBuilder>('/cashflow/reserve');
+  const [saving, setSaving] = useState(false);
+
+  const updateReserve = async (patch: Partial<ReserveBuilder>) => {
+    setSaving(true);
+    try {
+      const updated = await api.put<ReserveBuilder>('/cashflow/reserve', patch);
+      setData(updated);
+      toast.success('Reserve plan updated');
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Could not update reserve');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.15 }}
+      transition={{ duration: 0.5, ease: easeOutExpo }}
+      className="rounded-2xl p-6 border border-[rgba(0,229,160,0.15)]"
+      style={{ background: 'linear-gradient(135deg, #0F0F1E 0%, rgba(0,229,160,0.04) 100%)' }}
+    >
+      <div className="flex items-center justify-between gap-3 mb-6">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-[rgba(0,229,160,0.15)] flex items-center justify-center">
+            <PiggyBank size={20} style={{ color: '#00E5A0' }} />
+          </div>
+          <div>
+            <h3 className="font-display text-[36px] tracking-[0.02em] text-white">Reserve Builder</h3>
+            <p className="font-mono text-[12px] text-[rgba(255,255,255,0.42)] tracking-[0.04em]">
+              Smooth out slow months with an income buffer
+            </p>
+          </div>
+        </div>
+        {saving && <Loader2 size={18} className="animate-spin text-positive" />}
+      </div>
+
+      {error ? (
+        <ErrorNotice message={error} onRetry={refresh} />
+      ) : loading || !reserve ? (
+        <div className="space-y-4">
+          <SkeletonBlock className="h-12 w-1/2" />
+          <SkeletonBlock className="h-3 w-full" />
+          <SkeletonBlock className="h-10 w-full" />
+        </div>
+      ) : (
+        <>
+          <div className="flex flex-wrap items-end justify-between gap-4 mb-3">
+            <div>
+              <p className="font-mono text-[12px] text-[rgba(255,255,255,0.42)] tracking-[0.04em] mb-1">
+                Saved so far
+              </p>
+              <p className="font-mono text-[40px] font-medium text-white tracking-[-0.02em] leading-none">
+                ${reserve.current.toLocaleString()}
+                <span className="text-[18px] text-[rgba(255,255,255,0.42)]"> / ${reserve.goal.toLocaleString()}</span>
+              </p>
+            </div>
+            <span className="font-mono text-[13px] text-positive">
+              {Math.round((reserve.current / reserve.goal) * 100)}% of goal
+            </span>
+          </div>
+
+          <div className="h-2.5 bg-[rgba(255,255,255,0.06)] rounded-full overflow-hidden mb-6">
+            <motion.div
+              initial={{ width: 0 }}
+              whileInView={{ width: `${Math.min(100, (reserve.current / reserve.goal) * 100)}%` }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8, ease: easeOutExpo }}
+              className="h-full rounded-full"
+              style={{ background: 'linear-gradient(90deg, #00E5A0, #C8FF00)' }}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="font-body text-[14px] text-white">Monthly contribution</span>
+                <span className="font-mono text-[14px] text-positive">${reserve.monthlyTarget.toLocaleString()}</span>
+              </div>
+              <input
+                type="range"
+                min={100}
+                max={2500}
+                step={50}
+                value={reserve.monthlyTarget}
+                onChange={(e) => setData({ ...reserve, monthlyTarget: Number(e.target.value) })}
+                onMouseUp={() => updateReserve({ monthlyTarget: reserve.monthlyTarget })}
+                onTouchEnd={() => updateReserve({ monthlyTarget: reserve.monthlyTarget })}
+                className="w-full accent-acid cursor-pointer"
+              />
+              <p className="font-mono text-[11px] text-[rgba(255,255,255,0.42)] mt-1">
+                At this pace you'll hit your goal in{' '}
+                {Math.max(1, Math.ceil((reserve.goal - reserve.current) / reserve.monthlyTarget))} months
+              </p>
+            </div>
+            <div className="flex items-center justify-between bg-panel2 rounded-xl px-4 py-3 self-start">
+              <div>
+                <p className="font-body text-[14px] text-white">Auto-contribute</p>
+                <p className="font-mono text-[11px] text-[rgba(255,255,255,0.42)]">
+                  Move funds automatically on payout days
+                </p>
+              </div>
+              <button
+                onClick={() => updateReserve({ autoContribute: !reserve.autoContribute })}
+                className={`relative w-[44px] h-[24px] rounded-full transition-colors flex-shrink-0 ${reserve.autoContribute ? 'bg-acid' : 'bg-[rgba(255,255,255,0.12)]'}`}
+              >
+                <motion.div
+                  animate={{ x: reserve.autoContribute ? 20 : 4 }}
+                  transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                  className="absolute top-[2px] w-[20px] h-[20px] rounded-full bg-white"
+                />
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </motion.section>
   );
 }
@@ -207,6 +487,11 @@ export default function CashFlow() {
     <div className="space-y-8">
       <AIInsightBanner />
       <ForecastChart />
+      <Seasonality />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <TaxTrackerCard />
+        <ReserveBuilderCard />
+      </div>
     </div>
   );
 }
