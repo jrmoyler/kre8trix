@@ -1,51 +1,22 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   CheckCircle2,
   AlertTriangle,
+  Loader2,
   Lock,
   Upload,
   ShoppingBag,
 } from 'lucide-react';
+import { toast } from 'sonner';
+import { api, ApiError } from '@/lib/api';
+import { useApi } from '@/hooks/use-api';
+import type { Advance, AdvancesOverview } from '@/lib/types';
+import { ErrorNotice, SkeletonBlock } from '@/components/Skeletons';
 
 /* ------------------------------------------------------------------ */
-/*  Mock data                                                          */
+/*  Static presentation data                                           */
 /* ------------------------------------------------------------------ */
-const CCS_SCORE = 612;
-const CCS_TIER = 'Rising';
-const MAX_ADVANCE = 5000;
-const USED_ADVANCE = 2500;
-
-interface ActiveAdvance {
-  id: string;
-  amount: number;
-  fee: number;
-  feePercent: number;
-  repaid: number;
-  total: number;
-  percentRepaid: number;
-  issued: string;
-  repaymentRate: string;
-  estCompletion: string;
-  status: string;
-}
-
-const ACTIVE_ADVANCES: ActiveAdvance[] = [
-  {
-    id: 'KRA-2847',
-    amount: 500,
-    fee: 30,
-    feePercent: 6,
-    repaid: 318,
-    total: 530,
-    percentRepaid: 60,
-    issued: 'Sep 15, 2024',
-    repaymentRate: '10% of monthly income',
-    estCompletion: 'Nov 20',
-    status: 'Active — Repaying',
-  },
-];
-
 const ADVANCE_PRESETS = [250, 500, 1000, 2500, 5000, 10000];
 
 interface SponsorshipDeal {
@@ -54,30 +25,16 @@ interface SponsorshipDeal {
   status: 'Verified' | 'Pending verification';
 }
 
-const SPONSORSHIP_DEALS: SponsorshipDeal[] = [
+const INITIAL_DEALS: SponsorshipDeal[] = [
   { brand: 'Nike Creator Campaign', amount: 8000, status: 'Verified' },
   { brand: 'Spotify Wrapped Feature', amount: 3500, status: 'Pending verification' },
 ];
 
-interface EquipmentPurchase {
-  item: string;
-  date: string;
-  amount: number;
-  status: string;
-}
-
-const EQUIPMENT_PURCHASES: EquipmentPurchase[] = [
+const EQUIPMENT_PURCHASES = [
   { item: 'Sony A7IV Camera', date: 'Oct 1', amount: 2498, status: '4/6 payments' },
   { item: 'Elgato Key Light', date: 'Sep 15', amount: 199, status: 'Paid off' },
   { item: 'Rode Mic NT-USB+', date: 'Sep 10', amount: 169, status: '3/6 payments' },
   { item: 'Shure MV7', date: 'Aug 20', amount: 249, status: '2/6 payments' },
-];
-
-const ADVANCE_HISTORY = [
-  { id: 'KRA-2847', date: 'Sep 15, 2024', amount: 2500, fee: 62, repaid: 1125, status: 'Active', completion: 45 },
-  { id: 'KRA-2734', date: 'Jul 3, 2024', amount: 1000, fee: 25, repaid: 1025, status: 'Repaid', completion: 100 },
-  { id: 'KRA-2601', date: 'May 20, 2024', amount: 3500, fee: 87, repaid: 3587, status: 'Repaid', completion: 100 },
-  { id: 'KRA-2489', date: 'Mar 12, 2024', amount: 1500, fee: 37, repaid: 1537, status: 'Repaid', completion: 100 },
 ];
 
 const CREDIT_LINE_TOTAL = 5000;
@@ -90,7 +47,6 @@ function StatusBadge({ status }: { status: string }) {
   const config: Record<string, { bg: string; text: string }> = {
     'Completed': { bg: 'rgba(0,229,160,0.15)', text: '#00E5A0' },
     'Active': { bg: 'rgba(0,229,160,0.15)', text: '#00E5A0' },
-    'Active — Repaying': { bg: 'rgba(0,229,160,0.15)', text: '#00E5A0' },
     'Pending': { bg: 'rgba(255,212,0,0.15)', text: '#FFD400' },
     'Repaid': { bg: 'rgba(0,212,255,0.15)', text: '#00D4FF' },
     'Defaulted': { bg: 'rgba(255,77,77,0.15)', text: '#FF4D4D' },
@@ -105,29 +61,106 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
+function percentRepaid(advance: Advance): number {
+  if (advance.total <= 0) return 0;
+  return Math.round((advance.repaid / advance.total) * 100);
+}
+
+/* ------------------------------------------------------------------ */
+/*  Loading skeleton                                                   */
+/* ------------------------------------------------------------------ */
+function AdvancesSkeleton() {
+  return (
+    <div className="space-y-8">
+      <div className="bg-panel border border-[rgba(255,255,255,0.08)] rounded-2xl px-7 py-5">
+        <SkeletonBlock className="h-6 w-2/3 mb-3" />
+        <SkeletonBlock className="h-3 w-40" />
+      </div>
+      <div className="bg-panel border border-[rgba(255,255,255,0.08)] rounded-[20px] p-8">
+        <SkeletonBlock className="h-10 w-64 mb-4" />
+        <SkeletonBlock className="h-4 w-96 mb-6" />
+        <div className="flex gap-3 mb-5">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <SkeletonBlock key={i} className="h-11 w-24" />
+          ))}
+        </div>
+        <SkeletonBlock className="h-14 w-52" />
+      </div>
+    </div>
+  );
+}
+
 /* ------------------------------------------------------------------ */
 /*  Main Advances component                                            */
 /* ------------------------------------------------------------------ */
 export default function Advances() {
+  const { data: overview, loading, error, refresh, setData } = useApi<AdvancesOverview>('/advances');
+
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [customAmount, setCustomAmount] = useState('');
   const [historyFilter, setHistoryFilter] = useState('All');
+  const [applying, setApplying] = useState(false);
+  const [deals, setDeals] = useState<SponsorshipDeal[]>(INITIAL_DEALS);
+  const [showDealForm, setShowDealForm] = useState(false);
+  const [dealBrand, setDealBrand] = useState('');
+  const [dealAmount, setDealAmount] = useState('');
+
+  if (error) {
+    return (
+      <div className="bg-panel border border-[rgba(255,255,255,0.08)] rounded-2xl">
+        <ErrorNotice message={error} onRetry={refresh} />
+      </div>
+    );
+  }
+
+  if (loading || !overview) {
+    return <AdvancesSkeleton />;
+  }
+
+  const { eligibility, active, history } = overview;
 
   const advanceAmount = selectedAmount || parseFloat(customAmount) || 0;
-  const feePercent = 2.5;
-  const fee = advanceAmount * (feePercent / 100);
+  const fee = advanceAmount * (eligibility.feePercent / 100);
   const totalRepay = advanceAmount + fee;
   const monthlyIncome = 8200;
   const repaymentPercent = 10;
   const monthlyDeduction = monthlyIncome * (repaymentPercent / 100);
   const payoffMonths = monthlyDeduction > 0 ? Math.ceil(totalRepay / monthlyDeduction) : 0;
 
-  const isEligible = CCS_SCORE >= 500;
-  const isNearLimit = USED_ADVANCE / MAX_ADVANCE >= 0.8;
+  const isEligible = eligibility.eligible;
+  const isNearLimit = eligibility.used / eligibility.maxAmount >= 0.8;
 
   const filteredHistory = historyFilter === 'All'
-    ? ADVANCE_HISTORY
-    : ADVANCE_HISTORY.filter((h) => h.status === historyFilter);
+    ? history
+    : history.filter((h) => h.status === historyFilter);
+
+  const handleApply = async () => {
+    setApplying(true);
+    try {
+      const updated = await api.post<AdvancesOverview>('/advances/apply', { amount: advanceAmount });
+      setData(updated);
+      toast.success(`Advance approved — $${advanceAmount.toLocaleString()} is on the way to your USD wallet`);
+      setSelectedAmount(null);
+      setCustomAmount('');
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Application failed — try again');
+    } finally {
+      setApplying(false);
+    }
+  };
+
+  const handleAddDeal = () => {
+    const amount = parseFloat(dealAmount) || 0;
+    if (!dealBrand.trim() || amount <= 0) {
+      toast.error('Enter a brand name and deal amount');
+      return;
+    }
+    setDeals((prev) => [...prev, { brand: dealBrand.trim(), amount, status: 'Pending verification' }]);
+    toast.success(`${dealBrand.trim()} submitted for verification`);
+    setDealBrand('');
+    setDealAmount('');
+    setShowDealForm(false);
+  };
 
   return (
     <div className="space-y-8">
@@ -157,19 +190,19 @@ export default function Advances() {
             <div>
               <h4 className={`font-body text-[18px] font-semibold ${isEligible ? 'text-positive' : isNearLimit ? 'text-[#FFD400]' : 'text-negative'}`}>
                 {isEligible
-                  ? `You're approved for advances up to $${MAX_ADVANCE.toLocaleString()}`
+                  ? `You're approved for advances up to $${eligibility.available.toLocaleString()}`
                   : isNearLimit
-                  ? `You're at ${Math.round((USED_ADVANCE / MAX_ADVANCE) * 100)}% of your advance limit`
+                  ? `You're at ${Math.round((eligibility.used / eligibility.maxAmount) * 100)}% of your advance limit`
                   : 'Advance unavailable — improve your CCS score'}
               </h4>
               <p className="font-mono text-[12px] tracking-[0.04em] text-[rgba(255,255,255,0.42)]">
-                ${USED_ADVANCE.toLocaleString()} / ${MAX_ADVANCE.toLocaleString()} used
+                ${eligibility.used.toLocaleString()} / ${eligibility.maxAmount.toLocaleString()} used
               </p>
             </div>
           </div>
           <div className="flex items-center gap-3">
             <span className="inline-flex items-center px-3 py-1.5 rounded-full font-mono text-[12px] tracking-[0.04em] bg-[rgba(0,212,255,0.15)] text-electric">
-              CCS: {CCS_SCORE} — {CCS_TIER}
+              CCS: {eligibility.ccsScore} — {eligibility.tier}
             </span>
           </div>
         </div>
@@ -177,7 +210,7 @@ export default function Advances() {
         <div className="mt-4 h-1.5 bg-[rgba(255,255,255,0.06)] rounded-full overflow-hidden">
           <motion.div
             initial={{ width: 0 }}
-            animate={{ width: `${(USED_ADVANCE / MAX_ADVANCE) * 100}%` }}
+            animate={{ width: `${(eligibility.used / eligibility.maxAmount) * 100}%` }}
             transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] }}
             className="h-full rounded-full"
             style={{ background: isNearLimit ? 'linear-gradient(90deg, #FFD400, #FF4D00)' : 'linear-gradient(90deg, #C8FF00, #00D4FF)' }}
@@ -231,24 +264,26 @@ export default function Advances() {
             </div>
           </div>
           <p className="font-mono text-[12px] tracking-[0.04em] text-[rgba(255,255,255,0.42)]">
-            Fee: {feePercent}% (${fee.toFixed(2)}) • Total repayment: ${totalRepay.toFixed(2)} • Est. {payoffMonths} month{payoffMonths !== 1 ? 's' : ''} at {repaymentPercent}% of income
+            Fee: {eligibility.feePercent}% (${fee.toFixed(2)}) • Total repayment: ${totalRepay.toFixed(2)} • Est. {payoffMonths} month{payoffMonths !== 1 ? 's' : ''} at {repaymentPercent}% of income
           </p>
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            disabled={!isEligible || advanceAmount <= 0 || advanceAmount > MAX_ADVANCE - USED_ADVANCE}
-            className="bg-ember text-white font-body text-[16px] font-semibold px-8 py-4 rounded-2xl transition-all hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed"
+            disabled={!isEligible || applying || advanceAmount <= 0 || advanceAmount > eligibility.available}
+            onClick={handleApply}
+            className="flex items-center gap-2 bg-ember text-white font-body text-[16px] font-semibold px-8 py-4 rounded-2xl transition-all hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed"
           >
+            {applying && <Loader2 size={18} className="animate-spin" />}
             Apply for ${advanceAmount > 0 ? advanceAmount.toLocaleString() : '...'}
           </motion.button>
         </div>
       </motion.div>
 
       {/* ── Section 3: Active Advances ── */}
-      {ACTIVE_ADVANCES.length > 0 && (
+      {active.length > 0 && (
         <div className="space-y-4">
           <h3 className="font-display text-[36px] tracking-[0.02em] text-white">Active Advances</h3>
-          {ACTIVE_ADVANCES.map((advance) => (
+          {active.map((advance) => (
             <motion.div
               key={advance.id}
               initial={{ opacity: 0, y: 20 }}
@@ -260,7 +295,7 @@ export default function Advances() {
                 <div>
                   <div className="flex items-center gap-3">
                     <span className="font-mono text-[14px] text-electric font-medium">{advance.id}</span>
-                    <StatusBadge status={advance.status} />
+                    <StatusBadge status={`${advance.status}${advance.status === 'Active' ? ' — Repaying' : ''}`} />
                   </div>
                   <p className="font-mono text-[12px] text-[rgba(255,255,255,0.42)] tracking-[0.04em] mt-1">
                     Issued {advance.issued} • {advance.repaymentRate}
@@ -274,14 +309,14 @@ export default function Advances() {
               <div className="h-2 bg-[rgba(255,255,255,0.06)] rounded-full overflow-hidden mb-2">
                 <motion.div
                   initial={{ width: 0 }}
-                  animate={{ width: `${advance.percentRepaid}%` }}
+                  animate={{ width: `${percentRepaid(advance)}%` }}
                   transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] }}
                   className="h-full rounded-full bg-gradient-to-r from-acid to-electric"
                 />
               </div>
               <div className="flex items-center justify-between">
-                <span className="font-mono text-[12px] text-[rgba(255,255,255,0.42)]">${advance.repaid} repaid</span>
-                <span className="font-mono text-[12px] text-[rgba(255,255,255,0.42)]">${advance.total} total</span>
+                <span className="font-mono text-[12px] text-[rgba(255,255,255,0.42)]">${advance.repaid.toLocaleString()} repaid</span>
+                <span className="font-mono text-[12px] text-[rgba(255,255,255,0.42)]">${advance.total.toLocaleString()} total</span>
               </div>
             </motion.div>
           ))}
@@ -308,9 +343,9 @@ export default function Advances() {
           </div>
         </div>
 
-        {SPONSORSHIP_DEALS.length > 0 ? (
+        {deals.length > 0 ? (
           <div className="space-y-3 mb-6">
-            {SPONSORSHIP_DEALS.map((deal) => (
+            {deals.map((deal) => (
               <div key={deal.brand} className="flex items-center justify-between py-3 px-4 rounded-xl bg-panel2">
                 <div>
                   <p className="font-body text-[14px] text-white">{deal.brand}</p>
@@ -326,12 +361,47 @@ export default function Advances() {
           </div>
         )}
 
+        <AnimatePresence initial={false}>
+          {showDealForm && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="overflow-hidden"
+            >
+              <div className="flex flex-col sm:flex-row gap-3 mb-4">
+                <input
+                  type="text"
+                  value={dealBrand}
+                  onChange={(e) => setDealBrand(e.target.value)}
+                  placeholder="Brand / campaign name"
+                  className="flex-1 bg-surface border border-[rgba(255,255,255,0.1)] rounded-xl px-4 py-3 font-body text-[14px] text-white placeholder:text-[rgba(255,255,255,0.2)] focus:border-electric outline-none transition-colors"
+                />
+                <input
+                  type="number"
+                  value={dealAmount}
+                  onChange={(e) => setDealAmount(e.target.value)}
+                  placeholder="Deal amount ($)"
+                  className="sm:w-44 bg-surface border border-[rgba(255,255,255,0.1)] rounded-xl px-4 py-3 font-mono text-[14px] text-white placeholder:text-[rgba(255,255,255,0.2)] focus:border-electric outline-none transition-colors"
+                />
+                <button
+                  onClick={handleAddDeal}
+                  className="bg-acid text-void font-body text-[14px] font-semibold px-6 py-3 rounded-xl hover:brightness-110 transition-all"
+                >
+                  Submit
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <motion.button
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
+          onClick={() => setShowDealForm((v) => !v)}
           className="w-full py-3 rounded-xl border border-dashed border-[rgba(255,255,255,0.2)] text-[rgba(255,255,255,0.42)] hover:text-white hover:border-[rgba(255,255,255,0.4)] transition-all font-body text-[14px]"
         >
-          + Upload Signed Contract
+          {showDealForm ? 'Cancel' : '+ Upload Signed Contract'}
         </motion.button>
       </motion.div>
 
@@ -411,21 +481,27 @@ export default function Advances() {
         </div>
 
         <div className="space-y-3">
-          {filteredHistory.map((h) => (
-            <div key={h.id} className="flex items-center justify-between py-3 px-4 rounded-xl bg-panel2">
-              <div>
-                <div className="flex items-center gap-3">
-                  <span className="font-mono text-[14px] text-white font-medium">{h.id}</span>
-                  <StatusBadge status={h.status} />
+          {filteredHistory.length === 0 ? (
+            <p className="text-center py-8 font-mono text-[12px] text-[rgba(255,255,255,0.42)]">
+              No {historyFilter !== 'All' ? historyFilter.toLowerCase() : ''} advances
+            </p>
+          ) : (
+            filteredHistory.map((h) => (
+              <div key={h.id} className="flex items-center justify-between py-3 px-4 rounded-xl bg-panel2">
+                <div>
+                  <div className="flex items-center gap-3">
+                    <span className="font-mono text-[14px] text-white font-medium">{h.id}</span>
+                    <StatusBadge status={h.status} />
+                  </div>
+                  <p className="font-mono text-[12px] text-[rgba(255,255,255,0.42)] tracking-[0.04em]">{h.issued}</p>
                 </div>
-                <p className="font-mono text-[12px] text-[rgba(255,255,255,0.42)] tracking-[0.04em]">{h.date}</p>
+                <div className="text-right">
+                  <p className="font-mono text-[14px] text-white">${h.amount.toLocaleString()}</p>
+                  <p className="font-mono text-[12px] text-[rgba(255,255,255,0.42)]">${h.repaid.toLocaleString()} repaid</p>
+                </div>
               </div>
-              <div className="text-right">
-                <p className="font-mono text-[14px] text-white">${h.amount.toLocaleString()}</p>
-                <p className="font-mono text-[12px] text-[rgba(255,255,255,0.42)]">${h.repaid} repaid</p>
-              </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </motion.div>
     </div>
