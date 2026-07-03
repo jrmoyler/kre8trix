@@ -12,8 +12,17 @@ import {
   BarChart3,
   Settings,
   CheckCheck,
+  LogOut,
 } from 'lucide-react';
 import { Toaster } from '@/components/ui/sonner';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { useAuth } from '@/lib/auth-context';
 import {
   CommandDialog,
   CommandEmpty,
@@ -174,9 +183,15 @@ function NotificationBell() {
 export default function Layout({ children }: { children: ReactNode }) {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const [searchOpen, setSearchOpen] = useState(false);
-  const isOnboarding = location.pathname === '/onboarding';
+  const isFullScreen = location.pathname === '/onboarding' || location.pathname === '/login';
   const pageTitle = pageTitles[location.pathname] || 'Kre8trix';
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
+  };
 
   /* Cmd/Ctrl+K opens search */
   useEffect(() => {
@@ -190,8 +205,8 @@ export default function Layout({ children }: { children: ReactNode }) {
     return () => document.removeEventListener('keydown', down);
   }, []);
 
-  /* Onboarding is a full-screen flow — no chrome */
-  if (isOnboarding) {
+  /* Onboarding and login are full-screen flows — no chrome */
+  if (isFullScreen) {
     return (
       <div className="min-h-[100dvh] bg-void">
         <div className="noise-overlay" />
@@ -228,17 +243,46 @@ export default function Layout({ children }: { children: ReactNode }) {
               <Search size={20} />
             </button>
             <NotificationBell />
-            <button
-              onClick={() => navigate('/settings')}
-              aria-label="Account settings"
-              className="rounded-full"
-            >
-              <img
-                src="/avatar-creator-1.png"
-                alt="User"
-                className="w-9 h-9 rounded-full object-cover border border-[rgba(255,255,255,0.1)] cursor-pointer hover:border-[rgba(255,255,255,0.3)] transition-colors"
-              />
-            </button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button aria-label="Account menu" className="rounded-full">
+                  <img
+                    src={user?.avatarUrl || '/avatar-creator-1.png'}
+                    alt="User"
+                    className="w-9 h-9 rounded-full object-cover border border-[rgba(255,255,255,0.1)] cursor-pointer hover:border-[rgba(255,255,255,0.3)] transition-colors"
+                  />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                sideOffset={8}
+                className="w-[220px] bg-panel border-[rgba(255,255,255,0.08)] rounded-2xl"
+              >
+                {user && (
+                  <>
+                    <div className="px-2 py-2">
+                      <p className="font-body text-[14px] font-medium text-white truncate">{user.name}</p>
+                      <p className="font-mono text-[12px] text-[rgba(255,255,255,0.42)] truncate">{user.email}</p>
+                    </div>
+                    <DropdownMenuSeparator className="bg-[rgba(255,255,255,0.08)]" />
+                  </>
+                )}
+                <DropdownMenuItem
+                  onClick={() => navigate('/settings')}
+                  className="cursor-pointer font-body text-[14px] gap-2"
+                >
+                  <Settings size={16} />
+                  Settings
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={handleLogout}
+                  className="cursor-pointer font-body text-[14px] gap-2 text-negative focus:text-negative"
+                >
+                  <LogOut size={16} />
+                  Log out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </header>
 
