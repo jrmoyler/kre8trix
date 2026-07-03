@@ -5,6 +5,7 @@ import { LogOut, Search, Settings } from 'lucide-react';
 import { Toaster } from 'sonner';
 import Navbar from './Navbar';
 import Footer from './Footer';
+import InitialsAvatar from './InitialsAvatar';
 import CommandPalette from './CommandPalette';
 import { useCommandPaletteShortcut } from '@/hooks/use-command-palette-shortcut';
 import NotificationBell from './NotificationBell';
@@ -40,12 +41,12 @@ function UserMenu() {
 
   return (
     <div ref={containerRef} className="relative">
-      <button onClick={() => setOpen((v) => !v)} aria-label="Account menu">
-        <img
-          src="/avatar-creator-1.png"
-          alt="User"
-          className="w-9 h-9 rounded-full object-cover border border-[rgba(255,255,255,0.1)] cursor-pointer hover:border-[rgba(255,255,255,0.3)] transition-colors"
-        />
+      <button
+        onClick={() => setOpen((v) => !v)}
+        aria-label="Account menu"
+        className="rounded-full hover:brightness-110 transition-all"
+      >
+        <InitialsAvatar name={user?.name ?? 'K'} />
       </button>
       <AnimatePresence>
         {open && (
