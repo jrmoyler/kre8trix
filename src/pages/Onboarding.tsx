@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronRight, Check, Link, Wallet, TrendingUp, Shield, Sparkles } from 'lucide-react';
+import { ChevronRight, Check, Link, Wallet, Shield, Sparkles } from 'lucide-react';
 
 /* ── steps ────────────────────────────────────────────────── */
 const STEPS = [
@@ -19,6 +20,7 @@ const PLATFORMS = [
 ];
 
 export default function Onboarding() {
+  const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [connected, setConnected] = useState<string[]>([]);
   const [walletType, setWalletType] = useState<'new' | 'existing'>('new');
@@ -205,7 +207,7 @@ export default function Onboarding() {
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                onClick={() => window.location.href = '/dashboard'}
+                onClick={() => navigate('/dashboard')}
                 className="bg-acid text-void font-body text-[16px] font-semibold px-8 py-4 rounded-2xl"
               >
                 Go to Dashboard
@@ -216,25 +218,35 @@ export default function Onboarding() {
 
         {/* Navigation */}
         {step < 3 && (
-          <div className="flex items-center justify-between mt-8">
-            <button
-              onClick={() => setStep(Math.max(0, step - 1))}
-              disabled={step === 0}
-              className="font-body text-[14px] text-[rgba(255,255,255,0.42)] hover:text-white disabled:opacity-30 transition-colors"
-            >
-              Back
-            </button>
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => setStep(step + 1)}
-              disabled={!canProceed()}
-              className="flex items-center gap-2 bg-acid text-void font-body text-[16px] font-semibold px-6 py-3 rounded-2xl disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              Continue
-              <ChevronRight size={18} />
-            </motion.button>
-          </div>
+          <>
+            <div className="flex items-center justify-between mt-8">
+              <button
+                onClick={() => setStep(Math.max(0, step - 1))}
+                disabled={step === 0}
+                className="font-body text-[14px] text-[rgba(255,255,255,0.42)] hover:text-white disabled:opacity-30 transition-colors"
+              >
+                Back
+              </button>
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setStep(step + 1)}
+                disabled={!canProceed()}
+                className="flex items-center gap-2 bg-acid text-void font-body text-[16px] font-semibold px-6 py-3 rounded-2xl disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Continue
+                <ChevronRight size={18} />
+              </motion.button>
+            </div>
+            <div className="text-center mt-6">
+              <button
+                onClick={() => navigate('/dashboard')}
+                className="font-body text-[13px] text-[rgba(255,255,255,0.42)] hover:text-white underline underline-offset-4 transition-colors"
+              >
+                I'll complete this later
+              </button>
+            </div>
+          </>
         )}
       </div>
     </div>

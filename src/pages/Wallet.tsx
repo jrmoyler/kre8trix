@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router';
 import { motion, AnimatePresence, useMotionValue, useTransform, animate } from 'framer-motion';
+import { toast } from 'sonner';
 import {
   ArrowUpRight,
   ArrowDownLeft,
@@ -7,10 +9,6 @@ import {
   Clock,
   Copy,
   Check,
-  Search,
-  ChevronLeft,
-  ChevronRight,
-  Send,
 } from 'lucide-react';
 
 /* ------------------------------------------------------------------ */
@@ -44,7 +42,7 @@ const TRANSACTIONS: Transaction[] = [
   { id: '12', date: 'Oct 7, 2024', description: 'Brand Sponsorship', type: 'Income', currency: 'USD', amount: 5000.00, status: 'Completed' },
 ];
 
-const RECIPIENTS = [
+export const RECIPIENTS = [
   { name: 'Editor Mike', avatar: 'M', color: '#00D4FF' },
   { name: 'Tax Account', avatar: 'T', color: '#C8FF00' },
   { name: 'Equipment Vendor', avatar: 'E', color: '#FF4D00' },
@@ -124,15 +122,28 @@ const TABS = [
   { key: 'history', label: 'History', icon: Clock },
 ] as const;
 
+type TabKey = (typeof TABS)[number]['key'];
+
+const ACTION_TO_TAB: Record<string, TabKey> = {
+  send: 'send',
+  request: 'receive',
+  receive: 'receive',
+  convert: 'convert',
+  history: 'history',
+};
+
 /* ------------------------------------------------------------------ */
 /*  Main Wallet component                                              */
 /* ------------------------------------------------------------------ */
 export default function Wallet() {
-  const [activeTab, setActiveTab] = useState<'send' | 'receive' | 'convert' | 'history'>('send');
+  const [searchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState<TabKey>(() => {
+    const action = searchParams.get('action');
+    return (action && ACTION_TO_TAB[action]) || 'send';
+  });
   const [sendCurrency, setSendCurrency] = useState<'USD' | 'USDC'>('USD');
   const [sendAmount, setSendAmount] = useState('');
   const [sendRecipient, setSendRecipient] = useState('');
-  const [sendNote, setSendNote] = useState('');
   const [copied, setCopied] = useState(false);
   const [convertFrom, setConvertFrom] = useState<'USD' | 'USDC'>('USD');
   const [convertAmount, setConvertAmount] = useState('');
@@ -158,6 +169,23 @@ export default function Wallet() {
   const rate = 1.0;
   const convertedAmount = convertFrom === 'USD' ? convertNum / rate : convertNum * rate;
   const convertTo = convertFrom === 'USD' ? 'USDC' : 'USD';
+  const convertBalance = convertFrom === 'USD' ? USD_BALANCE : USDC_BALANCE;
+  const canConvert = convertNum > 0 && convertNum <= convertBalance;
+
+  const handleSend = () => {
+    toast.success(
+      `Sent ${sendCurrency === 'USD' ? `$${amountNum.toLocaleString()}` : `${amountNum.toLocaleString()} USDC`} to ${sendRecipient}`
+    );
+    setSendAmount('');
+    setSendRecipient('');
+  };
+
+  const handleConvert = () => {
+    toast.success(
+      `Converted ${convertNum.toLocaleString()} ${convertFrom} to ${convertedAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })} ${convertTo}`
+    );
+    setConvertAmount('');
+  };
 
   return (
     <div className="space-y-8">
@@ -178,7 +206,10 @@ export default function Wallet() {
               <span className="font-mono text-[12px] tracking-[0.04em] text-[rgba(255,255,255,0.42)]">USD Wallet</span>
               <span className="px-2 py-0.5 rounded-full bg-[rgba(0,229,160,0.15)] text-positive font-mono text-[11px]">Available</span>
             </div>
-            <button className="text-electric font-body text-[14px] font-medium hover:text-acid transition-colors">
+            <button
+              onClick={() => setActiveTab('receive')}
+              className="text-electric font-body text-[14px] font-medium hover:text-acid transition-colors"
+            >
               Deposit
             </button>
           </div>
@@ -206,7 +237,10 @@ export default function Wallet() {
               <span className="font-mono text-[12px] tracking-[0.04em] text-[rgba(255,255,255,0.42)]">USDC Wallet</span>
               <span className="px-2 py-0.5 rounded-full bg-[rgba(0,229,160,0.15)] text-positive font-mono text-[11px]">Available</span>
             </div>
-            <button className="text-electric font-body text-[14px] font-medium hover:text-acid transition-colors">
+            <button
+              onClick={() => setActiveTab('receive')}
+              className="text-electric font-body text-[14px] font-medium hover:text-acid transition-colors"
+            >
               Deposit
             </button>
           </div>
@@ -273,6 +307,7 @@ export default function Wallet() {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   disabled={!hasEnough || !sendRecipient}
+                  onClick={handleSend}
                   className="w-full bg-acid text-void font-body text-[16px] font-semibold py-4 rounded-2xl disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   Send {sendCurrency}
@@ -319,7 +354,13 @@ export default function Wallet() {
                     You'll receive: {convertedAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })} {convertTo}
                   </p>
                 )}
-                <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="w-full bg-acid text-void font-body text-[16px] font-semibold py-4 rounded-2xl">
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  disabled={!canConvert}
+                  onClick={handleConvert}
+                  className="w-full bg-acid text-void font-body text-[16px] font-semibold py-4 rounded-2xl disabled:opacity-40 disabled:cursor-not-allowed"
+                >
                   Convert
                 </motion.button>
               </div>

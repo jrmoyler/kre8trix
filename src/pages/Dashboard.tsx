@@ -22,28 +22,37 @@ import {
 
 /* ─────────────────────────── mock data ─────────────────────────── */
 
+/* `day` = offset in days from today (Oct 10). Negative = historical, positive = projected. */
 const cashFlowData = [
-  { date: 'Sep 1', historical: 8200, projected: null },
-  { date: 'Sep 5', historical: 9400, projected: null },
-  { date: 'Sep 10', historical: 11200, projected: null },
-  { date: 'Sep 15', historical: 10800, projected: null },
-  { date: 'Sep 20', historical: 13100, projected: null },
-  { date: 'Sep 25', historical: 14500, projected: null },
-  { date: 'Sep 30', historical: 15200, projected: null },
-  { date: 'Oct 5', historical: 16800, projected: null },
-  { date: 'Oct 10', historical: 18400, projected: null },
-  { date: 'Oct 15', historical: null, projected: 19200 },
-  { date: 'Oct 20', historical: null, projected: 21000 },
-  { date: 'Oct 25', historical: null, projected: 22800 },
-  { date: 'Oct 30', historical: null, projected: 24600 },
-  { date: 'Nov 5', historical: null, projected: 26200 },
-  { date: 'Nov 10', historical: null, projected: 28600 },
-  { date: 'Nov 15', historical: null, projected: 31200 },
-  { date: 'Nov 20', historical: null, projected: 33800 },
-  { date: 'Nov 30', historical: null, projected: 38400 },
-  { date: 'Dec 10', historical: null, projected: 41200 },
-  { date: 'Dec 20', historical: null, projected: 44800 },
+  { date: 'Sep 1', day: -40, historical: 8200, projected: null },
+  { date: 'Sep 5', day: -35, historical: 9400, projected: null },
+  { date: 'Sep 10', day: -30, historical: 11200, projected: null },
+  { date: 'Sep 15', day: -25, historical: 10800, projected: null },
+  { date: 'Sep 20', day: -20, historical: 13100, projected: null },
+  { date: 'Sep 25', day: -15, historical: 14500, projected: null },
+  { date: 'Sep 30', day: -10, historical: 15200, projected: null },
+  { date: 'Oct 5', day: -5, historical: 16800, projected: null },
+  { date: 'Oct 10', day: 0, historical: 18400, projected: null },
+  { date: 'Oct 15', day: 5, historical: null, projected: 19200 },
+  { date: 'Oct 20', day: 10, historical: null, projected: 21000 },
+  { date: 'Oct 25', day: 15, historical: null, projected: 22800 },
+  { date: 'Oct 30', day: 20, historical: null, projected: 24600 },
+  { date: 'Nov 5', day: 25, historical: null, projected: 26200 },
+  { date: 'Nov 10', day: 30, historical: null, projected: 28600 },
+  { date: 'Nov 15', day: 35, historical: null, projected: 31200 },
+  { date: 'Nov 20', day: 40, historical: null, projected: 33800 },
+  { date: 'Nov 30', day: 50, historical: null, projected: 38400 },
+  { date: 'Dec 10', day: 60, historical: null, projected: 41200 },
+  { date: 'Dec 20', day: 70, historical: null, projected: 44800 },
+  { date: 'Dec 30', day: 80, historical: null, projected: 47900 },
+  { date: 'Jan 8', day: 90, historical: null, projected: 51600 },
 ];
+
+const forecastRanges: Record<'30D' | '60D' | '90D', number> = {
+  '30D': 30,
+  '60D': 60,
+  '90D': 90,
+};
 
 const transactions = [
   { id: 1, name: 'YouTube Ad Revenue', platform: 'YouTube', amount: 4850, date: 'Oct 15', status: 'completed', iconColor: '#FF0000' },
@@ -498,10 +507,15 @@ export default function Dashboard() {
   const usdcSparkline = [4200, 5100, 5800, 6200, 7400, 8900, 10200, 11500, 12450];
 
   const forecastPills: Record<string, { label: string; amount: string; color: string }> = {
-    '30D': { label: '30-Day', amount: '$18,400', color: '#00D4FF' },
-    '60D': { label: '60-Day', amount: '$31,200', color: '#C8FF00' },
-    '90D': { label: '90-Day', amount: '$44,800', color: '#9B5DE5' },
+    '30D': { label: '30-Day', amount: '$28,600', color: '#00D4FF' },
+    '60D': { label: '60-Day', amount: '$41,200', color: '#C8FF00' },
+    '90D': { label: '90-Day', amount: '$51,600', color: '#9B5DE5' },
   };
+
+  const forecastData = useMemo(() => {
+    const range = forecastRanges[forecastTab];
+    return cashFlowData.filter((d) => d.day >= -range && d.day <= range);
+  }, [forecastTab]);
 
   return (
     <motion.div
@@ -608,7 +622,7 @@ export default function Dashboard() {
 
         <div className="h-[350px]">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={cashFlowData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+            <AreaChart data={forecastData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id="historicalGrad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#C8FF00" stopOpacity="0.2" />
