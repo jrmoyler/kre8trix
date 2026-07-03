@@ -7,9 +7,15 @@ import {
   Wallet,
   Link,
   ChevronRight,
+  Loader2,
   Save,
   Check,
 } from 'lucide-react';
+import { toast } from 'sonner';
+import { api, ApiError } from '@/lib/api';
+import { useApi } from '@/hooks/use-api';
+import type { AppSettings, PlatformConnection, Profile } from '@/lib/types';
+import { ErrorNotice, SkeletonBlock } from '@/components/Skeletons';
 
 /* ── constants ────────────────────────────────────────────── */
 const easeOutExpo = [0.16, 1, 0.3, 1] as [number, number, number, number];
@@ -22,14 +28,85 @@ const SETTINGS_TABS = [
   { key: 'connections', label: 'Connected Accounts', icon: Link },
 ];
 
+const inputClass =
+  'w-full bg-surface border border-[rgba(255,255,255,0.1)] rounded-xl px-4 py-3 text-white font-body focus:border-electric outline-none transition-colors';
+
+function ContentSkeleton() {
+  return (
+    <div className="space-y-4">
+      <SkeletonBlock className="h-7 w-40 mb-6" />
+      {Array.from({ length: 4 }).map((_, i) => (
+        <SkeletonBlock key={i} className="h-12 w-full" />
+      ))}
+    </div>
+  );
+}
+
 export default function Settings() {
   const [activeTab, setActiveTab] = useState('profile');
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  const handleSave = () => {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+  const profileQuery = useApi<Profile>('/profile');
+  const settingsQuery = useApi<AppSettings>('/settings');
+  const connectionsQuery = useApi<PlatformConnection[]>('/profile/connections');
+
+  /* Local edits overlay the API data until saved */
+  const [profileEdits, setProfileEdits] = useState<Profile | null>(null);
+  const [settingsEdits, setSettingsEdits] = useState<AppSettings | null>(null);
+  const [togglingPlatform, setTogglingPlatform] = useState<string | null>(null);
+
+  const profile = profileEdits ?? profileQuery.data ?? null;
+  const settings = settingsEdits ?? settingsQuery.data ?? null;
+  const setProfile = setProfileEdits;
+  const setSettings = setSettingsEdits;
+
+  const handleSave = async () => {
+    if (!profile || !settings) return;
+    setSaving(true);
+    try {
+      const [savedProfile, savedSettings] = await Promise.all([
+        api.put<Profile>('/profile', profile),
+        api.put<AppSettings>('/settings', settings),
+      ]);
+      setProfile(savedProfile);
+      setSettings(savedSettings);
+      setSaved(true);
+      toast.success('Settings saved');
+      setTimeout(() => setSaved(false), 2000);
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Could not save settings');
+    } finally {
+      setSaving(false);
+    }
   };
+
+  const toggleConnection = async (platform: PlatformConnection) => {
+    setTogglingPlatform(platform.name);
+    try {
+      const updated = await api.put<PlatformConnection[]>('/profile/connections', {
+        name: platform.name,
+        connected: !platform.connected,
+      });
+      connectionsQuery.setData(updated);
+      toast.success(`${platform.name} ${platform.connected ? 'disconnected' : 'connected'}`);
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Could not update connection');
+    } finally {
+      setTogglingPlatform(null);
+    }
+  };
+
+  const setNotification = (key: string, enabled: boolean) => {
+    if (!settings) return;
+    setSettings({
+      ...settings,
+      notifications: settings.notifications.map((n) => (n.key === key ? { ...n, enabled } : n)),
+    });
+  };
+
+  const loading = profileQuery.loading || settingsQuery.loading;
+  const loadError = profileQuery.error || settingsQuery.error;
 
   return (
     <div className="space-y-6">
@@ -73,155 +150,203 @@ export default function Settings() {
           transition={{ duration: 0.4, ease: easeOutExpo, delay: 0.1 }}
           className="lg:col-span-3 bg-panel border border-[rgba(255,255,255,0.08)] rounded-2xl p-6"
         >
-          {activeTab === 'profile' && (
-            <div className="space-y-6">
-              <h3 className="font-display text-[28px] tracking-[0.02em] text-white">Profile</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block font-mono text-[12px] text-[rgba(255,255,255,0.42)] tracking-[0.04em] mb-2">Display Name</label>
-                  <input type="text" defaultValue="Alex Chen" className="w-full bg-surface border border-[rgba(255,255,255,0.1)] rounded-xl px-4 py-3 text-white font-body focus:border-electric outline-none transition-colors" />
-                </div>
-                <div>
-                  <label className="block font-mono text-[12px] text-[rgba(255,255,255,0.42)] tracking-[0.04em] mb-2">Email</label>
-                  <input type="email" defaultValue="alex@kre8trix.app" className="w-full bg-surface border border-[rgba(255,255,255,0.1)] rounded-xl px-4 py-3 text-white font-body focus:border-electric outline-none transition-colors" />
-                </div>
-                <div>
-                  <label className="block font-mono text-[12px] text-[rgba(255,255,255,0.42)] tracking-[0.04em] mb-2">Phone</label>
-                  <input type="tel" defaultValue="+1 (555) 123-4567" className="w-full bg-surface border border-[rgba(255,255,255,0.1)] rounded-xl px-4 py-3 text-white font-body focus:border-electric outline-none transition-colors" />
-                </div>
-                <div>
-                  <label className="block font-mono text-[12px] text-[rgba(255,255,255,0.42)] tracking-[0.04em] mb-2">Creator Handle</label>
-                  <input type="text" defaultValue="@alexcreates" className="w-full bg-surface border border-[rgba(255,255,255,0.1)] rounded-xl px-4 py-3 text-white font-body focus:border-electric outline-none transition-colors" />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'notifications' && (
-            <div className="space-y-6">
-              <h3 className="font-display text-[28px] tracking-[0.02em] text-white">Notifications</h3>
-              <div className="space-y-4">
-                {[
-                  { label: 'Payment received', desc: 'Get notified when you receive a payment', defaultOn: true },
-                  { label: 'Advance due', desc: 'Reminder before advance repayment', defaultOn: true },
-                  { label: 'Score changes', desc: 'When your CCS score updates', defaultOn: true },
-                  { label: 'Platform disconnect', desc: 'If a connected platform loses sync', defaultOn: false },
-                  { label: 'Marketing emails', desc: 'Product updates and tips', defaultOn: false },
-                ].map((item) => (
-                  <div key={item.label} className="flex items-center justify-between py-3">
+          {loadError ? (
+            <ErrorNotice
+              message={loadError}
+              onRetry={() => {
+                profileQuery.refresh();
+                settingsQuery.refresh();
+              }}
+            />
+          ) : loading || !profile || !settings ? (
+            <ContentSkeleton />
+          ) : (
+            <>
+              {activeTab === 'profile' && (
+                <div className="space-y-6">
+                  <h3 className="font-display text-[28px] tracking-[0.02em] text-white">Profile</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <p className="font-body text-[14px] text-white">{item.label}</p>
-                      <p className="font-mono text-[12px] text-[rgba(255,255,255,0.42)]">{item.desc}</p>
+                      <label className="block font-mono text-[12px] text-[rgba(255,255,255,0.42)] tracking-[0.04em] mb-2">Display Name</label>
+                      <input
+                        type="text"
+                        value={profile.name}
+                        onChange={(e) => setProfile({ ...profile, name: e.target.value })}
+                        className={inputClass}
+                      />
                     </div>
-                    <Toggle defaultOn={item.defaultOn} />
+                    <div>
+                      <label className="block font-mono text-[12px] text-[rgba(255,255,255,0.42)] tracking-[0.04em] mb-2">Email</label>
+                      <input
+                        type="email"
+                        value={profile.email}
+                        onChange={(e) => setProfile({ ...profile, email: e.target.value })}
+                        className={inputClass}
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-mono text-[12px] text-[rgba(255,255,255,0.42)] tracking-[0.04em] mb-2">Phone</label>
+                      <input
+                        type="tel"
+                        value={profile.phone}
+                        onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+                        className={inputClass}
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-mono text-[12px] text-[rgba(255,255,255,0.42)] tracking-[0.04em] mb-2">Creator Handle</label>
+                      <input
+                        type="text"
+                        value={profile.handle}
+                        onChange={(e) => setProfile({ ...profile, handle: e.target.value })}
+                        className={inputClass}
+                      />
+                    </div>
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'security' && (
-            <div className="space-y-6">
-              <h3 className="font-display text-[28px] tracking-[0.02em] text-white">Security</h3>
-              <div className="space-y-4">
-                <button className="w-full flex items-center justify-between p-4 rounded-xl bg-panel2 border border-[rgba(255,255,255,0.08)] hover:border-[rgba(255,255,255,0.14)] transition-colors">
-                  <div className="text-left">
-                    <p className="font-body text-[14px] text-white">Change Password</p>
-                    <p className="font-mono text-[12px] text-[rgba(255,255,255,0.42)]">Last changed 30 days ago</p>
-                  </div>
-                  <ChevronRight size={16} className="text-[rgba(255,255,255,0.42)]" />
-                </button>
-                <button className="w-full flex items-center justify-between p-4 rounded-xl bg-panel2 border border-[rgba(255,255,255,0.08)] hover:border-[rgba(255,255,255,0.14)] transition-colors">
-                  <div className="text-left">
-                    <p className="font-body text-[14px] text-white">Two-Factor Authentication</p>
-                    <p className="font-mono text-[12px] text-[rgba(255,255,255,0.42)]">Enabled via authenticator app</p>
-                  </div>
-                  <span className="text-positive font-mono text-[12px]">Enabled</span>
-                </button>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'wallet' && (
-            <div className="space-y-6">
-              <h3 className="font-display text-[28px] tracking-[0.02em] text-white">Wallet Settings</h3>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 rounded-xl bg-panel2">
-                  <div>
-                    <p className="font-body text-[14px] text-white">Auto-Convert USDC to USD</p>
-                    <p className="font-mono text-[12px] text-[rgba(255,255,255,0.42)]">On payout day</p>
-                  </div>
-                  <Toggle defaultOn={true} />
                 </div>
-                <div className="flex items-center justify-between p-4 rounded-xl bg-panel2">
-                  <div>
-                    <p className="font-body text-[14px] text-white">Default Payout Wallet</p>
-                    <p className="font-mono text-[12px] text-[rgba(255,255,255,0.42)]">USDC (Solana)</p>
-                  </div>
-                  <ChevronRight size={16} className="text-[rgba(255,255,255,0.42)]" />
-                </div>
-              </div>
-            </div>
-          )}
+              )}
 
-          {activeTab === 'connections' && (
-            <div className="space-y-6">
-              <h3 className="font-display text-[28px] tracking-[0.02em] text-white">Connected Accounts</h3>
-              <div className="space-y-3">
-                {[
-                  { name: 'YouTube', user: 'Alex Creates', connected: true },
-                  { name: 'TikTok', user: '@alexcreates', connected: true },
-                  { name: 'Shopify', user: 'alexcreates.store', connected: true },
-                  { name: 'Stripe', user: 'alex@kre8trix.app', connected: false },
-                  { name: 'Patreon', user: '', connected: false },
-                ].map((account) => (
-                  <div key={account.name} className="flex items-center justify-between p-4 rounded-xl bg-panel2">
-                    <div className="flex items-center gap-3">
-                      <span className="w-8 h-8 rounded-full bg-panel flex items-center justify-center font-body text-[12px] text-white">
-                        {account.name[0]}
-                      </span>
-                      <div>
-                        <p className="font-body text-[14px] text-white">{account.name}</p>
-                        {account.user && <p className="font-mono text-[12px] text-[rgba(255,255,255,0.42)]">{account.user}</p>}
+              {activeTab === 'notifications' && (
+                <div className="space-y-6">
+                  <h3 className="font-display text-[28px] tracking-[0.02em] text-white">Notifications</h3>
+                  <div className="space-y-4">
+                    {settings.notifications.map((item) => (
+                      <div key={item.key} className="flex items-center justify-between py-3">
+                        <div>
+                          <p className="font-body text-[14px] text-white">{item.label}</p>
+                          <p className="font-mono text-[12px] text-[rgba(255,255,255,0.42)]">{item.description}</p>
+                        </div>
+                        <Toggle on={item.enabled} onChange={(v) => setNotification(item.key, v)} />
                       </div>
-                    </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'security' && (
+                <div className="space-y-6">
+                  <h3 className="font-display text-[28px] tracking-[0.02em] text-white">Security</h3>
+                  <div className="space-y-4">
                     <button
-                      className={`px-4 py-2 rounded-lg font-mono text-[12px] transition-all ${
-                        account.connected
-                          ? 'bg-[rgba(255,77,77,0.1)] text-negative hover:bg-[rgba(255,77,77,0.2)]'
-                          : 'bg-acid text-void hover:brightness-110'
-                      }`}
+                      onClick={() => toast.success(`Password reset link sent to ${profile.email}`)}
+                      className="w-full flex items-center justify-between p-4 rounded-xl bg-panel2 border border-[rgba(255,255,255,0.08)] hover:border-[rgba(255,255,255,0.14)] transition-colors"
                     >
-                      {account.connected ? 'Disconnect' : 'Connect'}
+                      <div className="text-left">
+                        <p className="font-body text-[14px] text-white">Change Password</p>
+                        <p className="font-mono text-[12px] text-[rgba(255,255,255,0.42)]">Last changed 30 days ago</p>
+                      </div>
+                      <ChevronRight size={16} className="text-[rgba(255,255,255,0.42)]" />
+                    </button>
+                    <button
+                      onClick={() => toast('Two-factor authentication is managed in your authenticator app')}
+                      className="w-full flex items-center justify-between p-4 rounded-xl bg-panel2 border border-[rgba(255,255,255,0.08)] hover:border-[rgba(255,255,255,0.14)] transition-colors"
+                    >
+                      <div className="text-left">
+                        <p className="font-body text-[14px] text-white">Two-Factor Authentication</p>
+                        <p className="font-mono text-[12px] text-[rgba(255,255,255,0.42)]">Enabled via authenticator app</p>
+                      </div>
+                      <span className="text-positive font-mono text-[12px]">Enabled</span>
                     </button>
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
+                </div>
+              )}
 
-          <div className="mt-6 pt-6 border-t border-[rgba(255,255,255,0.08)]">
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={handleSave}
-              className="flex items-center gap-2 bg-acid text-void font-body text-[16px] font-semibold px-6 py-3 rounded-2xl"
-            >
-              {saved ? <Check size={18} /> : <Save size={18} />}
-              {saved ? 'Saved!' : 'Save Changes'}
-            </motion.button>
-          </div>
+              {activeTab === 'wallet' && (
+                <div className="space-y-6">
+                  <h3 className="font-display text-[28px] tracking-[0.02em] text-white">Wallet Settings</h3>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-4 rounded-xl bg-panel2">
+                      <div>
+                        <p className="font-body text-[14px] text-white">Auto-Convert USDC to USD</p>
+                        <p className="font-mono text-[12px] text-[rgba(255,255,255,0.42)]">On payout day</p>
+                      </div>
+                      <Toggle
+                        on={settings.autoConvertUsdc}
+                        onChange={(v) => setSettings({ ...settings, autoConvertUsdc: v })}
+                      />
+                    </div>
+                    <button
+                      onClick={() => {
+                        const next = settings.defaultPayoutWallet === 'USDC (Solana)' ? 'USD (Bank ····4821)' : 'USDC (Solana)';
+                        setSettings({ ...settings, defaultPayoutWallet: next });
+                      }}
+                      className="w-full flex items-center justify-between p-4 rounded-xl bg-panel2 hover:bg-[rgba(255,255,255,0.08)] transition-colors"
+                    >
+                      <div className="text-left">
+                        <p className="font-body text-[14px] text-white">Default Payout Wallet</p>
+                        <p className="font-mono text-[12px] text-[rgba(255,255,255,0.42)]">{settings.defaultPayoutWallet}</p>
+                      </div>
+                      <ChevronRight size={16} className="text-[rgba(255,255,255,0.42)]" />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'connections' && (
+                <div className="space-y-6">
+                  <h3 className="font-display text-[28px] tracking-[0.02em] text-white">Connected Accounts</h3>
+                  {connectionsQuery.error ? (
+                    <ErrorNotice message={connectionsQuery.error} onRetry={connectionsQuery.refresh} />
+                  ) : connectionsQuery.loading || !connectionsQuery.data ? (
+                    <ContentSkeleton />
+                  ) : (
+                    <div className="space-y-3">
+                      {connectionsQuery.data.map((account) => (
+                        <div key={account.name} className="flex items-center justify-between p-4 rounded-xl bg-panel2">
+                          <div className="flex items-center gap-3">
+                            <span className="w-8 h-8 rounded-full bg-panel flex items-center justify-center font-body text-[12px] text-white">
+                              {account.name[0]}
+                            </span>
+                            <div>
+                              <p className="font-body text-[14px] text-white">{account.name}</p>
+                              {account.user && account.connected && (
+                                <p className="font-mono text-[12px] text-[rgba(255,255,255,0.42)]">{account.user}</p>
+                              )}
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => toggleConnection(account)}
+                            disabled={togglingPlatform === account.name}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-mono text-[12px] transition-all disabled:opacity-50 ${
+                              account.connected
+                                ? 'bg-[rgba(255,77,77,0.1)] text-negative hover:bg-[rgba(255,77,77,0.2)]'
+                                : 'bg-acid text-void hover:brightness-110'
+                            }`}
+                          >
+                            {togglingPlatform === account.name && <Loader2 size={12} className="animate-spin" />}
+                            {account.connected ? 'Disconnect' : 'Connect'}
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="mt-6 pt-6 border-t border-[rgba(255,255,255,0.08)]">
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="flex items-center gap-2 bg-acid text-void font-body text-[16px] font-semibold px-6 py-3 rounded-2xl disabled:opacity-60"
+                >
+                  {saving ? <Loader2 size={18} className="animate-spin" /> : saved ? <Check size={18} /> : <Save size={18} />}
+                  {saving ? 'Saving…' : saved ? 'Saved!' : 'Save Changes'}
+                </motion.button>
+              </div>
+            </>
+          )}
         </motion.div>
       </div>
     </div>
   );
 }
 
-function Toggle({ defaultOn = false }: { defaultOn?: boolean }) {
-  const [on, setOn] = useState(defaultOn);
+function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
   return (
     <button
-      onClick={() => setOn(!on)}
+      onClick={() => onChange(!on)}
       className={`relative w-[44px] h-[24px] rounded-full transition-colors ${on ? 'bg-acid' : 'bg-[rgba(255,255,255,0.12)]'}`}
     >
       <motion.div
