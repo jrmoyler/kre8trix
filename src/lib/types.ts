@@ -196,3 +196,46 @@ export interface AppNotification {
   read: boolean;
   accentColor: string;
 }
+
+/* ── C2: brand deal marketplace ──────────────────────────────────── */
+
+export type DealSort = 'match' | 'payout' | 'deadline';
+
+export interface BrandDeal {
+  id: string;
+  brand: string;
+  /** Accent color for the brand's initials logo. */
+  brandColor: string;
+  /** Short "about the brand" blurb shown in the detail view. */
+  brandAbout: string;
+  category: string;
+  tagline: string;
+  payoutMin: number;
+  payoutMax: number;
+  deliverables: string[];
+  requirements: string[];
+  payoutTerms: string;
+  /** ISO date (YYYY-MM-DD) — sortable lexicographically. */
+  deadline: string;
+  /** Creator/brand fit, 0-100. */
+  matchScore: number;
+  /** True when the current user has an application for this deal. */
+  applied: boolean;
+}
+
+export interface DealApplication {
+  id: string;
+  dealId: string;
+  brand: string;
+  brandColor: string;
+  category: string;
+  payoutMin: number;
+  payoutMax: number;
+  pitch: string;
+  submitted: string;
+  status: 'Pending' | 'Accepted';
+}
+
+export interface DealApplyResponse {
+  application: DealApplication;
+}

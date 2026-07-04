@@ -12,11 +12,14 @@ import type {
   AppNotification,
   AppSettings,
   AuthResponse,
+  BrandDeal,
   CashFlowForecast,
   CcsScore,
   CcsSimulationRequest,
   CcsSimulationResult,
   ConvertPayload,
+  DealApplication,
+  DealApplyResponse,
   ForecastPoint,
   ForecastSummaryItem,
   ForecastWindow,
@@ -588,3 +591,232 @@ registerMock('POST', '/notifications/read-all', (ctx) => {
   });
   return getState().notifications;
 });
+
+/* ─────────────────── C2: brand deal marketplace ─────────────────── */
+
+/** Deal catalog is static; per-user application state lives in mock state. */
+const MARKETPLACE_DEALS: Omit<BrandDeal, 'applied'>[] = [
+  {
+    id: 'deal_01',
+    brand: 'Lumen Audio',
+    brandColor: '#C8FF00',
+    brandAbout: 'Berlin-based maker of studio-grade wireless headphones and creator monitors, shipping to 40+ countries.',
+    category: 'Tech',
+    tagline: 'Launch campaign for the Lumen One ANC headphones',
+    payoutMin: 2500,
+    payoutMax: 4000,
+    deliverables: ['1 dedicated YouTube integration (60-90s)', '2 TikTok clips', '1 Instagram story set'],
+    requirements: ['50K+ subscribers on primary platform', 'Tech or lifestyle content focus', 'Draft for brand review 7 days before publish', '30-day exclusivity vs. competing audio brands'],
+    payoutTerms: '50% on contract signing, 50% within 15 days of final deliverable. Performance bonus of $500 at 250K combined views.',
+    deadline: '2026-07-24',
+    matchScore: 91,
+  },
+  {
+    id: 'deal_02',
+    brand: 'VoltWear',
+    brandColor: '#FF4D00',
+    brandAbout: 'Streetwear label blending reflective techwear fabrics with skate culture. Sold in 200+ boutiques.',
+    category: 'Fashion',
+    tagline: 'Fall drop lookbook + haul collaboration',
+    payoutMin: 1200,
+    payoutMax: 2200,
+    deliverables: ['1 haul/lookbook video', '3 Instagram feed posts', 'Discount code promotion for 30 days'],
+    requirements: ['Fashion or lifestyle niche', 'US/EU audience majority', 'Wardrobe items returned or purchased at 60% off'],
+    payoutTerms: 'Net-30 after final deliverable, plus 8% commission on tracked code sales.',
+    deadline: '2026-08-10',
+    matchScore: 68,
+  },
+  {
+    id: 'deal_03',
+    brand: 'PixelForge Games',
+    brandColor: '#9B5DE5',
+    brandAbout: 'Indie studio behind the roguelite hit "Emberfall" — 2M copies sold. Publishing 4 new titles this year.',
+    category: 'Gaming',
+    tagline: 'Sponsored playthrough of the Emberfall: Ashes DLC',
+    payoutMin: 3000,
+    payoutMax: 6500,
+    deliverables: ['1 sponsored stream (2h minimum)', '1 YouTube highlights video', 'Launch-day social post'],
+    requirements: ['Gaming content with 20K+ avg. views', 'Stream on launch week', 'Disclose sponsorship per FTC guidelines'],
+    payoutTerms: 'Flat fee tiered by average concurrent viewers, paid within 10 days of the stream. Key + DLC provided.',
+    deadline: '2026-07-18',
+    matchScore: 84,
+  },
+  {
+    id: 'deal_04',
+    brand: 'NordShield VPN',
+    brandColor: '#4687FF',
+    brandAbout: 'Privacy company with 14M users, consistently top-rated for speed and independent security audits.',
+    category: 'Tech',
+    tagline: 'Always-on privacy — quarterly ambassador program',
+    payoutMin: 4500,
+    payoutMax: 8000,
+    deliverables: ['3 YouTube pre-roll integrations (45-60s)', '1 dedicated short', 'Custom landing page promotion'],
+    requirements: ['100K+ subscribers', 'Prior sponsored-content experience', 'Quarterly commitment (3 videos)', 'No competing VPN promos during term'],
+    payoutTerms: 'Fixed fee per integration paid net-15, plus $8 CPA on conversions through your link.',
+    deadline: '2026-08-02',
+    matchScore: 88,
+  },
+  {
+    id: 'deal_05',
+    brand: 'GlowTheory',
+    brandColor: '#FF4D9E',
+    brandAbout: 'Clean-formula skincare brand built around dermatologist-reviewed routines for screen-heavy lifestyles.',
+    category: 'Beauty',
+    tagline: 'Summer SPF line — honest review series',
+    payoutMin: 900,
+    payoutMax: 1800,
+    deliverables: ['1 GRWM or routine video', '2 TikTok/Reels', 'Link-in-bio placement for 2 weeks'],
+    requirements: ['Beauty, wellness, or lifestyle niche', '60%+ audience aged 18-34', 'Products used on camera for 14+ days before review'],
+    payoutTerms: 'Full payment net-20 after deliverables; PR kit (~$240 value) yours to keep.',
+    deadline: '2026-07-30',
+    matchScore: 54,
+  },
+  {
+    id: 'deal_06',
+    brand: 'IronPulse Fitness',
+    brandColor: '#00E5A0',
+    brandAbout: 'Connected home-gym platform — smart resistance equipment plus live coaching for 300K members.',
+    category: 'Fitness',
+    tagline: '30-day transformation challenge partnership',
+    payoutMin: 2000,
+    payoutMax: 3600,
+    deliverables: ['4 weekly progress videos', '1 dedicated equipment review', 'Challenge hashtag promotion'],
+    requirements: ['Fitness or self-improvement content', 'Document the full 30-day program', 'Equipment loan agreement (returned or bought out after)'],
+    payoutTerms: 'Paid in two installments: 40% at challenge midpoint, 60% on completion.',
+    deadline: '2026-08-22',
+    matchScore: 77,
+  },
+  {
+    id: 'deal_07',
+    brand: 'Brewline Coffee',
+    brandColor: '#B4693C',
+    brandAbout: 'Specialty roaster shipping single-origin subscriptions nationwide; B-Corp certified since 2023.',
+    category: 'Food',
+    tagline: 'Morning-routine subscription box feature',
+    payoutMin: 600,
+    payoutMax: 1200,
+    deliverables: ['1 morning routine integration', '1 Instagram story with swipe-up'],
+    requirements: ['Lifestyle, vlog, or productivity niche', 'Natural product placement — no hard sell'],
+    payoutTerms: 'Flat fee net-15 plus 12-month coffee subscription and 15% affiliate commission.',
+    deadline: '2026-07-15',
+    matchScore: 72,
+  },
+  {
+    id: 'deal_08',
+    brand: 'Stackwise',
+    brandColor: '#00D4FF',
+    brandAbout: 'Bookkeeping and tax automation built for creators and solo businesses — trusted by 80K freelancers.',
+    category: 'Finance',
+    tagline: 'Creator finance education series (3-part)',
+    payoutMin: 5000,
+    payoutMax: 9500,
+    deliverables: ['3-part educational video series', '1 newsletter feature', 'Webinar co-host appearance'],
+    requirements: ['Business, finance, or creator-economy content', 'Audience of working creators/freelancers', 'Scripts co-reviewed for compliance', 'No competing fintech promos for 60 days'],
+    payoutTerms: 'Per-episode fee net-15, plus $1,000 completion bonus for the full series.',
+    deadline: '2026-08-15',
+    matchScore: 81,
+  },
+  {
+    id: 'deal_09',
+    brand: 'Wanderlight Travel',
+    brandColor: '#FFD400',
+    brandAbout: 'Boutique group-travel operator curating creator retreats and workation packages in 18 destinations.',
+    category: 'Travel',
+    tagline: 'Lisbon creator retreat — documented trip',
+    payoutMin: 3200,
+    payoutMax: 5400,
+    deliverables: ['1 travel vlog (10+ min)', '5 Instagram stories on location', '1 retreat review post'],
+    requirements: ['Travel or lifestyle content', 'Available Sep 8-14 for the retreat', 'Passport valid 6+ months'],
+    payoutTerms: 'Trip costs fully covered plus flat creator fee paid 50/50 before and after the retreat.',
+    deadline: '2026-08-05',
+    matchScore: 63,
+  },
+  {
+    id: 'deal_10',
+    brand: 'Nimbus Drive',
+    brandColor: '#8ED1FC',
+    brandAbout: 'Encrypted cloud storage with creator-friendly plans — unlimited version history and 4K proxy previews.',
+    category: 'Tech',
+    tagline: 'Workflow integration — "how I back up my footage"',
+    payoutMin: 1500,
+    payoutMax: 2800,
+    deliverables: ['1 workflow/behind-the-scenes integration', '1 pinned comment with trial link'],
+    requirements: ['Video-production or tech content', 'Show real workflow usage', 'FTC disclosure required'],
+    payoutTerms: 'Flat fee net-30 plus $5 per trial signup for 60 days.',
+    deadline: '2026-09-01',
+    matchScore: 70,
+  },
+];
+
+/** Read applications defensively — state persisted before C2 lacks the field. */
+function marketplaceApps(): DealApplication[] {
+  return getState().marketplaceApplications ?? [];
+}
+
+registerMock('GET', '/marketplace/deals', (ctx) => {
+  requireAuth(ctx);
+  const appliedIds = new Set(marketplaceApps().map((a) => a.dealId));
+  let deals: BrandDeal[] = MARKETPLACE_DEALS.map((d) => ({ ...d, applied: appliedIds.has(d.id) }));
+
+  const { category, search, sort } = ctx.query;
+  if (category && category !== 'All') {
+    deals = deals.filter((d) => d.category === category);
+  }
+  if (search) {
+    const q = search.toLowerCase();
+    deals = deals.filter(
+      (d) =>
+        d.brand.toLowerCase().includes(q) ||
+        d.tagline.toLowerCase().includes(q) ||
+        d.category.toLowerCase().includes(q),
+    );
+  }
+  if (sort === 'payout') deals.sort((a, b) => b.payoutMax - a.payoutMax);
+  else if (sort === 'deadline') deals.sort((a, b) => a.deadline.localeCompare(b.deadline));
+  else deals.sort((a, b) => b.matchScore - a.matchScore);
+
+  return deals;
+});
+
+registerMock('GET', '/marketplace/applications', (ctx) => {
+  requireAuth(ctx);
+  return marketplaceApps();
+});
+
+/* The mock registry matches exact paths, so register one apply route per
+   catalog deal — same shape as the real API's POST /marketplace/deals/:id/apply. */
+for (const deal of MARKETPLACE_DEALS) {
+  registerMock('POST', `/marketplace/deals/${deal.id}/apply`, (ctx) => {
+    requireAuth(ctx);
+    const body = ctx.body as { pitch?: string };
+    const pitch = body?.pitch?.trim() ?? '';
+    if (pitch.length < 10) {
+      throw new ApiError(400, 'Add a short pitch (at least 10 characters)');
+    }
+    if (marketplaceApps().some((a) => a.dealId === deal.id)) {
+      throw new ApiError(409, 'You already applied to this deal');
+    }
+
+    let application: DealApplication | undefined;
+    mutate((s) => {
+      const counter = s.applicationCounter ?? 100;
+      s.applicationCounter = counter + 1;
+      application = {
+        id: `app_${String(counter).padStart(2, '0')}`,
+        dealId: deal.id,
+        brand: deal.brand,
+        brandColor: deal.brandColor,
+        category: deal.category,
+        payoutMin: deal.payoutMin,
+        payoutMax: deal.payoutMax,
+        pitch,
+        submitted: todayLabel(),
+        status: 'Pending',
+      };
+      s.marketplaceApplications = [application, ...(s.marketplaceApplications ?? [])];
+    });
+
+    const response: DealApplyResponse = { application: application! };
+    return response;
+  });
+}

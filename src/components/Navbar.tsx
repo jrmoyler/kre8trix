@@ -6,6 +6,7 @@ import {
   Target,
   TrendingUp,
   Zap,
+  Store,
   CreditCard,
   BarChart3,
   Settings,
@@ -21,6 +22,8 @@ const navItems = [
   { label: 'Credit Score', icon: Target, path: '/credit-score' },
   { label: 'Cash Flow', icon: TrendingUp, path: '/cash-flow' },
   { label: 'Advances', icon: Zap, path: '/advances' },
+  { label: 'Marketplace', icon: Store, path: '/marketplace' }, // C2
+
   { label: 'Cards', icon: CreditCard, path: '/cards' },
   { label: 'Analytics', icon: BarChart3, path: '/analytics' },
   { label: 'Settings', icon: Settings, path: '/settings' },
