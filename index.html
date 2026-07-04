@@ -4,6 +4,21 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Kre8trix — Creator Financial OS</title>
+    <!-- C7: apply the persisted theme before first paint to avoid a flash -->
+    <script>
+      (function () {
+        var theme = 'dark';
+        try {
+          var stored = localStorage.getItem('kre8trix.theme');
+          if (stored === 'light' || stored === 'dark') {
+            theme = stored;
+          } else if (stored === 'system' && window.matchMedia('(prefers-color-scheme: light)').matches) {
+            theme = 'light';
+          }
+        } catch (e) { /* default to dark */ }
+        document.documentElement.setAttribute('data-theme', theme);
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

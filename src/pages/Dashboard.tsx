@@ -106,8 +106,8 @@ function AlertBanner() {
           transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] as [number, number, number, number], delay: 0.1 }}
           className="w-full rounded-2xl px-6 py-4 flex items-center justify-between gap-4 mb-6"
           style={{
-            background: 'linear-gradient(90deg, rgba(200,255,0,0.06), rgba(0,212,255,0.06))',
-            border: '1px solid rgba(200,255,0,0.15)',
+            background: 'linear-gradient(90deg, rgba(var(--acid-rgb),0.06), rgba(var(--electric-rgb),0.06))',
+            border: '1px solid rgba(var(--acid-rgb),0.15)',
           }}
         >
           <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -115,7 +115,7 @@ function AlertBanner() {
               <span className="animate-pulse absolute inline-flex h-full w-full rounded-full bg-acid opacity-75" />
               <span className="relative inline-flex rounded-full h-4 w-4 bg-acid" />
             </span>
-            <p className="font-body text-[14px] text-[#E8E8F0] truncate">
+            <p className="font-body text-[14px] text-[rgb(var(--color-ink))] truncate">
               Your October looks tight. Platform payouts delayed 5 days. Consider an advance.
             </p>
           </div>
@@ -128,7 +128,7 @@ function AlertBanner() {
             </button>
             <button
               onClick={() => setDismissed(true)}
-              className="text-[rgba(255,255,255,0.42)] hover:text-white transition-colors duration-150"
+              className="text-[rgba(var(--fg-rgb),0.42)] hover:text-ink transition-colors duration-150"
             >
               <X size={18} />
             </button>
@@ -181,21 +181,21 @@ function BalanceCard({
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-3">
-            <span className="font-mono text-[12px] tracking-[0.04em] text-[rgba(255,255,255,0.42)] uppercase">
+            <span className="font-mono text-[12px] tracking-[0.04em] text-[rgba(var(--fg-rgb),0.42)] uppercase">
               {label}
             </span>
           </div>
-          <div className="font-mono text-[36px] font-medium text-white tracking-[-0.02em] leading-none mb-2">
+          <div className="font-mono text-[36px] font-medium text-ink tracking-[-0.02em] leading-none mb-2">
             {prefix}{count.toLocaleString()}{suffix}
           </div>
           <div className="flex items-center gap-2">
             <span
               className="inline-flex items-center px-3 py-1 rounded-full font-mono text-[12px] tracking-[0.04em]"
-              style={{ background: `${accentColor}20`, color: accentColor }}
+              style={{ background: `color-mix(in srgb, ${accentColor} 13%, transparent)`, color: accentColor }}
             >
               {change}
             </span>
-            <span className="font-body text-[12px] text-[rgba(255,255,255,0.42)]">{changeLabel}</span>
+            <span className="font-body text-[12px] text-[rgba(var(--fg-rgb),0.42)]">{changeLabel}</span>
           </div>
         </div>
         <div className="w-[120px] h-[50px] flex-shrink-0">
@@ -237,21 +237,21 @@ function CCSScoreCard({ score }: { score: CcsScore }) {
       variants={itemVariants}
       initial="hidden"
       animate="visible"
-      className="rounded-2xl p-8 bg-panel border border-[rgba(255,255,255,0.08)] flex flex-col items-center"
+      className="rounded-2xl p-8 bg-panel border border-[rgba(var(--fg-rgb),0.08)] flex flex-col items-center"
     >
       <div className="flex items-center gap-2 mb-6 self-start">
-        <h3 className="font-display text-[28px] tracking-[0.02em] text-white">
+        <h3 className="font-display text-[28px] tracking-[0.02em] text-ink">
           Creator Credit Score
         </h3>
-        <Info size={16} className="text-[rgba(255,255,255,0.42)]" />
+        <Info size={16} className="text-[rgba(var(--fg-rgb),0.42)]" />
       </div>
 
       <div className="relative mb-4">
         <svg width="200" height="200" viewBox="0 0 200 200" className="-rotate-90">
           <defs>
             <linearGradient id="scoreGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#C8FF00" />
-              <stop offset="100%" stopColor="#00D4FF" />
+              <stop offset="0%" stopColor="rgb(var(--color-acid))" />
+              <stop offset="100%" stopColor="rgb(var(--color-electric))" />
             </linearGradient>
           </defs>
           <circle
@@ -259,7 +259,7 @@ function CCSScoreCard({ score }: { score: CcsScore }) {
             cy="100"
             r="90"
             fill="none"
-            stroke="rgba(255,255,255,0.08)"
+            stroke="rgba(var(--fg-rgb),0.08)"
             strokeWidth="12"
           />
           <motion.circle
@@ -274,14 +274,14 @@ function CCSScoreCard({ score }: { score: CcsScore }) {
             initial={{ strokeDashoffset: circumference }}
             animate={{ strokeDashoffset: dashOffset }}
             transition={{ duration: 1.5, ease: [0.16, 1, 0.3, 1] as [number, number, number, number], delay: 0.6 }}
-            style={{ filter: 'drop-shadow(0 0 24px rgba(200,255,0,0.15))' }}
+            style={{ filter: 'drop-shadow(0 0 24px rgba(var(--acid-rgb),0.15))' }}
           />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="font-mono text-[48px] font-medium text-white tracking-[-0.02em] leading-none">
+          <span className="font-mono text-[48px] font-medium text-ink tracking-[-0.02em] leading-none">
             {count}
           </span>
-          <span className="font-mono text-[12px] text-[rgba(255,255,255,0.42)] tracking-[0.04em] mt-1">
+          <span className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em] mt-1">
             out of {score.maxScore}
           </span>
         </div>
@@ -295,11 +295,11 @@ function CCSScoreCard({ score }: { score: CcsScore }) {
       >
         <span
           className="inline-flex items-center px-4 py-1.5 rounded-full font-mono text-[12px] tracking-[0.04em] font-medium"
-          style={{ background: 'rgba(0,212,255,0.15)', color: '#00D4FF' }}
+          style={{ background: 'rgba(var(--electric-rgb),0.15)', color: 'rgb(var(--color-electric))' }}
         >
           {score.tier.toUpperCase()}
         </span>
-        <span className="font-mono text-[12px] text-[rgba(255,255,255,0.42)] tracking-[0.04em]">
+        <span className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em]">
           Top {score.percentile}% of creators
         </span>
       </motion.div>
@@ -334,21 +334,21 @@ function QuickActionButton({
   return (
     <motion.button
       variants={itemVariants}
-      whileHover={{ y: -2, borderColor: `${color}40` }}
+      whileHover={{ y: -2, borderColor: `color-mix(in srgb, ${color} 25%, transparent)` }}
       whileTap={{ scale: 0.98 }}
       transition={{ delay }}
       onClick={onClick}
-      className="flex items-center gap-4 bg-panel2 border border-[rgba(255,255,255,0.08)] rounded-2xl p-5 w-full text-left hover:shadow-[0_8px_32px_rgba(0,0,0,0.3)] transition-all duration-300"
+      className="flex items-center gap-4 bg-panel2 border border-[rgba(var(--fg-rgb),0.08)] rounded-2xl p-5 w-full text-left hover:shadow-[0_8px_32px_rgba(0,0,0,0.3)] transition-all duration-300"
     >
       <div
         className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 transition-transform duration-300 group-hover:scale-105"
-        style={{ background: `${color}15` }}
+        style={{ background: `color-mix(in srgb, ${color} 9%, transparent)` }}
       >
         <Icon size={22} style={{ color }} />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="font-body text-[16px] font-semibold text-white truncate">{label}</p>
-        <p className="font-mono text-[12px] text-[rgba(255,255,255,0.42)] tracking-[0.04em] truncate">
+        <p className="font-body text-[16px] font-semibold text-ink truncate">{label}</p>
+        <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em] truncate">
           {description}
         </p>
       </div>
@@ -366,9 +366,9 @@ function TransactionRow({
 }) {
   const isPositive = tx.amount > 0;
   const statusColors: Record<string, string> = {
-    Completed: '#00E5A0',
-    Pending: '#FFD400',
-    Failed: '#FF4D4D',
+    Completed: 'rgb(var(--color-positive))',
+    Pending: 'rgb(var(--color-gold))',
+    Failed: 'rgb(var(--color-negative))',
   };
 
   return (
@@ -384,27 +384,27 @@ function TransactionRow({
     >
       <div
         className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
-        style={{ background: `${tx.iconColor}15` }}
+        style={{ background: `color-mix(in srgb, ${tx.iconColor} 9%, transparent)` }}
       >
         <span className="text-[12px] font-bold" style={{ color: tx.iconColor }}>
           {tx.platform[0]}
         </span>
       </div>
       <div className="flex-1 min-w-0">
-        <p className="font-body text-[14px] text-white truncate">{tx.description}</p>
-        <p className="font-mono text-[12px] text-[rgba(255,255,255,0.42)] tracking-[0.04em] truncate">
+        <p className="font-body text-[14px] text-ink truncate">{tx.description}</p>
+        <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em] truncate">
           {tx.platform}
         </p>
       </div>
       <div className="text-right flex-shrink-0">
         <p
           className="font-mono text-[14px] font-medium tracking-[-0.02em]"
-          style={{ color: isPositive ? '#00E5A0' : '#FF4D4D' }}
+          style={{ color: isPositive ? 'rgb(var(--color-positive))' : 'rgb(var(--color-negative))' }}
         >
           {isPositive ? '+' : '-'}${Math.abs(tx.amount).toLocaleString()}.00
         </p>
         <div className="flex items-center justify-end gap-2 mt-0.5">
-          <span className="font-mono text-[12px] text-[rgba(255,255,255,0.42)] tracking-[0.04em]">
+          <span className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em]">
             {tx.date}
           </span>
           <span
@@ -431,10 +431,10 @@ function PlatformRevenueBar({
 
   return (
     <div className="flex items-center gap-3">
-      <span className="font-mono text-[12px] text-white tracking-[0.04em] w-[70px] flex-shrink-0 text-right">
+      <span className="font-mono text-[12px] text-ink tracking-[0.04em] w-[70px] flex-shrink-0 text-right">
         {item.platform}
       </span>
-      <div className="flex-1 h-8 bg-[rgba(255,255,255,0.04)] rounded-lg overflow-hidden">
+      <div className="flex-1 h-8 bg-[rgba(var(--fg-rgb),0.04)] rounded-lg overflow-hidden">
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: `${widthPercent}%` }}
@@ -447,7 +447,7 @@ function PlatformRevenueBar({
           style={{ background: item.color, opacity: 0.7 }}
         />
       </div>
-      <span className="font-mono text-[14px] text-white tracking-[-0.02em] w-[70px] flex-shrink-0">
+      <span className="font-mono text-[14px] text-ink tracking-[-0.02em] w-[70px] flex-shrink-0">
         ${item.amount.toLocaleString()}
       </span>
     </div>
@@ -467,10 +467,10 @@ export default function Dashboard() {
   const forecastQuery = useApi<CashFlowForecast>(`/cashflow/forecast?window=${forecastTab}`);
 
   const quickActions = [
-    { icon: ArrowUpRight, label: 'Send Money', description: 'Transfer funds instantly', color: '#C8FF00', path: '/wallet?action=send' },
-    { icon: ArrowDownLeft, label: 'Request', description: 'Request payment from anyone', color: '#00D4FF', path: '/wallet?action=request' },
-    { icon: RefreshCw, label: 'Convert', description: 'USD to USDC & back', color: '#9B5DE5', path: '/wallet?action=convert' },
-    { icon: Zap, label: 'Get Advance', description: 'Revenue-backed financing', color: '#FF4D00', path: '/advances' },
+    { icon: ArrowUpRight, label: 'Send Money', description: 'Transfer funds instantly', color: 'rgb(var(--color-acid))', path: '/wallet?action=send' },
+    { icon: ArrowDownLeft, label: 'Request', description: 'Request payment from anyone', color: 'rgb(var(--color-electric))', path: '/wallet?action=request' },
+    { icon: RefreshCw, label: 'Convert', description: 'USD to USDC & back', color: 'rgb(var(--color-violet))', path: '/wallet?action=convert' },
+    { icon: Zap, label: 'Get Advance', description: 'Revenue-backed financing', color: 'rgb(var(--color-ember))', path: '/advances' },
   ];
 
   const balances = balancesQuery.data;
@@ -505,11 +505,11 @@ export default function Dashboard() {
                 change="+$1,240"
                 changeLabel="this month"
                 delay={300}
-                accentColor="#00E5A0"
-                gradientBg="linear-gradient(135deg, #0F0F1E 0%, rgba(200,255,0,0.03) 100%)"
-                borderColor="rgba(200,255,0,0.12)"
+                accentColor="rgb(var(--color-positive))"
+                gradientBg="linear-gradient(135deg, rgb(var(--color-panel)) 0%, rgba(var(--acid-rgb),0.03) 100%)"
+                borderColor="rgba(var(--acid-rgb),0.12)"
                 sparklineData={balances.usdSparkline}
-                sparklineColor="#00D4FF"
+                sparklineColor="rgb(var(--color-electric))"
               />
               <BalanceCard
                 label="USDC Balance"
@@ -519,11 +519,11 @@ export default function Dashboard() {
                 prefix=""
                 suffix=" USDC"
                 delay={450}
-                accentColor="#00E5A0"
-                gradientBg="linear-gradient(135deg, #0F0F1E 0%, rgba(155,93,229,0.03) 100%)"
-                borderColor="rgba(155,93,229,0.12)"
+                accentColor="rgb(var(--color-positive))"
+                gradientBg="linear-gradient(135deg, rgb(var(--color-panel)) 0%, rgba(var(--violet-rgb),0.03) 100%)"
+                borderColor="rgba(var(--violet-rgb),0.12)"
                 sparklineData={balances.usdcSparkline}
-                sparklineColor="#9B5DE5"
+                sparklineColor="rgb(var(--color-violet))"
               />
             </>
           )}
@@ -560,10 +560,10 @@ export default function Dashboard() {
       {/* Section 5: Cash Flow Forecast */}
       <motion.div
         variants={itemVariants}
-        className="bg-panel border border-[rgba(255,255,255,0.08)] rounded-2xl p-6"
+        className="bg-panel border border-[rgba(var(--fg-rgb),0.08)] rounded-2xl p-6"
       >
         <div className="flex items-center justify-between mb-6">
-          <h3 className="font-display text-[36px] tracking-[0.02em] text-white">
+          <h3 className="font-display text-[36px] tracking-[0.02em] text-ink">
             Cash Flow Forecast
           </h3>
           <div className="flex items-center gap-3">
@@ -575,8 +575,8 @@ export default function Dashboard() {
                   className={`
                     px-4 py-2 rounded-lg font-mono text-[12px] tracking-[0.04em] transition-all duration-200
                     ${forecastTab === tab
-                      ? 'bg-panel text-white shadow-sm'
-                      : 'text-[rgba(255,255,255,0.42)] hover:text-white'
+                      ? 'bg-panel text-ink shadow-sm'
+                      : 'text-[rgba(var(--fg-rgb),0.42)] hover:text-ink'
                     }
                   `}
                 >
@@ -604,58 +604,58 @@ export default function Dashboard() {
               <AreaChart data={forecast.points} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="historicalGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#C8FF00" stopOpacity="0.2" />
-                    <stop offset="100%" stopColor="#C8FF00" stopOpacity="0" />
+                    <stop offset="0%" stopColor="rgb(var(--color-acid))" stopOpacity="0.2" />
+                    <stop offset="100%" stopColor="rgb(var(--color-acid))" stopOpacity="0" />
                   </linearGradient>
                   <linearGradient id="projectedGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#00D4FF" stopOpacity="0.15" />
-                    <stop offset="100%" stopColor="#00D4FF" stopOpacity="0" />
+                    <stop offset="0%" stopColor="rgb(var(--color-electric))" stopOpacity="0.15" />
+                    <stop offset="100%" stopColor="rgb(var(--color-electric))" stopOpacity="0" />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
                 <XAxis
                   dataKey="label"
-                  tick={{ fontSize: 12, fill: 'rgba(255,255,255,0.42)', fontFamily: '"JetBrains Mono", monospace' }}
-                  axisLine={{ stroke: 'rgba(255,255,255,0.08)' }}
+                  tick={{ fontSize: 12, fill: 'rgba(var(--fg-rgb),0.42)', fontFamily: '"JetBrains Mono", monospace' }}
+                  axisLine={{ stroke: 'rgba(var(--fg-rgb),0.08)' }}
                   tickLine={false}
                 />
                 <YAxis
-                  tick={{ fontSize: 12, fill: 'rgba(255,255,255,0.42)', fontFamily: '"JetBrains Mono", monospace' }}
-                  axisLine={{ stroke: 'rgba(255,255,255,0.08)' }}
+                  tick={{ fontSize: 12, fill: 'rgba(var(--fg-rgb),0.42)', fontFamily: '"JetBrains Mono", monospace' }}
+                  axisLine={{ stroke: 'rgba(var(--fg-rgb),0.08)' }}
                   tickLine={false}
                   tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`}
                 />
                 <Tooltip
                   contentStyle={{
-                    background: '#0F0F1E',
-                    border: '1px solid rgba(255,255,255,0.08)',
+                    background: 'rgb(var(--color-panel))',
+                    border: '1px solid rgba(var(--fg-rgb),0.08)',
                     borderRadius: '12px',
                     fontFamily: '"JetBrains Mono", monospace',
                     fontSize: '12px',
-                    color: '#E8E8F0',
+                    color: 'rgb(var(--color-ink))',
                   }}
                   formatter={(value: number) => [`$${value?.toLocaleString()}`, '']}
                 />
                 <Area
                   type="monotone"
                   dataKey="actual"
-                  stroke="#C8FF00"
+                  stroke="rgb(var(--color-acid))"
                   strokeWidth={2}
                   fill="url(#historicalGrad)"
                   connectNulls={false}
                   dot={false}
-                  activeDot={{ r: 4, fill: '#C8FF00' }}
+                  activeDot={{ r: 4, fill: 'rgb(var(--color-acid))' }}
                 />
                 <Area
                   type="monotone"
                   dataKey="projected"
-                  stroke="#00D4FF"
+                  stroke="rgb(var(--color-electric))"
                   strokeWidth={2}
                   strokeDasharray="6 4"
                   fill="url(#projectedGrad)"
                   connectNulls={false}
                   dot={false}
-                  activeDot={{ r: 4, fill: '#00D4FF' }}
+                  activeDot={{ r: 4, fill: 'rgb(var(--color-electric))' }}
                 />
               </AreaChart>
             </ResponsiveContainer>
@@ -672,10 +672,10 @@ export default function Dashboard() {
               }`}
             >
               <span className="w-2.5 h-2.5 rounded-full" style={{ background: pill.color }} />
-              <span className="font-mono text-[12px] text-[rgba(255,255,255,0.42)] tracking-[0.04em]">
+              <span className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em]">
                 {pill.label}:
               </span>
-              <span className="font-mono text-[20px] font-medium text-white tracking-[-0.02em]">
+              <span className="font-mono text-[20px] font-medium text-ink tracking-[-0.02em]">
                 ${pill.amount.toLocaleString()}
               </span>
             </button>
@@ -688,10 +688,10 @@ export default function Dashboard() {
         {/* Recent Transactions */}
         <motion.div
           variants={itemVariants}
-          className="bg-panel border border-[rgba(255,255,255,0.08)] rounded-2xl p-6"
+          className="bg-panel border border-[rgba(var(--fg-rgb),0.08)] rounded-2xl p-6"
         >
           <div className="flex items-center justify-between mb-4">
-            <h4 className="font-display text-[28px] tracking-[0.02em] text-white">
+            <h4 className="font-display text-[28px] tracking-[0.02em] text-ink">
               Recent Transactions
             </h4>
             <button
@@ -707,7 +707,7 @@ export default function Dashboard() {
           ) : transactionsQuery.loading || !transactionsQuery.data ? (
             <TransactionListSkeleton rows={8} />
           ) : (
-            <div className="divide-y divide-[rgba(255,255,255,0.04)]">
+            <div className="divide-y divide-[rgba(var(--fg-rgb),0.04)]">
               {transactionsQuery.data.map((tx, i) => (
                 <TransactionRow key={tx.id} tx={tx} index={i} />
               ))}
@@ -718,10 +718,10 @@ export default function Dashboard() {
         {/* Platform Revenue */}
         <motion.div
           variants={itemVariants}
-          className="bg-panel border border-[rgba(255,255,255,0.08)] rounded-2xl p-6"
+          className="bg-panel border border-[rgba(var(--fg-rgb),0.08)] rounded-2xl p-6"
         >
           <div className="flex items-center justify-between mb-6">
-            <h4 className="font-display text-[28px] tracking-[0.02em] text-white">
+            <h4 className="font-display text-[28px] tracking-[0.02em] text-ink">
               Revenue by Platform
             </h4>
           </div>
@@ -741,16 +741,16 @@ export default function Dashboard() {
                   />
                 ))}
               </div>
-              <div className="flex items-center justify-between mt-6 pt-4 border-t border-[rgba(255,255,255,0.08)]">
+              <div className="flex items-center justify-between mt-6 pt-4 border-t border-[rgba(var(--fg-rgb),0.08)]">
                 <div>
-                  <span className="font-mono text-[12px] text-[rgba(255,255,255,0.42)] tracking-[0.04em]">
+                  <span className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em]">
                     Total Monthly
                   </span>
-                  <p className="font-mono text-[20px] font-medium tracking-[-0.02em]" style={{ color: '#C8FF00' }}>
+                  <p className="font-mono text-[20px] font-medium tracking-[-0.02em]" style={{ color: 'rgb(var(--color-acid))' }}>
                     ${revenue.total.toLocaleString()}
                   </p>
                 </div>
-                <span className="font-mono text-[12px] tracking-[0.04em]" style={{ color: '#00E5A0' }}>
+                <span className="font-mono text-[12px] tracking-[0.04em]" style={{ color: 'rgb(var(--color-positive))' }}>
                   +{revenue.changePercent}% vs last month
                 </span>
               </div>

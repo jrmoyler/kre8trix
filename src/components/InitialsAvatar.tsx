@@ -7,12 +7,12 @@ export default function InitialsAvatar({ name, size = 36 }: { name: string; size
     .join('');
   return (
     <span
-      className="rounded-full flex items-center justify-center font-body font-semibold text-void border border-[rgba(255,255,255,0.15)] flex-shrink-0 select-none"
+      className="rounded-full flex items-center justify-center font-body font-semibold text-void border border-[rgba(var(--fg-rgb),0.15)] flex-shrink-0 select-none"
       style={{
         width: size,
         height: size,
         fontSize: size * 0.38,
-        background: 'linear-gradient(135deg, #C8FF00, #00D4FF)',
+        background: 'linear-gradient(135deg, rgb(var(--color-acid)), rgb(var(--color-electric)))',
       }}
     >
       {initials || 'K'}

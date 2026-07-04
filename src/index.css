@@ -10,18 +10,41 @@
 @tailwind utilities;
 
 @layer base {
+  /* ── C7 theming ──────────────────────────────────────────────
+     Two variable sets per token:
+       --color-*  space-separated rgb triplets, consumed by Tailwind
+                  via `rgb(var(--color-*) / <alpha-value>)`
+       --*-rgb    comma-separated triplets, consumed by legacy
+                  `rgba(var(--*-rgb), <alpha>)` overlays
+     :root = dark (default), [data-theme="light"] = light.        */
   :root {
-    --void: #06060E;
-    --deep: #0B0B18;
-    --panel: #0F0F1E;
-    --panel2: #141428;
-    --surface: #1A1A35;
-    --acid: #C8FF00;
-    --electric: #00D4FF;
-    --ember: #FF4D00;
-    --violet: #9B5DE5;
-    --positive: #00E5A0;
-    --negative: #FF4D4D;
+    color-scheme: dark;
+
+    /* dark palette — exactly the original hex values as rgb triplets */
+    --color-void: 6 6 14;        /* #06060E */
+    --color-deep: 11 11 24;      /* #0B0B18 */
+    --color-panel: 15 15 30;     /* #0F0F1E */
+    --color-panel2: 20 20 40;    /* #141428 */
+    --color-surface: 26 26 53;   /* #1A1A35 */
+    --color-acid: 200 255 0;     /* #C8FF00 */
+    --color-electric: 0 212 255; /* #00D4FF */
+    --color-ember: 255 77 0;     /* #FF4D00 */
+    --color-violet: 155 93 229;  /* #9B5DE5 */
+    --color-positive: 0 229 160; /* #00E5A0 */
+    --color-negative: 255 77 77; /* #FF4D4D */
+    --color-ink: 232 232 240;    /* #E8E8F0 — primary text */
+    --color-gold: 255 212 0;     /* #FFD400 — warning accent */
+
+    --fg-rgb: 255,255,255;       /* foreground overlay base (text/borders/hover) */
+    --acid-rgb: 200,255,0;
+    --electric-rgb: 0,212,255;
+    --ember-rgb: 255,77,0;
+    --violet-rgb: 155,93,229;
+    --positive-rgb: 0,229,160;
+    --negative-rgb: 255,77,77;
+    --gold-rgb: 255,212,0;
+
+    --chart-grid: rgba(255,255,255,0.06);
 
     --background: 240 10% 3.9%;
     --foreground: 0 0% 98%;
@@ -53,21 +76,82 @@
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
+  /* ── C7: light theme ─────────────────────────────────────────
+     Near-white backgrounds with a subtle cool tint, dark ink text,
+     accent hues darkened for WCAG AA (>= 4.5:1) on white.        */
+  [data-theme="light"] {
+    color-scheme: light;
+
+    --color-void: 244 245 250;   /* #F4F5FA — page background */
+    --color-deep: 236 238 246;   /* #ECEEF6 */
+    --color-panel: 255 255 255;  /* #FFFFFF — cards */
+    --color-panel2: 241 242 249; /* #F1F2F9 */
+    --color-surface: 231 233 244;/* #E7E9F4 */
+    --color-acid: 90 122 0;      /* #5A7A00 — 4.9:1 on white */
+    --color-electric: 0 118 153; /* #007699 — 5.2:1 */
+    --color-ember: 194 58 0;     /* #C23A00 — 5.4:1 */
+    --color-violet: 107 52 184;  /* #6B34B8 — 7.4:1 */
+    --color-positive: 0 128 90;  /* #00805A — 5.0:1 */
+    --color-negative: 200 32 32; /* #C82020 — 5.7:1 */
+    --color-ink: 22 24 43;       /* #16182B — primary text */
+    --color-gold: 138 109 0;     /* #8A6D00 — 4.9:1 */
+
+    --fg-rgb: 22,24,43;          /* dark ink replaces white overlays */
+    --acid-rgb: 90,122,0;
+    --electric-rgb: 0,118,153;
+    --ember-rgb: 194,58,0;
+    --violet-rgb: 107,52,184;
+    --positive-rgb: 0,128,90;
+    --negative-rgb: 200,32,32;
+    --gold-rgb: 138,109,0;
+
+    --chart-grid: rgba(22,24,43,0.12);
+
+    /* shadcn/ui semantic vars — light variants */
+    --background: 228 33% 97%;
+    --foreground: 233 32% 13%;
+    --card: 0 0% 100%;
+    --card-foreground: 233 32% 13%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 233 32% 13%;
+    --primary: 233 32% 13%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 228 24% 93%;
+    --secondary-foreground: 233 32% 13%;
+    --muted: 228 24% 93%;
+    --muted-foreground: 233 10% 40%;
+    --accent: 228 24% 93%;
+    --accent-foreground: 233 32% 13%;
+    --destructive: 0 72% 45%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 230 16% 86%;
+    --input: 230 16% 86%;
+    --ring: 233 32% 13%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 233 32% 13%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 228 24% 93%;
+    --sidebar-accent-foreground: 233 32% 13%;
+    --sidebar-border: 230 16% 86%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
   * {
     @apply border-border;
   }
 
   body {
-    background-color: var(--void);
+    background-color: rgb(var(--color-void));
     font-family: "Bricolage Grotesque", system-ui, sans-serif;
-    color: #E8E8F0;
+    color: rgb(var(--color-ink));
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
   html {
     scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.12) var(--void);
+    scrollbar-color: rgba(var(--fg-rgb), 0.12) rgb(var(--color-void));
   }
 
   ::-webkit-scrollbar {
@@ -75,16 +159,16 @@
   }
 
   ::-webkit-scrollbar-track {
-    background: var(--void);
+    background: rgb(var(--color-void));
   }
 
   ::-webkit-scrollbar-thumb {
-    background-color: rgba(255, 255, 255, 0.12);
+    background-color: rgba(var(--fg-rgb), 0.12);
     border-radius: 3px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(255, 255, 255, 0.2);
+    background-color: rgba(var(--fg-rgb), 0.2);
   }
 }
 

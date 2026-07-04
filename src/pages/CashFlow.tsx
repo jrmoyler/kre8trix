@@ -36,17 +36,17 @@ function AIInsightBanner() {
   const chips = [
     {
       label: 'Apply for a $5K advance',
-      style: 'bg-[rgba(255,77,0,0.15)] text-[#FF4D00]',
+      style: 'bg-[rgba(var(--ember-rgb),0.15)] text-[rgb(var(--color-ember))]',
       action: () => navigate('/advances'),
     },
     {
       label: 'Defer equipment purchase',
-      style: 'bg-panel2 text-white',
+      style: 'bg-panel2 text-ink',
       action: () => toast.success('Equipment purchase deferred — we moved the reminder to November'),
     },
     {
       label: 'Adjust tax withholding',
-      style: 'bg-[rgba(0,212,255,0.15)] text-[#00D4FF]',
+      style: 'bg-[rgba(var(--electric-rgb),0.15)] text-[rgb(var(--color-electric))]',
       action: () => {
         document.getElementById('tax-tracker')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       },
@@ -58,9 +58,9 @@ function AIInsightBanner() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: easeOutExpo }}
-      className="w-full rounded-[20px] p-7 border border-[rgba(200,255,0,0.1)]"
+      className="w-full rounded-[20px] p-7 border border-[rgba(var(--acid-rgb),0.1)]"
       style={{
-        background: 'linear-gradient(135deg, rgba(200,255,0,0.04), rgba(0,212,255,0.04))',
+        background: 'linear-gradient(135deg, rgba(var(--acid-rgb),0.04), rgba(var(--electric-rgb),0.04))',
       }}
     >
       <div className="flex gap-4">
@@ -69,17 +69,17 @@ function AIInsightBanner() {
           animate={{ scale: 1 }}
           transition={{ duration: 0.3 }}
           className="flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center"
-          style={{ background: 'linear-gradient(135deg, #C8FF00, #00D4FF)' }}
+          style={{ background: 'linear-gradient(135deg, rgb(var(--color-acid)), rgb(var(--color-electric)))' }}
         >
           <BrainCircuit size={24} className="text-void" />
         </motion.div>
         <div className="flex-1">
           <div className="flex items-center gap-3 mb-2">
             <h5 className="font-body text-[20px] font-semibold text-acid">Kre8trix AI</h5>
-            <span className="font-mono text-[12px] text-[rgba(255,255,255,0.42)] tracking-[0.04em]">Just now</span>
+            <span className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em]">Just now</span>
           </div>
           <div className="border-l-[3px] border-acid pl-4">
-            <p className="font-body text-[18px] text-[#E8E8F0] leading-relaxed">
+            <p className="font-body text-[18px] text-[rgb(var(--color-ink))] leading-relaxed">
               Your October looks tight. Q4 AdSense typically drops 23% for your category. Consider activating your equipment credit line.
             </p>
           </div>
@@ -116,24 +116,24 @@ function ForecastChart() {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.15 }}
       transition={{ duration: 0.6, ease: easeOutExpo }}
-      className="bg-panel border border-[rgba(255,255,255,0.08)] rounded-2xl p-6"
+      className="bg-panel border border-[rgba(var(--fg-rgb),0.08)] rounded-2xl p-6"
     >
       <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
         <div>
-          <h2 className="font-display text-[48px] tracking-[0.02em] text-white">Income Forecast</h2>
+          <h2 className="font-display text-[48px] tracking-[0.02em] text-ink">Income Forecast</h2>
           {forecast && (
-            <p className="font-mono text-[12px] text-[rgba(255,255,255,0.42)] tracking-[0.04em]">
+            <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em]">
               {forecast.confidencePercent}% model confidence over {window}
             </p>
           )}
         </div>
         <div className="flex items-center gap-3">
-          <div className="flex bg-[rgba(255,255,255,0.06)] rounded-xl p-1">
+          <div className="flex bg-[rgba(var(--fg-rgb),0.06)] rounded-xl p-1">
             {FORECAST_WINDOWS.map((w) => (
               <button
                 key={w}
                 onClick={() => setWindow(w)}
-                className={`px-4 py-2 rounded-lg font-mono text-[12px] font-medium transition-all ${w === window ? 'bg-acid text-void' : 'text-[rgba(255,255,255,0.42)] hover:text-white'}`}
+                className={`px-4 py-2 rounded-lg font-mono text-[12px] font-medium transition-all ${w === window ? 'bg-acid text-void' : 'text-[rgba(var(--fg-rgb),0.42)] hover:text-ink'}`}
               >
                 {w}
               </button>
@@ -146,7 +146,7 @@ function ForecastChart() {
               onChange={(e) => setShowConfidence(e.target.checked)}
               className="w-4 h-4 accent-acid"
             />
-            <span className="font-body text-[14px] text-[rgba(255,255,255,0.42)]">Confidence bands</span>
+            <span className="font-body text-[14px] text-[rgba(var(--fg-rgb),0.42)]">Confidence bands</span>
           </label>
         </div>
       </div>
@@ -161,40 +161,40 @@ function ForecastChart() {
             <AreaChart data={forecast.points}>
               <defs>
                 <linearGradient id="actualFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#C8FF00" stopOpacity={0.4} />
-                  <stop offset="100%" stopColor="#C8FF00" stopOpacity={0} />
+                  <stop offset="0%" stopColor="rgb(var(--color-acid))" stopOpacity={0.4} />
+                  <stop offset="100%" stopColor="rgb(var(--color-acid))" stopOpacity={0} />
                 </linearGradient>
                 <linearGradient id="projectedFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#00D4FF" stopOpacity={0.3} />
-                  <stop offset="100%" stopColor="#00D4FF" stopOpacity={0} />
+                  <stop offset="0%" stopColor="rgb(var(--color-electric))" stopOpacity={0.3} />
+                  <stop offset="100%" stopColor="rgb(var(--color-electric))" stopOpacity={0} />
                 </linearGradient>
                 <linearGradient id="confidenceFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#00D4FF" stopOpacity={0.08} />
-                  <stop offset="100%" stopColor="#00D4FF" stopOpacity={0.02} />
+                  <stop offset="0%" stopColor="rgb(var(--color-electric))" stopOpacity={0.08} />
+                  <stop offset="100%" stopColor="rgb(var(--color-electric))" stopOpacity={0.02} />
                 </linearGradient>
               </defs>
-              <CartesianGrid stroke="rgba(255,255,255,0.04)" vertical={false} />
-              <XAxis dataKey="label" tick={{ fill: 'rgba(255,255,255,0.42)', fontSize: 12, fontFamily: 'JetBrains Mono' }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: 'rgba(255,255,255,0.42)', fontSize: 12, fontFamily: 'JetBrains Mono' }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `$${v.toLocaleString()}`} />
+              <CartesianGrid stroke="var(--chart-grid)" vertical={false} />
+              <XAxis dataKey="label" tick={{ fill: 'rgba(var(--fg-rgb),0.42)', fontSize: 12, fontFamily: 'JetBrains Mono' }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fill: 'rgba(var(--fg-rgb),0.42)', fontSize: 12, fontFamily: 'JetBrains Mono' }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `$${v.toLocaleString()}`} />
               <Tooltip
                 contentStyle={{
-                  background: '#141428',
-                  border: '1px solid rgba(255,255,255,0.08)',
+                  background: 'rgb(var(--color-panel2))',
+                  border: '1px solid rgba(var(--fg-rgb),0.08)',
                   borderRadius: '12px',
                   fontFamily: 'JetBrains Mono',
                   fontSize: '12px',
-                  color: '#fff',
+                  color: 'rgb(var(--color-ink))',
                 }}
                 formatter={(value: number) => [`$${value.toLocaleString()}`, '']}
               />
               {showConfidence && (
                 <>
                   <Area type="monotone" dataKey="high" stroke="none" fill="url(#confidenceFill)" />
-                  <Area type="monotone" dataKey="low" stroke="none" fill="#06060E" />
+                  <Area type="monotone" dataKey="low" stroke="none" fill="rgb(var(--color-void))" />
                 </>
               )}
-              <Area type="monotone" dataKey="actual" stroke="#C8FF00" strokeWidth={2} fill="url(#actualFill)" connectNulls={false} dot={false} />
-              <Area type="monotone" dataKey="projected" stroke="#00D4FF" strokeWidth={2} strokeDasharray="6 4" fill="url(#projectedFill)" connectNulls={false} dot={false} />
+              <Area type="monotone" dataKey="actual" stroke="rgb(var(--color-acid))" strokeWidth={2} fill="url(#actualFill)" connectNulls={false} dot={false} />
+              <Area type="monotone" dataKey="projected" stroke="rgb(var(--color-electric))" strokeWidth={2} strokeDasharray="6 4" fill="url(#projectedFill)" connectNulls={false} dot={false} />
             </AreaChart>
           </ResponsiveContainer>
         </div>
@@ -209,10 +209,10 @@ function ForecastChart() {
               className={`flex items-center gap-2 transition-opacity ${window === pill.window ? '' : 'opacity-50 hover:opacity-80'}`}
             >
               <span className="w-2.5 h-2.5 rounded-full" style={{ background: pill.color }} />
-              <span className="font-mono text-[12px] text-[rgba(255,255,255,0.42)] tracking-[0.04em]">
+              <span className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em]">
                 {pill.label}:
               </span>
-              <span className="font-mono text-[18px] font-medium text-white tracking-[-0.02em]">
+              <span className="font-mono text-[18px] font-medium text-ink tracking-[-0.02em]">
                 ${pill.amount.toLocaleString()}
               </span>
             </button>
@@ -235,10 +235,10 @@ function Seasonality() {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.15 }}
       transition={{ duration: 0.5, ease: easeOutExpo }}
-      className="bg-panel border border-[rgba(255,255,255,0.08)] rounded-2xl p-6"
+      className="bg-panel border border-[rgba(var(--fg-rgb),0.08)] rounded-2xl p-6"
     >
-      <h3 className="font-display text-[36px] tracking-[0.02em] text-white mb-1">Seasonality</h3>
-      <p className="font-mono text-[12px] text-[rgba(255,255,255,0.42)] tracking-[0.04em] mb-6">
+      <h3 className="font-display text-[36px] tracking-[0.02em] text-ink mb-1">Seasonality</h3>
+      <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em] mb-6">
         Your income index by month (100 = your average)
       </p>
       {error ? (
@@ -253,7 +253,7 @@ function Seasonality() {
             const isTrough = m.index <= 85;
             return (
               <div key={m.month} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end">
-                <span className="font-mono text-[10px] text-[rgba(255,255,255,0.42)]">{m.index}</span>
+                <span className="font-mono text-[10px] text-[rgba(var(--fg-rgb),0.42)]">{m.index}</span>
                 <motion.div
                   initial={{ height: 0 }}
                   whileInView={{ height: `${(m.index / max) * 100}%` }}
@@ -262,13 +262,13 @@ function Seasonality() {
                   className="w-full rounded-t-md"
                   style={{
                     background: isPeak
-                      ? 'linear-gradient(180deg, #C8FF00, rgba(200,255,0,0.3))'
+                      ? 'linear-gradient(180deg, rgb(var(--color-acid)), rgba(var(--acid-rgb),0.3))'
                       : isTrough
-                      ? 'rgba(255,77,77,0.4)'
-                      : 'rgba(0,212,255,0.3)',
+                      ? 'rgba(var(--negative-rgb),0.4)'
+                      : 'rgba(var(--electric-rgb),0.3)',
                   }}
                 />
-                <span className="font-mono text-[10px] text-[rgba(255,255,255,0.42)]">{m.month}</span>
+                <span className="font-mono text-[10px] text-[rgba(var(--fg-rgb),0.42)]">{m.month}</span>
               </div>
             );
           })}
@@ -291,15 +291,15 @@ function TaxTrackerCard() {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.15 }}
       transition={{ duration: 0.5, ease: easeOutExpo }}
-      className="bg-panel border border-[rgba(255,255,255,0.08)] rounded-2xl p-6"
+      className="bg-panel border border-[rgba(var(--fg-rgb),0.08)] rounded-2xl p-6"
     >
       <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 rounded-full bg-[rgba(255,212,0,0.15)] flex items-center justify-center">
-          <Landmark size={20} style={{ color: '#FFD400' }} />
+        <div className="w-10 h-10 rounded-full bg-[rgba(var(--gold-rgb),0.15)] flex items-center justify-center">
+          <Landmark size={20} style={{ color: 'rgb(var(--color-gold))' }} />
         </div>
         <div>
-          <h3 className="font-display text-[36px] tracking-[0.02em] text-white">Tax Tracker</h3>
-          <p className="font-mono text-[12px] text-[rgba(255,255,255,0.42)] tracking-[0.04em]">
+          <h3 className="font-display text-[36px] tracking-[0.02em] text-ink">Tax Tracker</h3>
+          <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em]">
             Estimated self-employment taxes
           </p>
         </div>
@@ -323,30 +323,30 @@ function TaxTrackerCard() {
               { label: 'Set Aside', value: `$${tax.setAside.toLocaleString()}` },
             ].map((stat) => (
               <div key={stat.label} className="bg-panel2 rounded-xl p-4">
-                <p className="font-mono text-[11px] text-[rgba(255,255,255,0.42)] tracking-[0.04em] mb-1">
+                <p className="font-mono text-[11px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em] mb-1">
                   {stat.label}
                 </p>
-                <p className="font-mono text-[18px] font-medium text-white tracking-[-0.02em]">{stat.value}</p>
+                <p className="font-mono text-[18px] font-medium text-ink tracking-[-0.02em]">{stat.value}</p>
               </div>
             ))}
           </div>
 
           <div className="mb-2 flex items-center justify-between">
-            <span className="font-mono text-[12px] text-[rgba(255,255,255,0.42)]">
+            <span className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)]">
               {Math.round((tax.setAside / tax.estimatedOwed) * 100)}% covered
             </span>
-            <span className="font-mono text-[12px] text-[rgba(255,255,255,0.42)]">
+            <span className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)]">
               Next deadline: {tax.nextDeadline}
             </span>
           </div>
-          <div className="h-2.5 bg-[rgba(255,255,255,0.06)] rounded-full overflow-hidden">
+          <div className="h-2.5 bg-[rgba(var(--fg-rgb),0.06)] rounded-full overflow-hidden">
             <motion.div
               initial={{ width: 0 }}
               whileInView={{ width: `${Math.min(100, (tax.setAside / tax.estimatedOwed) * 100)}%` }}
               viewport={{ once: true }}
               transition={{ duration: 0.8, ease: easeOutExpo }}
               className="h-full rounded-full"
-              style={{ background: 'linear-gradient(90deg, #FFD400, #C8FF00)' }}
+              style={{ background: 'linear-gradient(90deg, rgb(var(--color-gold)), rgb(var(--color-acid)))' }}
             />
           </div>
         </>
@@ -381,17 +381,17 @@ function ReserveBuilderCard() {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.15 }}
       transition={{ duration: 0.5, ease: easeOutExpo }}
-      className="rounded-2xl p-6 border border-[rgba(0,229,160,0.15)]"
-      style={{ background: 'linear-gradient(135deg, #0F0F1E 0%, rgba(0,229,160,0.04) 100%)' }}
+      className="rounded-2xl p-6 border border-[rgba(var(--positive-rgb),0.15)]"
+      style={{ background: 'linear-gradient(135deg, rgb(var(--color-panel)) 0%, rgba(var(--positive-rgb),0.04) 100%)' }}
     >
       <div className="flex items-center justify-between gap-3 mb-6">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-[rgba(0,229,160,0.15)] flex items-center justify-center">
-            <PiggyBank size={20} style={{ color: '#00E5A0' }} />
+          <div className="w-10 h-10 rounded-full bg-[rgba(var(--positive-rgb),0.15)] flex items-center justify-center">
+            <PiggyBank size={20} style={{ color: 'rgb(var(--color-positive))' }} />
           </div>
           <div>
-            <h3 className="font-display text-[36px] tracking-[0.02em] text-white">Reserve Builder</h3>
-            <p className="font-mono text-[12px] text-[rgba(255,255,255,0.42)] tracking-[0.04em]">
+            <h3 className="font-display text-[36px] tracking-[0.02em] text-ink">Reserve Builder</h3>
+            <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em]">
               Smooth out slow months with an income buffer
             </p>
           </div>
@@ -411,12 +411,12 @@ function ReserveBuilderCard() {
         <>
           <div className="flex flex-wrap items-end justify-between gap-4 mb-3">
             <div>
-              <p className="font-mono text-[12px] text-[rgba(255,255,255,0.42)] tracking-[0.04em] mb-1">
+              <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em] mb-1">
                 Saved so far
               </p>
-              <p className="font-mono text-[40px] font-medium text-white tracking-[-0.02em] leading-none">
+              <p className="font-mono text-[40px] font-medium text-ink tracking-[-0.02em] leading-none">
                 ${reserve.current.toLocaleString()}
-                <span className="text-[18px] text-[rgba(255,255,255,0.42)]"> / ${reserve.goal.toLocaleString()}</span>
+                <span className="text-[18px] text-[rgba(var(--fg-rgb),0.42)]"> / ${reserve.goal.toLocaleString()}</span>
               </p>
             </div>
             <span className="font-mono text-[13px] text-positive">
@@ -424,21 +424,21 @@ function ReserveBuilderCard() {
             </span>
           </div>
 
-          <div className="h-2.5 bg-[rgba(255,255,255,0.06)] rounded-full overflow-hidden mb-6">
+          <div className="h-2.5 bg-[rgba(var(--fg-rgb),0.06)] rounded-full overflow-hidden mb-6">
             <motion.div
               initial={{ width: 0 }}
               whileInView={{ width: `${Math.min(100, (reserve.current / reserve.goal) * 100)}%` }}
               viewport={{ once: true }}
               transition={{ duration: 0.8, ease: easeOutExpo }}
               className="h-full rounded-full"
-              style={{ background: 'linear-gradient(90deg, #00E5A0, #C8FF00)' }}
+              style={{ background: 'linear-gradient(90deg, rgb(var(--color-positive)), rgb(var(--color-acid)))' }}
             />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <span className="font-body text-[14px] text-white">Monthly contribution</span>
+                <span className="font-body text-[14px] text-ink">Monthly contribution</span>
                 <span className="font-mono text-[14px] text-positive">${reserve.monthlyTarget.toLocaleString()}</span>
               </div>
               <input
@@ -452,21 +452,21 @@ function ReserveBuilderCard() {
                 onTouchEnd={() => updateReserve({ monthlyTarget: reserve.monthlyTarget })}
                 className="w-full accent-acid cursor-pointer"
               />
-              <p className="font-mono text-[11px] text-[rgba(255,255,255,0.42)] mt-1">
+              <p className="font-mono text-[11px] text-[rgba(var(--fg-rgb),0.42)] mt-1">
                 At this pace you'll hit your goal in{' '}
                 {Math.max(1, Math.ceil((reserve.goal - reserve.current) / reserve.monthlyTarget))} months
               </p>
             </div>
             <div className="flex items-center justify-between bg-panel2 rounded-xl px-4 py-3 self-start">
               <div>
-                <p className="font-body text-[14px] text-white">Auto-contribute</p>
-                <p className="font-mono text-[11px] text-[rgba(255,255,255,0.42)]">
+                <p className="font-body text-[14px] text-ink">Auto-contribute</p>
+                <p className="font-mono text-[11px] text-[rgba(var(--fg-rgb),0.42)]">
                   Move funds automatically on payout days
                 </p>
               </div>
               <button
                 onClick={() => updateReserve({ autoContribute: !reserve.autoContribute })}
-                className={`relative w-[44px] h-[24px] rounded-full transition-colors flex-shrink-0 ${reserve.autoContribute ? 'bg-acid' : 'bg-[rgba(255,255,255,0.12)]'}`}
+                className={`relative w-[44px] h-[24px] rounded-full transition-colors flex-shrink-0 ${reserve.autoContribute ? 'bg-acid' : 'bg-[rgba(var(--fg-rgb),0.12)]'}`}
               >
                 <motion.div
                   animate={{ x: reserve.autoContribute ? 20 : 4 }}

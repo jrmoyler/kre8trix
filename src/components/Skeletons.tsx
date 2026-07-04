@@ -1,12 +1,12 @@
 /* App-styled loading skeletons used while API data is in flight. */
 
 export function SkeletonBlock({ className = '' }: { className?: string }) {
-  return <div className={`animate-pulse rounded-xl bg-[rgba(255,255,255,0.06)] ${className}`} />;
+  return <div className={`animate-pulse rounded-xl bg-[rgba(var(--fg-rgb),0.06)] ${className}`} />;
 }
 
 export function BalanceCardSkeleton() {
   return (
-    <div className="rounded-2xl p-6 bg-panel border border-[rgba(255,255,255,0.08)]">
+    <div className="rounded-2xl p-6 bg-panel border border-[rgba(var(--fg-rgb),0.08)]">
       <SkeletonBlock className="h-3 w-24 mb-4" />
       <SkeletonBlock className="h-9 w-44 mb-3" />
       <SkeletonBlock className="h-5 w-32" />
@@ -16,9 +16,9 @@ export function BalanceCardSkeleton() {
 
 export function ScoreCardSkeleton() {
   return (
-    <div className="rounded-2xl p-8 bg-panel border border-[rgba(255,255,255,0.08)] flex flex-col items-center">
+    <div className="rounded-2xl p-8 bg-panel border border-[rgba(var(--fg-rgb),0.08)] flex flex-col items-center">
       <SkeletonBlock className="h-6 w-48 mb-8 self-start" />
-      <div className="animate-pulse rounded-full bg-[rgba(255,255,255,0.06)] w-[200px] h-[200px] mb-6" />
+      <div className="animate-pulse rounded-full bg-[rgba(var(--fg-rgb),0.06)] w-[200px] h-[200px] mb-6" />
       <SkeletonBlock className="h-6 w-24 mb-2" />
       <SkeletonBlock className="h-3 w-32" />
     </div>
@@ -28,13 +28,13 @@ export function ScoreCardSkeleton() {
 export function ChartSkeleton({ height = 350 }: { height?: number }) {
   return (
     <div
-      className="animate-pulse rounded-xl bg-[rgba(255,255,255,0.04)] flex items-end justify-around gap-2 p-6"
+      className="animate-pulse rounded-xl bg-[rgba(var(--fg-rgb),0.04)] flex items-end justify-around gap-2 p-6"
       style={{ height }}
     >
       {[45, 65, 40, 75, 55, 85, 60, 95].map((h, i) => (
         <div
           key={i}
-          className="w-full rounded-t-lg bg-[rgba(255,255,255,0.05)]"
+          className="w-full rounded-t-lg bg-[rgba(var(--fg-rgb),0.05)]"
           style={{ height: `${h}%` }}
         />
       ))}
@@ -47,7 +47,7 @@ export function TransactionListSkeleton({ rows = 6 }: { rows?: number }) {
     <div className="space-y-2">
       {Array.from({ length: rows }).map((_, i) => (
         <div key={i} className="flex items-center gap-4 py-3 px-4">
-          <div className="animate-pulse w-10 h-10 rounded-full bg-[rgba(255,255,255,0.06)] flex-shrink-0" />
+          <div className="animate-pulse w-10 h-10 rounded-full bg-[rgba(var(--fg-rgb),0.06)] flex-shrink-0" />
           <div className="flex-1 space-y-2">
             <SkeletonBlock className="h-3.5 w-40" />
             <SkeletonBlock className="h-2.5 w-24" />
