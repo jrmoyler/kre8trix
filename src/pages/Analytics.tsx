@@ -72,13 +72,13 @@ function RevenueOverview({
       transition={{ duration: 0.5, ease: easeOutExpo }}
     >
       <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-        <h3 className="font-display text-[36px] tracking-[0.02em] text-white">Revenue Overview</h3>
-        <div className="flex bg-[rgba(255,255,255,0.06)] rounded-xl p-1">
+        <h3 className="font-display text-[36px] tracking-[0.02em] text-ink">Revenue Overview</h3>
+        <div className="flex bg-[rgba(var(--fg-rgb),0.06)] rounded-xl p-1">
           {TIME_RANGES.map((r) => (
             <button
               key={r.label}
               onClick={() => onRangeChange(r)}
-              className={`px-4 py-2 rounded-lg font-body text-[14px] font-medium transition-all ${range.label === r.label ? 'bg-acid text-void' : 'text-[rgba(255,255,255,0.42)] hover:text-white'}`}
+              className={`px-4 py-2 rounded-lg font-body text-[14px] font-medium transition-all ${range.label === r.label ? 'bg-acid text-void' : 'text-[rgba(var(--fg-rgb),0.42)] hover:text-ink'}`}
             >
               {r.label}
             </button>
@@ -93,10 +93,10 @@ function RevenueOverview({
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.08, duration: 0.4, ease: easeOutExpo }}
-            className="bg-panel border border-[rgba(255,255,255,0.08)] rounded-2xl p-5 hover:border-[rgba(255,255,255,0.14)] hover:-translate-y-0.5 transition-all duration-300"
+            className="bg-panel border border-[rgba(var(--fg-rgb),0.08)] rounded-2xl p-5 hover:border-[rgba(var(--fg-rgb),0.14)] hover:-translate-y-0.5 transition-all duration-300"
           >
-            <p className="font-mono text-[12px] text-[rgba(255,255,255,0.42)] tracking-[0.04em] mb-2">{m.label}</p>
-            <p className="font-mono text-[20px] font-medium text-white mb-2">{m.value}</p>
+            <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em] mb-2">{m.label}</p>
+            <p className="font-mono text-[20px] font-medium text-ink mb-2">{m.value}</p>
             <div className="flex items-center gap-1">
               {m.positive ? (
                 <TrendingUp size={12} className="text-positive" />
@@ -127,16 +127,16 @@ function RevenueByPlatform({ months }: { months: number }) {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.15 }}
       transition={{ duration: 0.5, ease: easeOutExpo }}
-      className="bg-panel border border-[rgba(255,255,255,0.08)] rounded-2xl p-6"
+      className="bg-panel border border-[rgba(var(--fg-rgb),0.08)] rounded-2xl p-6"
     >
       <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-        <h3 className="font-display text-[36px] tracking-[0.02em] text-white">Revenue by Platform</h3>
-        <div className="flex bg-[rgba(255,255,255,0.06)] rounded-xl p-1">
+        <h3 className="font-display text-[36px] tracking-[0.02em] text-ink">Revenue by Platform</h3>
+        <div className="flex bg-[rgba(var(--fg-rgb),0.06)] rounded-xl p-1">
           {(['stacked', 'grouped'] as const).map((m) => (
             <button
               key={m}
               onClick={() => setChartMode(m)}
-              className={`px-4 py-2 rounded-lg font-body text-[14px] font-medium capitalize transition-all ${chartMode === m ? 'bg-acid text-void' : 'text-[rgba(255,255,255,0.42)] hover:text-white'}`}
+              className={`px-4 py-2 rounded-lg font-body text-[14px] font-medium capitalize transition-all ${chartMode === m ? 'bg-acid text-void' : 'text-[rgba(var(--fg-rgb),0.42)] hover:text-ink'}`}
             >
               {m}
             </button>
@@ -147,23 +147,23 @@ function RevenueByPlatform({ months }: { months: number }) {
       <div style={{ height: 400 }}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data}>
-            <CartesianGrid stroke="rgba(255,255,255,0.04)" vertical={false} />
-            <XAxis dataKey="month" tick={{ fill: 'rgba(255,255,255,0.42)', fontSize: 12, fontFamily: 'JetBrains Mono' }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fill: 'rgba(255,255,255,0.42)', fontSize: 12, fontFamily: 'JetBrains Mono' }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `$${v.toLocaleString()}`} />
+            <CartesianGrid stroke="var(--chart-grid)" vertical={false} />
+            <XAxis dataKey="month" tick={{ fill: 'rgba(var(--fg-rgb),0.42)', fontSize: 12, fontFamily: 'JetBrains Mono' }} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fill: 'rgba(var(--fg-rgb),0.42)', fontSize: 12, fontFamily: 'JetBrains Mono' }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `$${v.toLocaleString()}`} />
             <Tooltip
               contentStyle={{
-                background: '#141428',
-                border: '1px solid rgba(255,255,255,0.08)',
+                background: 'rgb(var(--color-panel2))',
+                border: '1px solid rgba(var(--fg-rgb),0.08)',
                 borderRadius: '12px',
                 fontFamily: 'JetBrains Mono',
                 fontSize: '12px',
-                color: '#fff',
+                color: 'rgb(var(--color-ink))',
               }}
               formatter={(value: number) => [`$${value.toLocaleString()}`, '']}
             />
             <Legend
               wrapperStyle={{ fontFamily: 'JetBrains Mono', fontSize: '12px', paddingTop: '16px' }}
-              formatter={(value: string) => <span style={{ color: 'rgba(255,255,255,0.42)' }}>{value}</span>}
+              formatter={(value: string) => <span style={{ color: 'rgba(var(--fg-rgb),0.42)' }}>{value}</span>}
             />
             <Bar dataKey="YouTube" stackId={chartMode === 'stacked' ? 'a' : undefined} fill="#FF0000" radius={[0, 0, 0, 0]} />
             <Bar dataKey="Stripe" stackId={chartMode === 'stacked' ? 'a' : undefined} fill="#635BFF" radius={[0, 0, 0, 0]} />

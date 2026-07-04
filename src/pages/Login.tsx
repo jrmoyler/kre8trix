@@ -4,11 +4,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, Lock, Mail, User } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { ApiError } from '@/lib/api';
+import { EMAIL_RE } from '@/lib/types';
 
 type Mode = 'login' | 'signup';
 
 const inputClass =
-  'w-full bg-surface border border-[rgba(255,255,255,0.1)] rounded-xl pl-11 pr-4 py-3.5 font-body text-[15px] text-white placeholder:text-[rgba(255,255,255,0.25)] focus:border-electric outline-none transition-colors';
+  'w-full bg-surface border border-[rgba(var(--fg-rgb),0.1)] rounded-xl pl-11 pr-4 py-3.5 font-body text-[15px] text-ink placeholder:text-[rgba(var(--fg-rgb),0.25)] focus:border-electric outline-none transition-colors';
 
 export default function Login() {
   const { login, signup } = useAuth();
@@ -26,6 +27,19 @@ export default function Login() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
+    // Client-side validation mirroring the API boundary rules.
+    if (mode === 'signup' && !name.trim()) {
+      setError('Name is required');
+      return;
+    }
+    if (!EMAIL_RE.test(email.trim())) {
+      setError('Enter a valid email address');
+      return;
+    }
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
+    }
     setSubmitting(true);
     try {
       if (mode === 'login') {
@@ -52,7 +66,7 @@ export default function Login() {
       >
         <div className="text-center mb-8">
           <span className="font-display text-[36px] tracking-[0.02em] text-acid">KRE8TRIX</span>
-          <p className="font-body text-[14px] text-[rgba(255,255,255,0.42)] mt-1">
+          <p className="font-body text-[14px] text-[rgba(var(--fg-rgb),0.42)] mt-1">
             The financial OS for creators
           </p>
         </div>
@@ -60,12 +74,12 @@ export default function Login() {
         <div
           className="rounded-2xl p-8"
           style={{
-            background: 'linear-gradient(135deg, #0F0F1E 0%, rgba(200,255,0,0.03) 100%)',
-            border: '1px solid rgba(255,255,255,0.08)',
+            background: 'linear-gradient(135deg, rgb(var(--color-panel)) 0%, rgba(var(--acid-rgb),0.03) 100%)',
+            border: '1px solid rgba(var(--fg-rgb),0.08)',
           }}
         >
           {/* Mode toggle */}
-          <div className="flex bg-[rgba(255,255,255,0.06)] rounded-xl p-1 mb-6">
+          <div className="flex bg-[rgba(var(--fg-rgb),0.06)] rounded-xl p-1 mb-6">
             {(['login', 'signup'] as const).map((m) => (
               <button
                 key={m}
@@ -75,7 +89,7 @@ export default function Login() {
                   setError(null);
                 }}
                 className={`flex-1 py-2.5 rounded-lg font-body text-[14px] font-medium transition-all ${
-                  mode === m ? 'bg-acid text-void' : 'text-[rgba(255,255,255,0.42)] hover:text-white'
+                  mode === m ? 'bg-acid text-void' : 'text-[rgba(var(--fg-rgb),0.42)] hover:text-ink'
                 }`}
               >
                 {m === 'login' ? 'Sign In' : 'Create Account'}
@@ -93,7 +107,7 @@ export default function Login() {
                   exit={{ opacity: 0, height: 0 }}
                   className="relative overflow-hidden"
                 >
-                  <User size={16} className="absolute left-4 top-[18px] text-[rgba(255,255,255,0.42)]" />
+                  <User size={16} className="absolute left-4 top-[18px] text-[rgba(var(--fg-rgb),0.42)]" />
                   <input
                     type="text"
                     value={name}
@@ -107,7 +121,7 @@ export default function Login() {
             </AnimatePresence>
 
             <div className="relative">
-              <Mail size={16} className="absolute left-4 top-[18px] text-[rgba(255,255,255,0.42)]" />
+              <Mail size={16} className="absolute left-4 top-[18px] text-[rgba(var(--fg-rgb),0.42)]" />
               <input
                 type="email"
                 value={email}
@@ -119,7 +133,7 @@ export default function Login() {
             </div>
 
             <div className="relative">
-              <Lock size={16} className="absolute left-4 top-[18px] text-[rgba(255,255,255,0.42)]" />
+              <Lock size={16} className="absolute left-4 top-[18px] text-[rgba(var(--fg-rgb),0.42)]" />
               <input
                 type="password"
                 value={password}
@@ -155,7 +169,7 @@ export default function Login() {
             </motion.button>
           </form>
 
-          <p className="font-mono text-[11px] text-[rgba(255,255,255,0.3)] tracking-[0.04em] text-center mt-6">
+          <p className="font-mono text-[11px] text-[rgba(var(--fg-rgb),0.3)] tracking-[0.04em] text-center mt-6">
             Demo environment — any email and a 6+ character password works
           </p>
         </div>

@@ -30,6 +30,9 @@ export interface WalletTransaction {
   amount: number;
   status: 'Completed' | 'Pending' | 'Failed';
   iconColor: string;
+  /* C1: set on creator-to-creator sends */
+  recipientHandle?: string;
+  recipientAddress?: string;
 }
 
 export interface SendPayload {
@@ -188,11 +191,188 @@ export interface AppSettings {
   defaultPayoutWallet: string;
 }
 
+/* ── C5: notifications ── */
+
+export type NotificationType = 'payment' | 'advance' | 'ccs' | 'tax' | 'platform' | 'system';
+
 export interface AppNotification {
   id: string;
+  type: NotificationType;
   title: string;
   body: string;
-  time: string;
+  /** In-app route opened when the notification is clicked. */
+  actionPath: string;
   read: boolean;
-  accentColor: string;
+  /** ISO 8601 timestamp. */
+  createdAt: string;
+}
+
+/* ────────────────────────────────────────────────────────────────
+ * C1 — creator-to-creator payments
+ * ──────────────────────────────────────────────────────────────── */
+
+/** A creator that can receive payments, returned by GET /creators/search. */
+export interface Creator {
+  id: string;
+  /** Includes the leading '@'. */
+  handle: string;
+  displayName: string;
+  /** Avatar initials, e.g. "ZO". */
+  initials: string;
+  /** Solana wallet address (base58). */
+  walletAddress: string;
+}
+
+/** Entry in the "Recent recipients" row, returned by GET /wallet/recipients. */
+export interface RecentRecipient {
+  id: string;
+  /** Null when the send went to a raw wallet address. */
+  handle: string | null;
+  displayName: string;
+  walletAddress: string;
+  /** Human-readable date label of the most recent send, e.g. "Oct 12, 2024". */
+  lastSentAt: string;
+}
+
+/** Solana wallet address check: base58 alphabet, 32-44 chars. */
+export const SOLANA_ADDRESS_RE = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
+
+/** Pragmatic email shape check (local@domain.tld) shared by the login form
+ *  and the mock API boundary — mirrors what a real API must enforce. */
+export const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/* ── C2: brand deal marketplace ──────────────────────────────────── */
+
+export type DealSort = 'match' | 'payout' | 'deadline';
+
+export interface BrandDeal {
+  id: string;
+  brand: string;
+  /** Accent color for the brand's initials logo. */
+  brandColor: string;
+  /** Short "about the brand" blurb shown in the detail view. */
+  brandAbout: string;
+  category: string;
+  tagline: string;
+  payoutMin: number;
+  payoutMax: number;
+  deliverables: string[];
+  requirements: string[];
+  payoutTerms: string;
+  /** ISO date (YYYY-MM-DD) — sortable lexicographically. */
+  deadline: string;
+  /** Creator/brand fit, 0-100. */
+  matchScore: number;
+  /** True when the current user has an application for this deal. */
+  applied: boolean;
+}
+
+export interface DealApplication {
+  id: string;
+  dealId: string;
+  brand: string;
+  brandColor: string;
+  category: string;
+  payoutMin: number;
+  payoutMax: number;
+  pitch: string;
+  submitted: string;
+  status: 'Pending' | 'Accepted';
+}
+
+export interface DealApplyResponse {
+  application: DealApplication;
+}
+/* ─────────────── C3: Tax Center ─────────────── */
+
+export type FilingStatus = 'single' | 'married_joint' | 'married_separate' | 'head_of_household';
+
+export interface TaxEstimateSettings {
+  /** Effective tax rate applied to YTD income (percent, 10-50). */
+  effectiveRatePercent: number;
+  filingStatus: FilingStatus;
+}
+
+export interface QuarterlyEstimate {
+  quarter: 'Q1' | 'Q2' | 'Q3' | 'Q4';
+  period: string;
+  dueDate: string;
+  amount: number;
+  /** Portion of `amount` already covered by the tax reserve. */
+  reserved: number;
+  status: 'Covered' | 'Partial' | 'Unfunded';
+}
+
+export interface TurboTaxConnection {
+  connected: boolean;
+  account: string | null;
+  lastSync: string | null;
+}
+
+export interface TaxSummary {
+  taxYear: number;
+  ytdIncome: number;
+  settings: TaxEstimateSettings;
+  totalEstimated: number;
+  reserved: number;
+  stillNeeded: number;
+  quarters: QuarterlyEstimate[];
+  turbotax: TurboTaxConnection;
+}
+
+export interface Ten99kRow {
+  platform: string;
+  color: string;
+  grossPayments: number;
+  transactionCount: number;
+  /** Federal 1099-K reporting threshold for gross payments. */
+  threshold: number;
+  formStatus: 'Expected' | 'On track' | 'Below threshold';
+}
+
+/* ─────────────── end C3: Tax Center ─────────────── */
+/* ── C4: platform connect OAuth (authorization-code flow) ────── */
+
+/** Platforms that connect via the OAuth 2.0 authorization-code flow. */
+export type OAuthPlatform = 'youtube' | 'tiktok' | 'stripe';
+
+/** Response of GET /oauth/:platform/start. */
+export interface OAuthStartResponse {
+  platform: OAuthPlatform;
+  /** SPA path of the provider consent screen, carrying the OAuth params. */
+  authorizeUrl: string;
+  /** Random CSRF state token — also persisted client-side for validation. */
+  state: string;
+}
+
+/** Body of POST /oauth/authorize/decision (mock provider consent screen). */
+export interface OAuthDecisionPayload {
+  state: string;
+  decision: 'allow' | 'deny';
+}
+
+/** Response of POST /oauth/authorize/decision. */
+export interface OAuthDecisionResponse {
+  /** SPA path the provider redirects back to (the client redirect_uri). */
+  redirect: string;
+}
+
+/** Body of POST /oauth/token. */
+export interface OAuthTokenPayload {
+  grant_type: 'authorization_code';
+  code: string;
+  redirect_uri: string;
+  client_id: string;
+}
+
+/** Response of POST /oauth/token. */
+export interface OAuthTokenResponse {
+  access_token: string;
+  token_type: 'Bearer';
+  expires_in: number;
+  refresh_token: string;
+  scope: string;
+  platform: OAuthPlatform;
+  /** Updated connections snapshot so the UI can reflect the new link. */
+  connections: PlatformConnection[];
 }

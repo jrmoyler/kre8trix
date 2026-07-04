@@ -50,6 +50,8 @@ export interface MockContext {
   body: unknown;
   /** Bearer token from the Authorization header (null when logged out). */
   token: string | null;
+  /** C5: path params captured from `:param` segments in the registered path. */
+  params: Record<string, string>;
 }
 
 export type MockHandler = (ctx: MockContext) => unknown;
@@ -67,9 +69,44 @@ function delay(ms: number) {
   return new Promise<void>((resolve) => setTimeout(resolve, ms));
 }
 
+/* C5: registered paths may declare `:param` segments (e.g. `/notifications/:id/read`).
+   Exact-path handlers still win; patterns are only consulted on an exact-lookup miss. */
+function matchMockRoute(
+  method: HttpMethod,
+  pathname: string,
+): { handler: MockHandler; params: Record<string, string> } | null {
+  const requestSegments = pathname.split('/');
+  for (const [key, handler] of mockRegistry) {
+    if (!key.startsWith(`${method} `) || !key.includes('/:')) continue;
+    const patternSegments = key.slice(method.length + 1).split('/');
+    if (patternSegments.length !== requestSegments.length) continue;
+    const params: Record<string, string> = {};
+    let matched = true;
+    for (let i = 0; i < patternSegments.length; i++) {
+      const segment = patternSegments[i];
+      if (segment.startsWith(':')) {
+        params[segment.slice(1)] = decodeURIComponent(requestSegments[i]);
+      } else if (segment !== requestSegments[i]) {
+        matched = false;
+        break;
+      }
+    }
+    if (matched) return { handler, params };
+  }
+  return null;
+}
+
 async function dispatchMock(method: HttpMethod, path: string, body?: unknown): Promise<unknown> {
   const [pathname, search = ''] = path.split('?');
-  const handler = mockRegistry.get(`${method} ${pathname}`);
+  let handler = mockRegistry.get(`${method} ${pathname}`);
+  let params: Record<string, string> = {};
+  if (!handler) {
+    const match = matchMockRoute(method, pathname);
+    if (match) {
+      handler = match.handler;
+      params = match.params;
+    }
+  }
   if (!handler) {
     throw new ApiError(404, `No mock handler for ${method} ${pathname}`);
   }
@@ -79,7 +116,7 @@ async function dispatchMock(method: HttpMethod, path: string, body?: unknown): P
   });
 
   await delay(MOCK_LATENCY_MS * (0.6 + Math.random() * 0.8));
-  return handler({ query, body, token: getToken() });
+  return handler({ query, body, token: getToken(), params });
 }
 
 /* ─────────────────────────── real transport ─────────────────────────── */
@@ -123,10 +160,17 @@ async function dispatchFetch(method: HttpMethod, path: string, body?: unknown): 
 /* ─────────────────────────── public API ─────────────────────────── */
 
 async function request<T>(method: HttpMethod, path: string, body?: unknown): Promise<T> {
-  if (API_URL) {
-    return (await dispatchFetch(method, path, body)) as T;
+  try {
+    if (API_URL) {
+      return (await dispatchFetch(method, path, body)) as T;
+    }
+    return (await dispatchMock(method, path, body)) as T;
+  } catch (err) {
+    // A 401 means the session is no longer valid — drop the stored token
+    // regardless of which transport (real or mock) produced it.
+    if (err instanceof ApiError && err.status === 401) clearToken();
+    throw err;
   }
-  return (await dispatchMock(method, path, body)) as T;
 }
 
 export const api = {
