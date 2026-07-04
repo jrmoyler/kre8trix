@@ -30,6 +30,9 @@ export interface WalletTransaction {
   amount: number;
   status: 'Completed' | 'Pending' | 'Failed';
   iconColor: string;
+  /* C1: set on creator-to-creator sends */
+  recipientHandle?: string;
+  recipientAddress?: string;
 }
 
 export interface SendPayload {
@@ -196,3 +199,33 @@ export interface AppNotification {
   read: boolean;
   accentColor: string;
 }
+
+/* ────────────────────────────────────────────────────────────────
+ * C1 — creator-to-creator payments
+ * ──────────────────────────────────────────────────────────────── */
+
+/** A creator that can receive payments, returned by GET /creators/search. */
+export interface Creator {
+  id: string;
+  /** Includes the leading '@'. */
+  handle: string;
+  displayName: string;
+  /** Avatar initials, e.g. "ZO". */
+  initials: string;
+  /** Solana wallet address (base58). */
+  walletAddress: string;
+}
+
+/** Entry in the "Recent recipients" row, returned by GET /wallet/recipients. */
+export interface RecentRecipient {
+  id: string;
+  /** Null when the send went to a raw wallet address. */
+  handle: string | null;
+  displayName: string;
+  walletAddress: string;
+  /** Human-readable date label of the most recent send, e.g. "Oct 12, 2024". */
+  lastSentAt: string;
+}
+
+/** Solana wallet address check: base58 alphabet, 32-44 chars. */
+export const SOLANA_ADDRESS_RE = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;

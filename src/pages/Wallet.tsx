@@ -14,13 +14,34 @@ import {
 import { toast } from 'sonner';
 import { api, ApiError } from '@/lib/api';
 import { useApi } from '@/hooks/use-api';
-import type { WalletBalances, WalletMutationResponse, WalletTransaction } from '@/lib/types';
-import { BalanceCardSkeleton, ErrorNotice, TransactionListSkeleton } from '@/components/Skeletons';
+import { useAuth } from '@/lib/auth-context';
+import { SOLANA_ADDRESS_RE } from '@/lib/types';
+import type {
+  Creator,
+  RecentRecipient,
+  WalletBalances,
+  WalletMutationResponse,
+  WalletTransaction,
+} from '@/lib/types';
+import InitialsAvatar from '@/components/InitialsAvatar';
+import {
+  BalanceCardSkeleton,
+  ErrorNotice,
+  SkeletonBlock,
+  TransactionListSkeleton,
+} from '@/components/Skeletons';
 
 /* ------------------------------------------------------------------ */
 /*  Static data                                                        */
 /* ------------------------------------------------------------------ */
 const WALLET_ADDRESS = 'Hx3fK9mNpQr2sT5vW8xYzAbCdEfGhIjKlMnOpQrStUv9kL2';
+
+/* ------------------------------------------------------------------ */
+/*  C1 — creator-to-creator payment helpers                            */
+/* ------------------------------------------------------------------ */
+function shortenAddress(address: string): string {
+  return `${address.slice(0, 4)}…${address.slice(-4)}`;
+}
 
 /* ------------------------------------------------------------------ */
 /*  Animated number component                                          */
@@ -115,15 +136,26 @@ export default function Wallet() {
     setSearchParams({ action: tab }, { replace: true });
   };
 
+  const { user } = useAuth();
+
   /* API state */
   const balancesQuery = useApi<WalletBalances>('/wallet/balances');
   const transactionsQuery = useApi<WalletTransaction[]>('/wallet/transactions');
+  const recipientsQuery = useApi<RecentRecipient[]>('/wallet/recipients');
   const balances = balancesQuery.data;
 
   /* Form state */
   const [sendCurrency, setSendCurrency] = useState<'USD' | 'USDC'>('USD');
   const [sendAmount, setSendAmount] = useState('');
   const [sendRecipient, setSendRecipient] = useState('');
+
+  /* C1 — recipient lookup state */
+  const [selectedCreator, setSelectedCreator] = useState<Creator | null>(null);
+  const [creatorResults, setCreatorResults] = useState<Creator[]>([]);
+  const [creatorSearching, setCreatorSearching] = useState(false);
+  /** The query the current creatorResults were resolved for. */
+  const [searchedQuery, setSearchedQuery] = useState('');
+  const [recipientFocused, setRecipientFocused] = useState(false);
   const [requestCurrency, setRequestCurrency] = useState<'USD' | 'USDC'>('USD');
   const [requestAmount, setRequestAmount] = useState('');
   const [requestFrom, setRequestFrom] = useState('');
@@ -147,6 +179,112 @@ export default function Wallet() {
   const amountNum = parseFloat(sendAmount) || 0;
   const hasEnough = amountNum > 0 && amountNum <= availableBalance;
 
+  /* ── C1: recipient resolution & validation ─────────────────────── */
+  const trimmedRecipient = sendRecipient.trim();
+  const isHandleInput = trimmedRecipient.startsWith('@');
+  const isValidAddress = SOLANA_ADDRESS_RE.test(trimmedRecipient);
+  const isSelfSend =
+    trimmedRecipient === WALLET_ADDRESS ||
+    (user !== null && trimmedRecipient.toLowerCase() === user.handle.toLowerCase());
+
+  /* A picked creator, or an exact handle match among search results. */
+  const exactMatch = creatorResults.find(
+    (c) => c.handle.toLowerCase() === trimmedRecipient.toLowerCase(),
+  );
+  const activeCreator =
+    selectedCreator && selectedCreator.handle.toLowerCase() === trimmedRecipient.toLowerCase()
+      ? selectedCreator
+      : exactMatch ?? null;
+
+  /* Debounced creator search while typing a handle or name. All state
+     updates run inside the (async) timeout to avoid cascading renders. */
+  useEffect(() => {
+    const q = sendRecipient.trim();
+    const shouldSearch =
+      q.length >= 2 &&
+      !SOLANA_ADDRESS_RE.test(q) &&
+      !(selectedCreator && q.toLowerCase() === selectedCreator.handle.toLowerCase());
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      if (!shouldSearch) {
+        if (!cancelled) {
+          setCreatorResults([]);
+          setSearchedQuery(q);
+          setCreatorSearching(false);
+        }
+        return;
+      }
+      if (!cancelled) setCreatorSearching(true);
+      try {
+        const results = await api.get<Creator[]>(`/creators/search?q=${encodeURIComponent(q)}`);
+        if (!cancelled) setCreatorResults(results);
+      } catch {
+        if (!cancelled) setCreatorResults([]);
+      } finally {
+        if (!cancelled) {
+          setSearchedQuery(q);
+          setCreatorSearching(false);
+        }
+      }
+    }, shouldSearch ? 300 : 0);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [sendRecipient, selectedCreator]);
+
+  /* Inline recipient error (self-send / malformed USDC address). */
+  const addressLooksWrong =
+    !isHandleInput &&
+    trimmedRecipient.length > 0 &&
+    !isValidAddress &&
+    sendCurrency === 'USDC' &&
+    (trimmedRecipient.length >= 32 || !recipientFocused);
+  const recipientError = isSelfSend
+    ? "You can't send to yourself"
+    : addressLooksWrong && !activeCreator
+      ? 'Invalid Solana address — expected 32–44 base58 characters (or type @ to find a creator)'
+      : null;
+
+  const recipientValid =
+    !isSelfSend &&
+    (activeCreator !== null ||
+      isValidAddress ||
+      (sendCurrency === 'USD' && trimmedRecipient.length > 0 && !isHandleInput));
+
+  /* True while a search is in flight or results are for a stale query. */
+  const searchPending = creatorSearching || searchedQuery !== trimmedRecipient;
+
+  const showCreatorDropdown =
+    recipientFocused &&
+    !activeCreator &&
+    !isValidAddress &&
+    trimmedRecipient.length >= 2 &&
+    (searchPending || isHandleInput || creatorResults.length > 0);
+
+  const pickCreator = (creator: Creator) => {
+    setSelectedCreator(creator);
+    setSendRecipient(creator.handle);
+    setRecipientFocused(false);
+  };
+
+  const pickRecentRecipient = (recipient: RecentRecipient) => {
+    if (recipient.handle) {
+      setSelectedCreator({
+        id: recipient.id,
+        handle: recipient.handle,
+        displayName: recipient.displayName,
+        initials: '',
+        walletAddress: recipient.walletAddress,
+      });
+      setSendRecipient(recipient.handle);
+    } else {
+      setSelectedCreator(null);
+      setSendRecipient(recipient.walletAddress);
+    }
+  };
+  /* ── end C1 recipient logic ────────────────────────────────────── */
+
   const requestNum = parseFloat(requestAmount) || 0;
 
   const convertNum = parseFloat(convertAmount) || 0;
@@ -163,18 +301,24 @@ export default function Wallet() {
 
   const handleSend = async () => {
     setSubmitting(true);
+    /* C1: send the handle when a creator is picked — the mock backend
+       resolves it to their wallet address and records the recipient. */
+    const recipient = activeCreator ? activeCreator.handle : trimmedRecipient;
     try {
       const result = await api.post<WalletMutationResponse>('/wallet/send', {
         currency: sendCurrency,
         amount: amountNum,
-        recipient: sendRecipient,
+        recipient,
       });
       applyMutation(result);
+      recipientsQuery.refresh();
       toast.success(
-        `Sent ${sendCurrency === 'USD' ? `$${amountNum.toLocaleString()}` : `${amountNum.toLocaleString()} USDC`} to ${sendRecipient}`,
+        `Sent ${sendCurrency === 'USD' ? `$${amountNum.toLocaleString()}` : `${amountNum.toLocaleString()} USDC`} to ${recipient}`,
       );
       setSendAmount('');
       setSendRecipient('');
+      setSelectedCreator(null);
+      setCreatorResults([]);
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Transfer failed — try again');
     } finally {
@@ -338,17 +482,115 @@ export default function Wallet() {
                 <p className="font-mono text-[12px] text-[rgba(255,255,255,0.42)]">
                   Available: {sendCurrency === 'USD' ? `$${availableBalance.toLocaleString()}` : `${availableBalance.toLocaleString()} USDC`}
                 </p>
-                <input
-                  type="text"
-                  value={sendRecipient}
-                  onChange={(e) => setSendRecipient(e.target.value)}
-                  placeholder="Recipient address or username"
-                  className="w-full bg-surface border border-[rgba(255,255,255,0.1)] rounded-xl px-4 py-3 font-body text-[16px] text-white placeholder:text-[rgba(255,255,255,0.2)] focus:border-electric outline-none transition-colors"
-                />
+
+                {/* C1 — Recent recipients */}
+                {(recipientsQuery.loading || (recipientsQuery.data?.length ?? 0) > 0) && (
+                  <div className="space-y-2">
+                    <p className="font-mono text-[12px] tracking-[0.04em] text-[rgba(255,255,255,0.42)]">
+                      Recent recipients
+                    </p>
+                    {recipientsQuery.loading && !recipientsQuery.data ? (
+                      <div className="flex gap-2">
+                        {[0, 1, 2].map((i) => (
+                          <SkeletonBlock key={i} className="h-9 w-32 rounded-full" />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="flex gap-2 overflow-x-auto pb-1">
+                        {(recipientsQuery.data ?? []).map((r) => (
+                          <button
+                            key={r.id}
+                            type="button"
+                            onClick={() => pickRecentRecipient(r)}
+                            className="flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-full bg-panel2 border border-[rgba(255,255,255,0.08)] hover:border-electric transition-colors flex-shrink-0"
+                          >
+                            <InitialsAvatar name={r.displayName} size={24} />
+                            <span className="font-body text-[13px] text-white whitespace-nowrap">
+                              {r.handle ?? shortenAddress(r.walletAddress)}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* C1 — Recipient combobox: @handle lookup or wallet address */}
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={sendRecipient}
+                    onChange={(e) => {
+                      setSendRecipient(e.target.value);
+                      if (
+                        selectedCreator &&
+                        e.target.value.trim().toLowerCase() !== selectedCreator.handle.toLowerCase()
+                      ) {
+                        setSelectedCreator(null);
+                      }
+                    }}
+                    onFocus={() => setRecipientFocused(true)}
+                    onBlur={() => setRecipientFocused(false)}
+                    placeholder="@handle or Solana wallet address"
+                    aria-invalid={recipientError !== null}
+                    className={`w-full bg-surface border rounded-xl px-4 py-3 font-body text-[16px] text-white placeholder:text-[rgba(255,255,255,0.2)] outline-none transition-colors ${
+                      recipientError
+                        ? 'border-negative focus:border-negative'
+                        : 'border-[rgba(255,255,255,0.1)] focus:border-electric'
+                    }`}
+                  />
+                  {showCreatorDropdown && (
+                    <div className="absolute left-0 right-0 top-full mt-2 z-20 bg-panel2 border border-[rgba(255,255,255,0.12)] rounded-xl shadow-xl overflow-hidden">
+                      {searchPending ? (
+                        <div className="flex items-center gap-2 px-4 py-3 font-mono text-[12px] text-[rgba(255,255,255,0.42)]">
+                          <Loader2 size={14} className="animate-spin" />
+                          Searching creators…
+                        </div>
+                      ) : creatorResults.length === 0 ? (
+                        <p className="px-4 py-3 font-mono text-[12px] text-[rgba(255,255,255,0.42)]">
+                          No creators match “{trimmedRecipient}”
+                        </p>
+                      ) : (
+                        creatorResults.map((c) => (
+                          <button
+                            key={c.id}
+                            type="button"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => pickCreator(c)}
+                            className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-[rgba(255,255,255,0.06)] transition-colors"
+                          >
+                            <InitialsAvatar name={c.displayName} size={32} />
+                            <span className="flex-1 min-w-0">
+                              <span className="block font-body text-[14px] font-medium text-white truncate">
+                                {c.displayName}
+                              </span>
+                              <span className="block font-mono text-[12px] text-electric truncate">
+                                {c.handle}
+                              </span>
+                            </span>
+                            <span className="font-mono text-[11px] text-[rgba(255,255,255,0.42)]">
+                              {shortenAddress(c.walletAddress)}
+                            </span>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
+                {recipientError ? (
+                  <p className="font-mono text-[12px] text-negative" role="alert">
+                    {recipientError}
+                  </p>
+                ) : activeCreator ? (
+                  <p className="font-mono text-[12px] text-positive">
+                    Sends to {activeCreator.displayName} · {shortenAddress(activeCreator.walletAddress)}
+                  </p>
+                ) : null}
+
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  disabled={!hasEnough || !sendRecipient || submitting}
+                  disabled={!hasEnough || !recipientValid || submitting}
                   onClick={handleSend}
                   className="w-full flex items-center justify-center gap-2 bg-acid text-void font-body text-[16px] font-semibold py-4 rounded-2xl disabled:opacity-40 disabled:cursor-not-allowed"
                 >
