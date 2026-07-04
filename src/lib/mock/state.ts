@@ -8,8 +8,10 @@ import type {
   Advance,
   AppNotification,
   AppSettings,
+  Creator,
   PlatformConnection,
   Profile,
+  RecentRecipient,
   ReserveBuilder,
   User,
   WalletTransaction,
@@ -29,6 +31,9 @@ export interface MockState {
   notifications: AppNotification[];
   txCounter: number;
   advanceCounter: number;
+  /* C1: creator-to-creator payments */
+  creators: Creator[];
+  recentRecipients: RecentRecipient[];
 }
 
 const STORAGE_KEY = 'kre8trix.mock.state';
@@ -115,7 +120,50 @@ function defaultState(): MockState {
     ],
     txCounter: 13,
     advanceCounter: 2848,
+    creators: seedCreators(),
+    recentRecipients: seedRecentRecipients(),
   };
+}
+
+/* ────────────────────────────────────────────────────────────────
+ * C1 — creator-to-creator payments (additive)
+ * ──────────────────────────────────────────────────────────────── */
+
+/** The signed-in user's own wallet — mirrors WALLET_ADDRESS in src/pages/Wallet.tsx. */
+export const SELF_WALLET_ADDRESS = 'Hx3fK9mNpQr2sT5vW8xYzAbCdEfGhIjKlMnOpQrStUv9kL2';
+
+function seedCreators(): Creator[] {
+  return [
+    { id: 'cr_01', handle: '@zaravibes', displayName: 'Zara Okafor', initials: 'ZO', walletAddress: 'aXvhkgX93EHzifMF7urqTHq3mxo7Le4GWmGW1aZehrpE' },
+    { id: 'cr_02', handle: '@mikeplays', displayName: 'Mike Torres', initials: 'MT', walletAddress: 'qRv9rH2V29wEKcjaocc6G5uyEpDR529MYzRPMdR2kSqA' },
+    { id: 'cr_03', handle: '@lunabeats', displayName: 'Luna Park', initials: 'LP', walletAddress: 'gXmdVRE1LYHzpb6xab86qfTnesL8T4uLiW46YSx2xwcd' },
+    { id: 'cr_04', handle: '@devdiaries', displayName: 'Priya Sharma', initials: 'PS', walletAddress: 'XTWED6LzdEhHitF4YmeFmwA2FBTEmG4CL3p1s5hCnKNY' },
+    { id: 'cr_05', handle: '@kofikooks', displayName: 'Kofi Mensah', initials: 'KM', walletAddress: 'RhifQKcnvP45tZaupqs3PQ3Ugcqgf2pZJAA2Bh5Ag8B1' },
+    { id: 'cr_06', handle: '@sketchsage', displayName: 'Sage Winters', initials: 'SW', walletAddress: '9qkMPgPdpfQ133MXBkgP6HRiAerSs8h6yXkJahx44XJM' },
+    { id: 'cr_07', handle: '@fitwithjade', displayName: 'Jade Nguyen', initials: 'JN', walletAddress: 'CdBGaRETT7ejp3rsjfP6udyFfSwpc4ey39d6vGfXgZCB' },
+    { id: 'cr_08', handle: '@nomadnoah', displayName: 'Noah Berg', initials: 'NB', walletAddress: 'dackjux9wBz8rPF2JYwKMJRJ4QGjmuCJHFrBFyFPsdNb' },
+  ];
+}
+
+function seedRecentRecipients(): RecentRecipient[] {
+  return [
+    { id: 'rcp_01', handle: '@zaravibes', displayName: 'Zara Okafor', walletAddress: 'aXvhkgX93EHzifMF7urqTHq3mxo7Le4GWmGW1aZehrpE', lastSentAt: 'Oct 12, 2024' },
+    { id: 'rcp_02', handle: '@devdiaries', displayName: 'Priya Sharma', walletAddress: 'XTWED6LzdEhHitF4YmeFmwA2FBTEmG4CL3p1s5hCnKNY', lastSentAt: 'Oct 4, 2024' },
+    { id: 'rcp_03', handle: '@lunabeats', displayName: 'Luna Park', walletAddress: 'gXmdVRE1LYHzpb6xab86qfTnesL8T4uLiW46YSx2xwcd', lastSentAt: 'Sep 27, 2024' },
+  ];
+}
+
+/**
+ * Backfill C1 fields for sessions whose persisted mock state predates
+ * this feature (sessionStorage snapshots without creators/recipients).
+ */
+export function ensureCreatorState() {
+  const state = getState();
+  if (state.creators && state.recentRecipients) return;
+  mutate((s) => {
+    if (!s.creators) s.creators = seedCreators();
+    if (!s.recentRecipients) s.recentRecipients = seedRecentRecipients();
+  });
 }
 
 let cached: MockState | null = null;

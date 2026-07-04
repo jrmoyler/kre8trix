@@ -6,7 +6,8 @@
  */
 
 import { ApiError, registerMock, type MockContext } from '../api';
-import { getState, mutate } from './state';
+import { ensureCreatorState, getState, mutate, SELF_WALLET_ADDRESS } from './state';
+import { SOLANA_ADDRESS_RE } from '../types';
 import type {
   AdvancesOverview,
   AppNotification,
@@ -17,12 +18,14 @@ import type {
   CcsSimulationRequest,
   CcsSimulationResult,
   ConvertPayload,
+  Creator,
   ForecastPoint,
   ForecastSummaryItem,
   ForecastWindow,
   PlatformConnection,
   PlatformRevenueSummary,
   Profile,
+  RecentRecipient,
   ReserveBuilder,
   SeasonalityMonth,
   SendPayload,
@@ -141,15 +144,45 @@ registerMock('GET', '/wallet/transactions', (ctx) => {
 
 registerMock('POST', '/wallet/send', (ctx) => {
   requireAuth(ctx);
+  ensureCreatorState();
   const body = ctx.body as SendPayload;
   if (!body?.recipient?.trim()) throw new ApiError(400, 'Recipient is required');
   if (!body.amount || body.amount <= 0) throw new ApiError(400, 'Amount must be greater than zero');
 
   const state = getState();
+  const recipientRaw = body.recipient.trim();
+
+  /* C1: self-send guard — by own handle or own wallet address */
+  if (
+    recipientRaw.toLowerCase() === state.user.handle.toLowerCase() ||
+    recipientRaw === SELF_WALLET_ADDRESS
+  ) {
+    throw new ApiError(400, "You can't send funds to yourself");
+  }
+
+  /* C1: resolve @handles to a known creator; match raw addresses too */
+  let creator: Creator | undefined;
+  if (recipientRaw.startsWith('@')) {
+    creator = state.creators.find((c) => c.handle.toLowerCase() === recipientRaw.toLowerCase());
+    if (!creator) throw new ApiError(404, `No creator found with handle ${recipientRaw}`);
+  } else {
+    creator = state.creators.find((c) => c.walletAddress === recipientRaw);
+    if (!creator && body.currency === 'USDC' && !SOLANA_ADDRESS_RE.test(recipientRaw)) {
+      throw new ApiError(400, 'Invalid Solana wallet address (base58, 32-44 characters)');
+    }
+  }
+
   const available = body.currency === 'USD' ? state.balances.usd : state.balances.usdc;
   if (body.amount > available) {
     throw new ApiError(400, `Insufficient ${body.currency} balance`);
   }
+
+  const resolvedAddress = creator?.walletAddress ?? recipientRaw;
+  const displayName = creator
+    ? creator.handle
+    : SOLANA_ADDRESS_RE.test(recipientRaw)
+      ? shortenAddress(recipientRaw)
+      : recipientRaw;
 
   let transaction: WalletTransaction | undefined;
   mutate((s) => {
@@ -158,19 +191,64 @@ registerMock('POST', '/wallet/send', (ctx) => {
     transaction = {
       id: `tx_${s.txCounter++}`,
       date: todayLabel(),
-      description: `Sent to ${body.recipient.trim()}`,
+      description: `Sent to ${displayName}`,
       platform: 'Kre8trix',
       type: 'Send',
       currency: body.currency,
       amount: -body.amount,
       status: 'Completed',
       iconColor: '#C8FF00',
+      /* C1: record who the money went to */
+      recipientHandle: creator?.handle,
+      recipientAddress:
+        creator !== undefined || SOLANA_ADDRESS_RE.test(recipientRaw) ? resolvedAddress : undefined,
     };
     s.transactions.unshift(transaction);
+
+    /* C1: feed the "Recent recipients" row (dedupe by address, cap 6) */
+    if (creator || SOLANA_ADDRESS_RE.test(recipientRaw)) {
+      const entry: RecentRecipient = {
+        id: `rcp_${resolvedAddress.slice(0, 8)}`,
+        handle: creator?.handle ?? null,
+        displayName: creator?.displayName ?? shortenAddress(recipientRaw),
+        walletAddress: resolvedAddress,
+        lastSentAt: todayLabel(),
+      };
+      s.recentRecipients = [
+        entry,
+        ...s.recentRecipients.filter((r) => r.walletAddress !== resolvedAddress),
+      ].slice(0, 6);
+    }
   });
 
   const response: WalletMutationResponse = { transaction: transaction!, balances: balancesSnapshot() };
   return response;
+});
+
+/* ── C1: creator-to-creator payments ───────────────────────────── */
+
+function shortenAddress(address: string): string {
+  return `${address.slice(0, 4)}…${address.slice(-4)}`;
+}
+
+registerMock('GET', '/creators/search', (ctx) => {
+  requireAuth(ctx);
+  ensureCreatorState();
+  const q = (ctx.query.q ?? '').trim().replace(/^@/, '').toLowerCase();
+  if (!q) return [] as Creator[];
+  const { creators } = getState();
+  return creators
+    .filter(
+      (c) =>
+        c.handle.toLowerCase().includes(q) || c.displayName.toLowerCase().includes(q),
+    )
+    .slice(0, 6);
+});
+
+registerMock('GET', '/wallet/recipients', (ctx) => {
+  requireAuth(ctx);
+  ensureCreatorState();
+  return getState().recentRecipients.slice(0, 6);
 });
 
 registerMock('POST', '/wallet/request', (ctx) => {
