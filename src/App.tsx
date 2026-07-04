@@ -7,6 +7,7 @@ import Wallet from './pages/Wallet'
 import CreditScore from './pages/CreditScore'
 import CashFlow from './pages/CashFlow'
 import Advances from './pages/Advances'
+import Marketplace from './pages/Marketplace' // C2: brand deal marketplace
 import CardManager from './pages/CardManager'
 import Analytics from './pages/Analytics'
 import Onboarding from './pages/Onboarding'
@@ -28,6 +29,7 @@ export default function App() {
                 <Route path="/credit-score" element={<CreditScore />} />
                 <Route path="/cash-flow" element={<CashFlow />} />
                 <Route path="/advances" element={<Advances />} />
+                <Route path="/marketplace" element={<Marketplace />} /> {/* C2 */}
                 <Route path="/cards" element={<CardManager />} />
                 <Route path="/analytics" element={<Analytics />} />
                 <Route path="/onboarding" element={<Onboarding />} />

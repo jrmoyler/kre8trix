@@ -9,6 +9,7 @@ import type {
   AppNotification,
   AppSettings,
   Creator,
+  DealApplication,
   PlatformConnection,
   Profile,
   RecentRecipient,
@@ -34,6 +35,10 @@ export interface MockState {
   /* C1: creator-to-creator payments */
   creators: Creator[];
   recentRecipients: RecentRecipient[];
+  /* C2: brand deal marketplace — optional so state persisted before this
+     feature shipped still parses; handlers fall back to defaults. */
+  marketplaceApplications?: DealApplication[];
+  applicationCounter?: number;
 }
 
 const STORAGE_KEY = 'kre8trix.mock.state';
@@ -122,6 +127,34 @@ function defaultState(): MockState {
     advanceCounter: 2848,
     creators: seedCreators(),
     recentRecipients: seedRecentRecipients(),
+    /* C2: brand deal marketplace */
+    marketplaceApplications: [
+      {
+        id: 'app_01',
+        dealId: 'deal_04',
+        brand: 'NordShield VPN',
+        brandColor: '#4687FF',
+        category: 'Tech',
+        payoutMin: 4500,
+        payoutMax: 8000,
+        pitch: 'My privacy-focused tech reviews average 180K views with a 62% retention rate — a natural fit for NordShield.',
+        submitted: 'Jun 18, 2026',
+        status: 'Accepted',
+      },
+      {
+        id: 'app_02',
+        dealId: 'deal_07',
+        brand: 'Brewline Coffee',
+        brandColor: '#B4693C',
+        category: 'Food',
+        payoutMin: 600,
+        payoutMax: 1200,
+        pitch: 'Morning-routine content is my top-performing format; I can weave Brewline in organically across a 3-video series.',
+        submitted: 'Jun 27, 2026',
+        status: 'Pending',
+      },
+    ],
+    applicationCounter: 3,
   };
 }
 
