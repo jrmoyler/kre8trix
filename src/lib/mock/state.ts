@@ -11,6 +11,8 @@ import type {
   PlatformConnection,
   Profile,
   ReserveBuilder,
+  TaxEstimateSettings,
+  TurboTaxConnection,
   User,
   WalletTransaction,
 } from '../types';
@@ -29,6 +31,9 @@ export interface MockState {
   notifications: AppNotification[];
   txCounter: number;
   advanceCounter: number;
+  /* C3: Tax Center */
+  taxEstimates: TaxEstimateSettings;
+  turbotax: TurboTaxConnection;
 }
 
 const STORAGE_KEY = 'kre8trix.mock.state';
@@ -115,6 +120,9 @@ function defaultState(): MockState {
     ],
     txCounter: 13,
     advanceCounter: 2848,
+    /* C3: Tax Center */
+    taxEstimates: { effectiveRatePercent: 24, filingStatus: 'single' },
+    turbotax: { connected: false, account: null, lastSync: null },
   };
 }
 

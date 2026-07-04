@@ -8,6 +8,7 @@ import {
   Zap,
   CreditCard,
   BarChart3,
+  Receipt,
   Settings,
   Menu,
   X,
@@ -20,6 +21,8 @@ const navItems = [
   { label: 'Wallet', icon: Wallet, path: '/wallet' },
   { label: 'Credit Score', icon: Target, path: '/credit-score' },
   { label: 'Cash Flow', icon: TrendingUp, path: '/cash-flow' },
+  { label: 'Tax Center', icon: Receipt, path: '/taxes' }, // C3: Tax Center
+
   { label: 'Advances', icon: Zap, path: '/advances' },
   { label: 'Cards', icon: CreditCard, path: '/cards' },
   { label: 'Analytics', icon: BarChart3, path: '/analytics' },
