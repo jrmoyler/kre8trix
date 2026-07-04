@@ -272,3 +272,51 @@ export interface DealApplication {
 export interface DealApplyResponse {
   application: DealApplication;
 }
+/* ─────────────── C3: Tax Center ─────────────── */
+
+export type FilingStatus = 'single' | 'married_joint' | 'married_separate' | 'head_of_household';
+
+export interface TaxEstimateSettings {
+  /** Effective tax rate applied to YTD income (percent, 10-50). */
+  effectiveRatePercent: number;
+  filingStatus: FilingStatus;
+}
+
+export interface QuarterlyEstimate {
+  quarter: 'Q1' | 'Q2' | 'Q3' | 'Q4';
+  period: string;
+  dueDate: string;
+  amount: number;
+  /** Portion of `amount` already covered by the tax reserve. */
+  reserved: number;
+  status: 'Covered' | 'Partial' | 'Unfunded';
+}
+
+export interface TurboTaxConnection {
+  connected: boolean;
+  account: string | null;
+  lastSync: string | null;
+}
+
+export interface TaxSummary {
+  taxYear: number;
+  ytdIncome: number;
+  settings: TaxEstimateSettings;
+  totalEstimated: number;
+  reserved: number;
+  stillNeeded: number;
+  quarters: QuarterlyEstimate[];
+  turbotax: TurboTaxConnection;
+}
+
+export interface Ten99kRow {
+  platform: string;
+  color: string;
+  grossPayments: number;
+  transactionCount: number;
+  /** Federal 1099-K reporting threshold for gross payments. */
+  threshold: number;
+  formStatus: 'Expected' | 'On track' | 'Below threshold';
+}
+
+/* ─────────────── end C3: Tax Center ─────────────── */

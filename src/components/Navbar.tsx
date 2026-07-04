@@ -9,6 +9,7 @@ import {
   Store,
   CreditCard,
   BarChart3,
+  Receipt,
   Settings,
   Menu,
   X,
@@ -21,6 +22,8 @@ const navItems = [
   { label: 'Wallet', icon: Wallet, path: '/wallet' },
   { label: 'Credit Score', icon: Target, path: '/credit-score' },
   { label: 'Cash Flow', icon: TrendingUp, path: '/cash-flow' },
+  { label: 'Tax Center', icon: Receipt, path: '/taxes' }, // C3: Tax Center
+
   { label: 'Advances', icon: Zap, path: '/advances' },
   { label: 'Marketplace', icon: Store, path: '/marketplace' }, // C2
 

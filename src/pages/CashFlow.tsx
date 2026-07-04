@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
 import {
   AreaChart,
@@ -303,6 +303,7 @@ function TaxTrackerCard() {
             Estimated self-employment taxes
           </p>
         </div>
+        <Link to="/taxes" className="ml-auto font-mono text-[12px] tracking-[0.04em] text-electric hover:text-acid transition-colors whitespace-nowrap">Open Tax Center →</Link>{/* C3: Tax Center */}
       </div>
 
       {error ? (

@@ -14,6 +14,8 @@ import type {
   Profile,
   RecentRecipient,
   ReserveBuilder,
+  TaxEstimateSettings,
+  TurboTaxConnection,
   User,
   WalletTransaction,
 } from '../types';
@@ -39,6 +41,9 @@ export interface MockState {
      feature shipped still parses; handlers fall back to defaults. */
   marketplaceApplications?: DealApplication[];
   applicationCounter?: number;
+  /* C3: Tax Center */
+  taxEstimates: TaxEstimateSettings;
+  turbotax: TurboTaxConnection;
 }
 
 const STORAGE_KEY = 'kre8trix.mock.state';
@@ -155,6 +160,9 @@ function defaultState(): MockState {
       },
     ],
     applicationCounter: 3,
+    /* C3: Tax Center */
+    taxEstimates: { effectiveRatePercent: 24, filingStatus: 'single' },
+    turbotax: { connected: false, account: null, lastSync: null },
   };
 }
 

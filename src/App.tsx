@@ -12,6 +12,7 @@ import CardManager from './pages/CardManager'
 import Analytics from './pages/Analytics'
 import Onboarding from './pages/Onboarding'
 import Settings from './pages/Settings'
+import TaxCenter from './pages/TaxCenter' // C3: Tax Center
 
 export default function App() {
   return (
@@ -28,6 +29,7 @@ export default function App() {
                 <Route path="/wallet" element={<Wallet />} />
                 <Route path="/credit-score" element={<CreditScore />} />
                 <Route path="/cash-flow" element={<CashFlow />} />
+                <Route path="/taxes" element={<TaxCenter />} /> {/* C3: Tax Center */}
                 <Route path="/advances" element={<Advances />} />
                 <Route path="/marketplace" element={<Marketplace />} /> {/* C2 */}
                 <Route path="/cards" element={<CardManager />} />

@@ -30,9 +30,15 @@ import type {
   Profile,
   RecentRecipient,
   ReserveBuilder,
+  FilingStatus,
+  QuarterlyEstimate,
   SeasonalityMonth,
   SendPayload,
+  TaxEstimateSettings,
+  TaxSummary,
   TaxTracker,
+  Ten99kRow,
+  TurboTaxConnection,
   User,
   WalletBalances,
   WalletMutationResponse,
@@ -898,3 +904,126 @@ for (const deal of MARKETPLACE_DEALS) {
     return response;
   });
 }
+/* ─────────────────────────── C3: tax center ─────────────────────────── */
+
+const TAX_YEAR = 2026;
+/** Matches the YTD income surfaced by the Cash Flow tax tracker. */
+const TAX_YTD_INCOME = 94300;
+/** Matches the "set aside" figure on the Cash Flow tax tracker. */
+const TAX_RESERVED = 15800;
+const FILING_STATUSES: FilingStatus[] = ['single', 'married_joint', 'married_separate', 'head_of_household'];
+
+/**
+ * Older persisted sessions may predate the tax fields on MockState —
+ * backfill defaults before any tax handler reads them.
+ */
+function ensureTaxState() {
+  const s = getState();
+  if (!s.taxEstimates || !s.turbotax) {
+    mutate((st) => {
+      st.taxEstimates = st.taxEstimates ?? { effectiveRatePercent: 24, filingStatus: 'single' };
+      st.turbotax = st.turbotax ?? { connected: false, account: null, lastSync: null };
+    });
+  }
+}
+
+function buildTaxSummary(): TaxSummary {
+  ensureTaxState();
+  const { taxEstimates, turbotax } = getState();
+  const totalEstimated = Math.round(TAX_YTD_INCOME * (taxEstimates.effectiveRatePercent / 100));
+  const perQuarter = Math.round(totalEstimated / 4);
+  const meta: { quarter: QuarterlyEstimate['quarter']; period: string; dueDate: string }[] = [
+    { quarter: 'Q1', period: 'Jan 1 – Mar 31', dueDate: `Apr 15, ${TAX_YEAR}` },
+    { quarter: 'Q2', period: 'Apr 1 – May 31', dueDate: `Jun 15, ${TAX_YEAR}` },
+    { quarter: 'Q3', period: 'Jun 1 – Aug 31', dueDate: `Sep 15, ${TAX_YEAR}` },
+    { quarter: 'Q4', period: 'Sep 1 – Dec 31', dueDate: `Jan 15, ${TAX_YEAR + 1}` },
+  ];
+
+  // Allocate the reserve to the earliest quarters first.
+  let remainingReserve = TAX_RESERVED;
+  const quarters: QuarterlyEstimate[] = meta.map((m, i) => {
+    // Last quarter absorbs rounding drift so the four sum to the total.
+    const amount = i === 3 ? totalEstimated - perQuarter * 3 : perQuarter;
+    const reserved = Math.min(amount, remainingReserve);
+    remainingReserve -= reserved;
+    const status: QuarterlyEstimate['status'] =
+      reserved >= amount && amount > 0 ? 'Covered' : reserved > 0 ? 'Partial' : 'Unfunded';
+    return { ...m, amount, reserved, status };
+  });
+
+  return {
+    taxYear: TAX_YEAR,
+    ytdIncome: TAX_YTD_INCOME,
+    settings: taxEstimates,
+    totalEstimated,
+    reserved: Math.min(TAX_RESERVED, totalEstimated),
+    stillNeeded: Math.max(0, totalEstimated - TAX_RESERVED),
+    quarters,
+    turbotax,
+  };
+}
+
+registerMock('GET', '/tax/summary', (ctx) => {
+  requireAuth(ctx);
+  return buildTaxSummary();
+});
+
+registerMock('PUT', '/tax/estimates', (ctx) => {
+  requireAuth(ctx);
+  const body = ctx.body as Partial<TaxEstimateSettings>;
+  if (body.effectiveRatePercent !== undefined) {
+    if (typeof body.effectiveRatePercent !== 'number' || body.effectiveRatePercent < 10 || body.effectiveRatePercent > 50) {
+      throw new ApiError(400, 'Effective tax rate must be between 10% and 50%');
+    }
+  }
+  if (body.filingStatus !== undefined && !FILING_STATUSES.includes(body.filingStatus)) {
+    throw new ApiError(400, `Unknown filing status: ${body.filingStatus}`);
+  }
+  ensureTaxState();
+  mutate((s) => {
+    s.taxEstimates = {
+      ...s.taxEstimates,
+      ...(body.effectiveRatePercent !== undefined ? { effectiveRatePercent: Math.round(body.effectiveRatePercent) } : {}),
+      ...(body.filingStatus !== undefined ? { filingStatus: body.filingStatus } : {}),
+    };
+  });
+  return buildTaxSummary();
+});
+
+registerMock('GET', '/tax/1099k', (ctx) => {
+  requireAuth(ctx);
+  const threshold = 5000;
+  const platforms = [
+    { platform: 'YouTube', color: '#FF0000', grossPayments: 28450, transactionCount: 12 },
+    { platform: 'TikTok', color: '#FF0050', grossPayments: 4180, transactionCount: 9 },
+    { platform: 'Shopify', color: '#96BF48', grossPayments: 21460, transactionCount: 342 },
+    { platform: 'Stripe', color: '#635BFF', grossPayments: 26800, transactionCount: 57 },
+    { platform: 'Patreon', color: '#FF424D', grossPayments: 6230, transactionCount: 78 },
+    { platform: 'Spotify', color: '#1DB954', grossPayments: 2440, transactionCount: 6 },
+  ];
+  const rows: Ten99kRow[] = platforms.map((p) => ({
+    ...p,
+    threshold,
+    formStatus:
+      p.grossPayments >= threshold
+        ? 'Expected'
+        : p.grossPayments >= threshold * 0.6
+        ? 'On track'
+        : 'Below threshold',
+  }));
+  return rows;
+});
+
+registerMock('POST', '/tax/turbotax/connect', (ctx) => {
+  requireAuth(ctx);
+  ensureTaxState();
+  const body = ctx.body as { connected?: boolean } | undefined;
+  const connected = body?.connected ?? true;
+  mutate((s) => {
+    s.turbotax = connected
+      ? { connected: true, account: s.profile.email, lastSync: todayLabel() }
+      : { connected: false, account: null, lastSync: null };
+  });
+  const response: TurboTaxConnection = getState().turbotax;
+  return response;
+});
