@@ -188,11 +188,18 @@ export interface AppSettings {
   defaultPayoutWallet: string;
 }
 
+/* ── C5: notifications ── */
+
+export type NotificationType = 'payment' | 'advance' | 'ccs' | 'tax' | 'platform' | 'system';
+
 export interface AppNotification {
   id: string;
+  type: NotificationType;
   title: string;
   body: string;
-  time: string;
+  /** In-app route opened when the notification is clicked. */
+  actionPath: string;
   read: boolean;
-  accentColor: string;
+  /** ISO 8601 timestamp. */
+  createdAt: string;
 }

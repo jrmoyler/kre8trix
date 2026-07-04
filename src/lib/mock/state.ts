@@ -29,9 +29,32 @@ export interface MockState {
   notifications: AppNotification[];
   txCounter: number;
   advanceCounter: number;
+  /* C5: notification id counter + last time the mock generator emitted one. */
+  notifCounter: number;
+  notifLastGeneratedAt: number;
 }
 
 const STORAGE_KEY = 'kre8trix.mock.state';
+
+/* ── C5: notification seed ──
+   Exported so handlers can re-seed sessions cached before the C5 shape existed. */
+
+function hoursAgo(hours: number): string {
+  return new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
+}
+
+export const NOTIF_COUNTER_START = 7;
+
+export function seedNotifications(): AppNotification[] {
+  return [
+    { id: 'ntf_1', type: 'payment', title: 'Payout delayed', body: 'YouTube payout delayed 5 days — expected Oct 22.', actionPath: '/wallet?action=history', read: false, createdAt: hoursAgo(2) },
+    { id: 'ntf_2', type: 'ccs', title: 'CCS score updated', body: 'Your Creator Credit Score rose to 612 (+17).', actionPath: '/credit-score', read: false, createdAt: hoursAgo(26) },
+    { id: 'ntf_3', type: 'advance', title: 'Advance repayment', body: '$318 auto-deducted toward advance KRA-2847.', actionPath: '/advances', read: false, createdAt: hoursAgo(49) },
+    { id: 'ntf_4', type: 'tax', title: 'Quarterly estimate ahead', body: 'Set aside $6,832 more before the Jan 15 deadline.', actionPath: '/cash-flow', read: false, createdAt: hoursAgo(74) },
+    { id: 'ntf_5', type: 'platform', title: 'New platform synced', body: 'Shopify store connected and syncing revenue.', actionPath: '/settings', read: true, createdAt: hoursAgo(98) },
+    { id: 'ntf_6', type: 'system', title: 'Security checkup', body: 'Review your connected devices and sessions.', actionPath: '/settings', read: true, createdAt: hoursAgo(150) },
+  ];
+}
 
 function defaultState(): MockState {
   return {
@@ -107,14 +130,11 @@ function defaultState(): MockState {
       monthlyTarget: 800,
       autoContribute: true,
     },
-    notifications: [
-      { id: 'ntf_1', title: 'Payout delayed', body: 'YouTube payout delayed 5 days — expected Oct 22.', time: '2h ago', read: false, accentColor: '#FFD400' },
-      { id: 'ntf_2', title: 'CCS score updated', body: 'Your Creator Credit Score rose to 612 (+17).', time: '1d ago', read: false, accentColor: '#00D4FF' },
-      { id: 'ntf_3', title: 'Advance repayment', body: '$318 auto-deducted toward advance KRA-2847.', time: '2d ago', read: false, accentColor: '#C8FF00' },
-      { id: 'ntf_4', title: 'New platform synced', body: 'Shopify store connected and syncing revenue.', time: '4d ago', read: true, accentColor: '#96BF48' },
-    ],
+    notifications: seedNotifications(),
     txCounter: 13,
     advanceCounter: 2848,
+    notifCounter: NOTIF_COUNTER_START,
+    notifLastGeneratedAt: Date.now(),
   };
 }
 

@@ -11,6 +11,7 @@ import CardManager from './pages/CardManager'
 import Analytics from './pages/Analytics'
 import Onboarding from './pages/Onboarding'
 import Settings from './pages/Settings'
+import Notifications from './pages/Notifications' // C5
 
 export default function App() {
   return (
@@ -32,6 +33,8 @@ export default function App() {
                 <Route path="/analytics" element={<Analytics />} />
                 <Route path="/onboarding" element={<Onboarding />} />
                 <Route path="/settings" element={<Settings />} />
+                {/* C5: full notification center (no Navbar item by design) */}
+                <Route path="/notifications-center" element={<Notifications />} />
               </Routes>
             </Layout>
           </ProtectedRoute>

@@ -1,16 +1,28 @@
 import { useEffect, useRef, useState } from 'react';
+import { Link, useNavigate } from 'react-router';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Bell, CheckCheck } from 'lucide-react';
+import { ArrowRight, Bell, CheckCheck } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useApi } from '@/hooks/use-api';
+import { NOTIFICATION_TYPE_META, timeAgo } from '@/lib/notifications';
 import type { AppNotification } from '@/lib/types';
+
+/** C5: poll cadence while the app is open, so new mock notifications surface. */
+const POLL_INTERVAL_MS = 60_000;
 
 export default function NotificationBell() {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const { data: notifications, setData } = useApi<AppNotification[]>('/notifications');
+  const navigate = useNavigate();
+  const { data: notifications, setData, refresh } = useApi<AppNotification[]>('/notifications');
 
   const unreadCount = notifications?.filter((n) => !n.read).length ?? 0;
+  const badgeLabel = unreadCount > 9 ? '9+' : String(unreadCount);
+
+  useEffect(() => {
+    const id = window.setInterval(refresh, POLL_INTERVAL_MS);
+    return () => window.clearInterval(id);
+  }, [refresh]);
 
   useEffect(() => {
     if (!open) return;
@@ -28,6 +40,19 @@ export default function NotificationBell() {
     setData(updated);
   };
 
+  const openNotification = (notification: AppNotification) => {
+    setOpen(false);
+    if (!notification.read && notifications) {
+      // Optimistic local flip; the POST response reconciles.
+      setData(notifications.map((n) => (n.id === notification.id ? { ...n, read: true } : n)));
+      api
+        .post<AppNotification[]>(`/notifications/${notification.id}/read`)
+        .then(setData)
+        .catch(() => refresh());
+    }
+    navigate(notification.actionPath);
+  };
+
   return (
     <div ref={containerRef} className="relative">
       <button
@@ -37,7 +62,9 @@ export default function NotificationBell() {
       >
         <Bell size={20} />
         {unreadCount > 0 && (
-          <span className="absolute top-2 right-2 w-2 h-2 bg-negative rounded-full" />
+          <span className="absolute top-1 right-1 min-w-[16px] h-4 px-1 rounded-full bg-negative text-white font-mono text-[9px] font-bold leading-4 text-center">
+            {badgeLabel}
+          </span>
         )}
       </button>
 
@@ -73,30 +100,54 @@ export default function NotificationBell() {
                   You're all caught up
                 </div>
               ) : (
-                notifications.map((n) => (
-                  <div
-                    key={n.id}
-                    className={`flex gap-3 px-5 py-4 border-b border-[rgba(255,255,255,0.04)] last:border-b-0 ${
-                      n.read ? 'opacity-60' : ''
-                    }`}
-                  >
-                    <span
-                      className="mt-1.5 w-2 h-2 rounded-full flex-shrink-0"
-                      style={{ background: n.read ? 'rgba(255,255,255,0.2)' : n.accentColor }}
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="font-body text-[13px] font-medium text-white truncate">{n.title}</p>
-                        <span className="font-mono text-[10px] text-[rgba(255,255,255,0.42)] flex-shrink-0">
-                          {n.time}
-                        </span>
+                notifications.map((n) => {
+                  const meta = NOTIFICATION_TYPE_META[n.type] ?? NOTIFICATION_TYPE_META.system;
+                  const Icon = meta.icon;
+                  return (
+                    <button
+                      key={n.id}
+                      onClick={() => openNotification(n)}
+                      className="w-full text-left flex gap-3 px-5 py-4 border-b border-[rgba(255,255,255,0.04)] last:border-b-0 hover:bg-[rgba(255,255,255,0.04)] transition-colors"
+                    >
+                      <span
+                        className="mt-0.5 w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                        style={{
+                          background: `${meta.color}1F`,
+                          color: meta.color,
+                          opacity: n.read ? 0.45 : 1,
+                        }}
+                      >
+                        <Icon size={15} />
+                      </span>
+                      <div className={`flex-1 min-w-0 ${n.read ? 'opacity-60' : ''}`}>
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="font-body text-[13px] font-medium text-white truncate">{n.title}</p>
+                          <span className="font-mono text-[10px] text-[rgba(255,255,255,0.42)] flex-shrink-0">
+                            {timeAgo(n.createdAt)}
+                          </span>
+                        </div>
+                        <p className="font-body text-[12px] text-[rgba(255,255,255,0.42)] mt-0.5">{n.body}</p>
                       </div>
-                      <p className="font-body text-[12px] text-[rgba(255,255,255,0.42)] mt-0.5">{n.body}</p>
-                    </div>
-                  </div>
-                ))
+                      {!n.read && (
+                        <span
+                          className="mt-2 w-1.5 h-1.5 rounded-full flex-shrink-0"
+                          style={{ background: meta.color }}
+                        />
+                      )}
+                    </button>
+                  );
+                })
               )}
             </div>
+
+            <Link
+              to="/notifications-center"
+              onClick={() => setOpen(false)}
+              className="flex items-center justify-center gap-1.5 px-5 py-3 border-t border-[rgba(255,255,255,0.08)] font-mono text-[11px] tracking-[0.04em] text-electric hover:text-acid transition-colors"
+            >
+              View all
+              <ArrowRight size={12} />
+            </Link>
           </motion.div>
         )}
       </AnimatePresence>
