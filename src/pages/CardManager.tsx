@@ -33,12 +33,12 @@ interface SpendCategory {
 }
 
 const SPEND_CATEGORIES: SpendCategory[] = [
-  { name: 'Equipment', icon: Monitor, current: 1299, limit: 2000, color: '#C8FF00' },
-  { name: 'Software', icon: Code, current: 89, limit: 200, color: '#00D4FF' },
-  { name: 'Travel', icon: Plane, current: 450, limit: 1000, color: '#9B5DE5' },
-  { name: 'Dining', icon: UtensilsCrossed, current: 120, limit: 300, color: '#FF4D00' },
-  { name: 'Advertising', icon: Megaphone, current: 340, limit: 500, color: '#FF4D00' },
-  { name: 'Daily Spend', icon: ShoppingBag, current: 280, limit: 500, color: '#00D4FF' },
+  { name: 'Equipment', icon: Monitor, current: 1299, limit: 2000, color: 'rgb(var(--color-acid))' },
+  { name: 'Software', icon: Code, current: 89, limit: 200, color: 'rgb(var(--color-electric))' },
+  { name: 'Travel', icon: Plane, current: 450, limit: 1000, color: 'rgb(var(--color-violet))' },
+  { name: 'Dining', icon: UtensilsCrossed, current: 120, limit: 300, color: 'rgb(var(--color-ember))' },
+  { name: 'Advertising', icon: Megaphone, current: 340, limit: 500, color: 'rgb(var(--color-ember))' },
+  { name: 'Daily Spend', icon: ShoppingBag, current: 280, limit: 500, color: 'rgb(var(--color-electric))' },
 ];
 
 /* ------------------------------------------------------------------ */
@@ -76,7 +76,7 @@ function TiltCard({ src, alt, frozen, showDetails }: { src: string; alt: string;
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
-          background: 'radial-gradient(ellipse at center, rgba(200,255,0,0.06) 0%, transparent 60%)',
+          background: 'radial-gradient(ellipse at center, rgba(var(--acid-rgb),0.06) 0%, transparent 60%)',
         }}
       />
       <motion.div
@@ -88,7 +88,7 @@ function TiltCard({ src, alt, frozen, showDetails }: { src: string; alt: string;
           transition={{ duration: 0.4 }}
           className="relative rounded-2xl overflow-hidden"
           style={{
-            boxShadow: '0 25px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05)',
+            boxShadow: '0 25px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(var(--fg-rgb),0.05)',
           }}
         >
           <img src={src} alt={alt} className="w-[320px] h-[200px] object-cover rounded-2xl" />
@@ -111,8 +111,8 @@ function TiltCard({ src, alt, frozen, showDetails }: { src: string; alt: string;
           <div className="absolute inset-0 flex flex-col justify-between p-5 pointer-events-none">
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-2">
-                <CreditCard size={20} className="text-acid" />
-                <span className="font-display text-[14px] tracking-[0.02em] text-acid">KRE8TRIX</span>
+                <CreditCard size={20} className="text-[#C8FF00]" />
+                <span className="font-display text-[14px] tracking-[0.02em] text-[#C8FF00]">KRE8TRIX</span>
               </div>
               <Wifi size={24} className="text-white/60" />
             </div>
@@ -161,21 +161,21 @@ export default function CardManager() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] }}
-        className="bg-panel border border-[rgba(255,255,255,0.08)] rounded-2xl p-6"
+        className="bg-panel border border-[rgba(var(--fg-rgb),0.08)] rounded-2xl p-6"
       >
         <TiltCard src="/card-metal.png" alt="Kre8trix Card" frozen={frozen} showDetails={showDetails} />
 
         <div className="flex items-center justify-center gap-4 mt-4">
           <button
             onClick={() => setShowDetails(!showDetails)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-panel2 text-white hover:bg-panel transition-colors"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-panel2 text-ink hover:bg-panel transition-colors"
           >
             {showDetails ? <EyeOff size={16} /> : <Eye size={16} />}
             <span className="font-body text-[14px]">{showDetails ? 'Hide' : 'Show'} Details</span>
           </button>
           <button
             onClick={handleCopyNumber}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-panel2 text-white hover:bg-panel transition-colors"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-panel2 text-ink hover:bg-panel transition-colors"
           >
             {copied ? <Check size={16} className="text-positive" /> : <Copy size={16} />}
             <span className="font-body text-[14px]">{copied ? 'Copied!' : 'Copy Number'}</span>
@@ -183,7 +183,7 @@ export default function CardManager() {
           <button
             onClick={() => setFrozen(!frozen)}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-colors ${
-              frozen ? 'bg-[rgba(255,77,77,0.15)] text-negative' : 'bg-panel2 text-white hover:bg-panel'
+              frozen ? 'bg-[rgba(var(--negative-rgb),0.15)] text-negative' : 'bg-panel2 text-ink hover:bg-panel'
             }`}
           >
             <Snowflake size={16} />
@@ -197,9 +197,9 @@ export default function CardManager() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.1, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] }}
-        className="bg-panel border border-[rgba(255,255,255,0.08)] rounded-2xl p-6"
+        className="bg-panel border border-[rgba(var(--fg-rgb),0.08)] rounded-2xl p-6"
       >
-        <h3 className="font-display text-[36px] tracking-[0.02em] text-white mb-6">Spend Categories</h3>
+        <h3 className="font-display text-[36px] tracking-[0.02em] text-ink mb-6">Spend Categories</h3>
         <div className="space-y-4">
           {categories.map((cat, i) => {
             const percent = (cat.current / cat.limit) * 100;
@@ -208,13 +208,13 @@ export default function CardManager() {
                 <div className="flex items-center justify-between mb-1">
                   <div className="flex items-center gap-2">
                     <cat.icon size={16} style={{ color: cat.color }} />
-                    <span className="font-body text-[14px] text-white">{cat.name}</span>
+                    <span className="font-body text-[14px] text-ink">{cat.name}</span>
                   </div>
-                  <span className="font-mono text-[12px] text-[rgba(255,255,255,0.42)]">
+                  <span className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)]">
                     ${cat.current} / ${cat.limit}
                   </span>
                 </div>
-                <div className="h-2 bg-[rgba(255,255,255,0.06)] rounded-full overflow-hidden">
+                <div className="h-2 bg-[rgba(var(--fg-rgb),0.06)] rounded-full overflow-hidden">
                   <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${Math.min(percent, 100)}%` }}

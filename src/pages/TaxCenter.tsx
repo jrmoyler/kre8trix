@@ -29,9 +29,9 @@ function usd(amount: number): string {
 
 function StatusBadge({ label, tone }: { label: string; tone: 'positive' | 'warning' | 'muted' }) {
   const config = {
-    positive: { bg: 'rgba(0,229,160,0.15)', text: '#00E5A0' },
-    warning: { bg: 'rgba(255,212,0,0.15)', text: '#FFD400' },
-    muted: { bg: 'rgba(255,255,255,0.08)', text: 'rgba(255,255,255,0.55)' },
+    positive: { bg: 'rgba(var(--positive-rgb),0.15)', text: 'rgb(var(--color-positive))' },
+    warning: { bg: 'rgba(var(--gold-rgb),0.15)', text: 'rgb(var(--color-gold))' },
+    muted: { bg: 'rgba(var(--fg-rgb),0.08)', text: 'rgba(var(--fg-rgb),0.55)' },
   }[tone];
   return (
     <span
@@ -89,15 +89,15 @@ function QuarterlyCalculator({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: easeOutExpo }}
-      className="bg-panel border border-[rgba(255,255,255,0.08)] rounded-2xl p-6"
+      className="bg-panel border border-[rgba(var(--fg-rgb),0.08)] rounded-2xl p-6"
     >
       <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 rounded-full bg-[rgba(255,212,0,0.15)] flex items-center justify-center">
-          <Landmark size={20} style={{ color: '#FFD400' }} />
+        <div className="w-10 h-10 rounded-full bg-[rgba(var(--gold-rgb),0.15)] flex items-center justify-center">
+          <Landmark size={20} style={{ color: 'rgb(var(--color-gold))' }} />
         </div>
         <div className="flex-1">
-          <h2 className="font-display text-[36px] tracking-[0.02em] text-white">Quarterly Estimates</h2>
-          <p className="font-mono text-[12px] text-[rgba(255,255,255,0.42)] tracking-[0.04em]">
+          <h2 className="font-display text-[36px] tracking-[0.02em] text-ink">Quarterly Estimates</h2>
+          <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em]">
             {summary ? `Estimated payments for tax year ${summary.taxYear}` : 'Estimated payments'}
           </p>
         </div>
@@ -120,13 +120,13 @@ function QuarterlyCalculator({
         <>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
             {[
-              { label: 'YTD Income', value: usd(summary.ytdIncome), color: 'text-white' },
-              { label: 'Est. Total Owed', value: usd(totalEstimated), color: 'text-white' },
+              { label: 'YTD Income', value: usd(summary.ytdIncome), color: 'text-ink' },
+              { label: 'Est. Total Owed', value: usd(totalEstimated), color: 'text-ink' },
               { label: 'Already Reserved', value: usd(reserved), color: 'text-positive' },
               { label: 'Still Needed', value: usd(stillNeeded), color: stillNeeded > 0 ? 'text-ember' : 'text-positive' },
             ].map((stat) => (
               <div key={stat.label} className="bg-panel2 rounded-xl p-4">
-                <p className="font-mono text-[11px] text-[rgba(255,255,255,0.42)] tracking-[0.04em] mb-1">
+                <p className="font-mono text-[11px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em] mb-1">
                   {stat.label}
                 </p>
                 <p className={`font-mono text-[18px] font-medium tracking-[-0.02em] ${stat.color}`}>{stat.value}</p>
@@ -137,7 +137,7 @@ function QuarterlyCalculator({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <span className="font-body text-[14px] text-white">Effective tax rate</span>
+                <span className="font-body text-[14px] text-ink">Effective tax rate</span>
                 <span className="font-mono text-[14px] text-acid">{rate}%</span>
               </div>
               <input
@@ -151,22 +151,22 @@ function QuarterlyCalculator({
                 onTouchEnd={() => saveEstimates({ effectiveRatePercent: rate })}
                 className="w-full accent-acid cursor-pointer"
               />
-              <p className="font-mono text-[11px] text-[rgba(255,255,255,0.42)] mt-1">
+              <p className="font-mono text-[11px] text-[rgba(var(--fg-rgb),0.42)] mt-1">
                 Federal + state + self-employment combined
               </p>
             </div>
             <div>
-              <label className="block font-body text-[14px] text-white mb-1.5" htmlFor="filing-status">
+              <label className="block font-body text-[14px] text-ink mb-1.5" htmlFor="filing-status">
                 Filing status
               </label>
               <select
                 id="filing-status"
                 value={summary.settings.filingStatus}
                 onChange={(e) => saveEstimates({ filingStatus: e.target.value as FilingStatus })}
-                className="w-full bg-panel2 border border-[rgba(255,255,255,0.08)] rounded-xl px-4 py-2.5 font-body text-[14px] text-white focus:outline-none focus:border-acid cursor-pointer"
+                className="w-full bg-panel2 border border-[rgba(var(--fg-rgb),0.08)] rounded-xl px-4 py-2.5 font-body text-[14px] text-ink focus:outline-none focus:border-acid cursor-pointer"
               >
                 {FILING_STATUS_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value} className="bg-panel2 text-white">
+                  <option key={opt.value} value={opt.value} className="bg-panel2 text-ink">
                     {opt.label}
                   </option>
                 ))}
@@ -175,20 +175,20 @@ function QuarterlyCalculator({
           </div>
 
           <div className="mb-2 flex items-center justify-between">
-            <span className="font-mono text-[12px] text-[rgba(255,255,255,0.42)]">
+            <span className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)]">
               {Math.round(coveredPercent)}% of estimated taxes reserved
             </span>
-            <span className="font-mono text-[12px] text-[rgba(255,255,255,0.42)]">
+            <span className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)]">
               Next due: {summary.quarters.find((q) => q.status !== 'Covered')?.dueDate ?? summary.quarters[3].dueDate}
             </span>
           </div>
-          <div className="h-2.5 bg-[rgba(255,255,255,0.06)] rounded-full overflow-hidden mb-6">
+          <div className="h-2.5 bg-[rgba(var(--fg-rgb),0.06)] rounded-full overflow-hidden mb-6">
             <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${coveredPercent}%` }}
               transition={{ duration: 0.8, ease: easeOutExpo }}
               className="h-full rounded-full"
-              style={{ background: 'linear-gradient(90deg, #FFD400, #C8FF00)' }}
+              style={{ background: 'linear-gradient(90deg, rgb(var(--color-gold)), rgb(var(--color-acid)))' }}
             />
           </div>
 
@@ -196,22 +196,22 @@ function QuarterlyCalculator({
             {summary.quarters.map((q) => {
               const amount = pendingRate !== null ? Math.round(previewTotal / 4) : q.amount;
               return (
-                <div key={q.quarter} className="bg-panel2 rounded-xl p-4 border border-[rgba(255,255,255,0.04)]">
+                <div key={q.quarter} className="bg-panel2 rounded-xl p-4 border border-[rgba(var(--fg-rgb),0.04)]">
                   <div className="flex items-center justify-between mb-3">
-                    <span className="font-display text-[24px] tracking-[0.02em] text-white">{q.quarter}</span>
+                    <span className="font-display text-[24px] tracking-[0.02em] text-ink">{q.quarter}</span>
                     <StatusBadge
                       label={q.status}
                       tone={q.status === 'Covered' ? 'positive' : q.status === 'Partial' ? 'warning' : 'muted'}
                     />
                   </div>
-                  <p className="font-mono text-[22px] font-medium text-white tracking-[-0.02em] mb-2">
+                  <p className="font-mono text-[22px] font-medium text-ink tracking-[-0.02em] mb-2">
                     {usd(amount)}
                   </p>
-                  <div className="flex items-center gap-1.5 font-mono text-[11px] text-[rgba(255,255,255,0.42)]">
+                  <div className="flex items-center gap-1.5 font-mono text-[11px] text-[rgba(var(--fg-rgb),0.42)]">
                     <CalendarClock size={12} className="flex-shrink-0" />
                     Due {q.dueDate}
                   </div>
-                  <p className="font-mono text-[11px] text-[rgba(255,255,255,0.42)] mt-1">{q.period}</p>
+                  <p className="font-mono text-[11px] text-[rgba(var(--fg-rgb),0.42)] mt-1">{q.period}</p>
                 </div>
               );
             })}
@@ -234,15 +234,15 @@ function Ten99kTracker() {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.15 }}
       transition={{ duration: 0.5, ease: easeOutExpo }}
-      className="bg-panel border border-[rgba(255,255,255,0.08)] rounded-2xl p-6"
+      className="bg-panel border border-[rgba(var(--fg-rgb),0.08)] rounded-2xl p-6"
     >
       <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 rounded-full bg-[rgba(0,212,255,0.15)] flex items-center justify-center">
+        <div className="w-10 h-10 rounded-full bg-[rgba(var(--electric-rgb),0.15)] flex items-center justify-center">
           <FileCheck2 size={20} className="text-electric" />
         </div>
         <div>
-          <h2 className="font-display text-[36px] tracking-[0.02em] text-white">1099-K Tracker</h2>
-          <p className="font-mono text-[12px] text-[rgba(255,255,255,0.42)] tracking-[0.04em]">
+          <h2 className="font-display text-[36px] tracking-[0.02em] text-ink">1099-K Tracker</h2>
+          <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em]">
             Gross payments per platform vs the federal reporting threshold
           </p>
         </div>
@@ -256,11 +256,11 @@ function Ten99kTracker() {
         <div className="overflow-x-auto">
           <table className="w-full min-w-[640px]">
             <thead>
-              <tr className="border-b border-[rgba(255,255,255,0.08)]">
+              <tr className="border-b border-[rgba(var(--fg-rgb),0.08)]">
                 {['Platform', 'Gross Payments', 'Transactions', 'Threshold Progress', 'Expected Form'].map((h) => (
                   <th
                     key={h}
-                    className="text-left font-mono text-[11px] text-[rgba(255,255,255,0.42)] tracking-[0.04em] uppercase pb-3 pr-4"
+                    className="text-left font-mono text-[11px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em] uppercase pb-3 pr-4"
                   >
                     {h}
                   </th>
@@ -271,31 +271,31 @@ function Ten99kTracker() {
               {rows.map((row) => {
                 const progress = Math.min(100, (row.grossPayments / row.threshold) * 100);
                 return (
-                  <tr key={row.platform} className="border-b border-[rgba(255,255,255,0.04)] last:border-0">
+                  <tr key={row.platform} className="border-b border-[rgba(var(--fg-rgb),0.04)] last:border-0">
                     <td className="py-4 pr-4">
                       <div className="flex items-center gap-2.5">
                         <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: row.color }} />
-                        <span className="font-body text-[14px] font-medium text-white">{row.platform}</span>
+                        <span className="font-body text-[14px] font-medium text-ink">{row.platform}</span>
                       </div>
                     </td>
-                    <td className="py-4 pr-4 font-mono text-[14px] text-white tracking-[-0.02em]">
+                    <td className="py-4 pr-4 font-mono text-[14px] text-ink tracking-[-0.02em]">
                       {usd(row.grossPayments)}
                     </td>
-                    <td className="py-4 pr-4 font-mono text-[14px] text-[rgba(255,255,255,0.6)]">
+                    <td className="py-4 pr-4 font-mono text-[14px] text-[rgba(var(--fg-rgb),0.6)]">
                       {row.transactionCount}
                     </td>
                     <td className="py-4 pr-4">
                       <div className="flex items-center gap-3 min-w-[160px]">
-                        <div className="flex-1 h-2 bg-[rgba(255,255,255,0.06)] rounded-full overflow-hidden">
+                        <div className="flex-1 h-2 bg-[rgba(var(--fg-rgb),0.06)] rounded-full overflow-hidden">
                           <div
                             className="h-full rounded-full"
                             style={{
                               width: `${progress}%`,
-                              background: progress >= 100 ? '#C8FF00' : progress >= 60 ? '#FFD400' : 'rgba(0,212,255,0.6)',
+                              background: progress >= 100 ? 'rgb(var(--color-acid))' : progress >= 60 ? 'rgb(var(--color-gold))' : 'rgba(var(--electric-rgb),0.6)',
                             }}
                           />
                         </div>
-                        <span className="font-mono text-[11px] text-[rgba(255,255,255,0.42)] w-[72px] flex-shrink-0">
+                        <span className="font-mono text-[11px] text-[rgba(var(--fg-rgb),0.42)] w-[72px] flex-shrink-0">
                           {Math.round(progress)}% of {usd(row.threshold)}
                         </span>
                       </div>
@@ -400,23 +400,23 @@ function TurboTaxCard({
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.15 }}
       transition={{ duration: 0.5, ease: easeOutExpo }}
-      className="rounded-2xl p-6 border border-[rgba(0,212,255,0.15)]"
-      style={{ background: 'linear-gradient(135deg, #0F0F1E 0%, rgba(0,212,255,0.05) 100%)' }}
+      className="rounded-2xl p-6 border border-[rgba(var(--electric-rgb),0.15)]"
+      style={{ background: 'linear-gradient(135deg, rgb(var(--color-panel)) 0%, rgba(var(--electric-rgb),0.05) 100%)' }}
     >
       <div className="flex flex-wrap items-center justify-between gap-6">
         <div className="flex items-center gap-4 min-w-0">
           <div
             className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{ background: 'linear-gradient(135deg, #00D4FF, #C8FF00)' }}
+            style={{ background: 'linear-gradient(135deg, rgb(var(--color-electric)), rgb(var(--color-acid)))' }}
           >
             <Receipt size={24} className="text-void" />
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-3 flex-wrap">
-              <h2 className="font-display text-[36px] tracking-[0.02em] text-white">TurboTax</h2>
+              <h2 className="font-display text-[36px] tracking-[0.02em] text-ink">TurboTax</h2>
               {connected && <StatusBadge label="Connected" tone="positive" />}
             </div>
-            <p className="font-mono text-[12px] text-[rgba(255,255,255,0.42)] tracking-[0.04em]">
+            <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em]">
               {connected && summary?.turbotax.account
                 ? `Linked to ${summary.turbotax.account} · last sync ${summary.turbotax.lastSync}`
                 : 'Send your creator income and quarterly estimates straight to TurboTax'}
@@ -430,7 +430,7 @@ function TurboTaxCard({
             disabled={connecting || connected}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-body text-[14px] font-semibold transition-all ${
               connected
-                ? 'bg-[rgba(0,229,160,0.15)] text-positive cursor-default'
+                ? 'bg-[rgba(var(--positive-rgb),0.15)] text-positive cursor-default'
                 : 'bg-electric text-void hover:brightness-110 disabled:opacity-60'
             }`}
           >
@@ -460,8 +460,8 @@ export default function TaxCenter() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="font-display text-[48px] tracking-[0.02em] text-white">Tax Center</h1>
-        <p className="font-mono text-[12px] text-[rgba(255,255,255,0.42)] tracking-[0.04em]">
+        <h1 className="font-display text-[48px] tracking-[0.02em] text-ink">Tax Center</h1>
+        <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em]">
           Quarterly estimates, 1099-K coverage, and filing integrations
         </p>
       </div>

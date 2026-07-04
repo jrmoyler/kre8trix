@@ -45,13 +45,13 @@ const CREDIT_LINE_USED = 2500;
 /* ------------------------------------------------------------------ */
 function StatusBadge({ status }: { status: string }) {
   const config: Record<string, { bg: string; text: string }> = {
-    'Completed': { bg: 'rgba(0,229,160,0.15)', text: '#00E5A0' },
-    'Active': { bg: 'rgba(0,229,160,0.15)', text: '#00E5A0' },
-    'Pending': { bg: 'rgba(255,212,0,0.15)', text: '#FFD400' },
-    'Repaid': { bg: 'rgba(0,212,255,0.15)', text: '#00D4FF' },
-    'Defaulted': { bg: 'rgba(255,77,77,0.15)', text: '#FF4D4D' },
-    'Verified': { bg: 'rgba(0,229,160,0.15)', text: '#00E5A0' },
-    'Pending verification': { bg: 'rgba(255,212,0,0.15)', text: '#FFD400' },
+    'Completed': { bg: 'rgba(var(--positive-rgb),0.15)', text: 'rgb(var(--color-positive))' },
+    'Active': { bg: 'rgba(var(--positive-rgb),0.15)', text: 'rgb(var(--color-positive))' },
+    'Pending': { bg: 'rgba(var(--gold-rgb),0.15)', text: 'rgb(var(--color-gold))' },
+    'Repaid': { bg: 'rgba(var(--electric-rgb),0.15)', text: 'rgb(var(--color-electric))' },
+    'Defaulted': { bg: 'rgba(var(--negative-rgb),0.15)', text: 'rgb(var(--color-negative))' },
+    'Verified': { bg: 'rgba(var(--positive-rgb),0.15)', text: 'rgb(var(--color-positive))' },
+    'Pending verification': { bg: 'rgba(var(--gold-rgb),0.15)', text: 'rgb(var(--color-gold))' },
   };
   const c = config[status] || config['Pending'];
   return (
@@ -72,11 +72,11 @@ function percentRepaid(advance: Advance): number {
 function AdvancesSkeleton() {
   return (
     <div className="space-y-8">
-      <div className="bg-panel border border-[rgba(255,255,255,0.08)] rounded-2xl px-7 py-5">
+      <div className="bg-panel border border-[rgba(var(--fg-rgb),0.08)] rounded-2xl px-7 py-5">
         <SkeletonBlock className="h-6 w-2/3 mb-3" />
         <SkeletonBlock className="h-3 w-40" />
       </div>
-      <div className="bg-panel border border-[rgba(255,255,255,0.08)] rounded-[20px] p-8">
+      <div className="bg-panel border border-[rgba(var(--fg-rgb),0.08)] rounded-[20px] p-8">
         <SkeletonBlock className="h-10 w-64 mb-4" />
         <SkeletonBlock className="h-4 w-96 mb-6" />
         <div className="flex gap-3 mb-5">
@@ -107,7 +107,7 @@ export default function Advances() {
 
   if (error) {
     return (
-      <div className="bg-panel border border-[rgba(255,255,255,0.08)] rounded-2xl">
+      <div className="bg-panel border border-[rgba(var(--fg-rgb),0.08)] rounded-2xl">
         <ErrorNotice message={error} onRetry={refresh} />
       </div>
     );
@@ -169,8 +169,8 @@ export default function Advances() {
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] }}
-        className="relative bg-panel border border-[rgba(255,255,255,0.08)] rounded-2xl px-7 py-5 overflow-hidden"
-        style={{ borderLeft: `3px solid ${isEligible ? '#00E5A0' : isNearLimit ? '#FFD400' : '#FF4D4D'}` }}
+        className="relative bg-panel border border-[rgba(var(--fg-rgb),0.08)] rounded-2xl px-7 py-5 overflow-hidden"
+        style={{ borderLeft: `3px solid ${isEligible ? 'rgb(var(--color-positive))' : isNearLimit ? 'rgb(var(--color-gold))' : 'rgb(var(--color-negative))'}` }}
       >
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-4">
@@ -182,38 +182,38 @@ export default function Advances() {
               {isEligible ? (
                 <CheckCircle2 size={28} className="text-positive" />
               ) : isNearLimit ? (
-                <AlertTriangle size={28} className="text-[#FFD400]" />
+                <AlertTriangle size={28} className="text-[rgb(var(--color-gold))]" />
               ) : (
                 <Lock size={28} className="text-negative" />
               )}
             </motion.div>
             <div>
-              <h4 className={`font-body text-[18px] font-semibold ${isEligible ? 'text-positive' : isNearLimit ? 'text-[#FFD400]' : 'text-negative'}`}>
+              <h4 className={`font-body text-[18px] font-semibold ${isEligible ? 'text-positive' : isNearLimit ? 'text-[rgb(var(--color-gold))]' : 'text-negative'}`}>
                 {isEligible
                   ? `You're approved for advances up to $${eligibility.available.toLocaleString()}`
                   : isNearLimit
                   ? `You're at ${Math.round((eligibility.used / eligibility.maxAmount) * 100)}% of your advance limit`
                   : 'Advance unavailable — improve your CCS score'}
               </h4>
-              <p className="font-mono text-[12px] tracking-[0.04em] text-[rgba(255,255,255,0.42)]">
+              <p className="font-mono text-[12px] tracking-[0.04em] text-[rgba(var(--fg-rgb),0.42)]">
                 ${eligibility.used.toLocaleString()} / ${eligibility.maxAmount.toLocaleString()} used
               </p>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <span className="inline-flex items-center px-3 py-1.5 rounded-full font-mono text-[12px] tracking-[0.04em] bg-[rgba(0,212,255,0.15)] text-electric">
+            <span className="inline-flex items-center px-3 py-1.5 rounded-full font-mono text-[12px] tracking-[0.04em] bg-[rgba(var(--electric-rgb),0.15)] text-electric">
               CCS: {eligibility.ccsScore} — {eligibility.tier}
             </span>
           </div>
         </div>
         {/* Progress bar */}
-        <div className="mt-4 h-1.5 bg-[rgba(255,255,255,0.06)] rounded-full overflow-hidden">
+        <div className="mt-4 h-1.5 bg-[rgba(var(--fg-rgb),0.06)] rounded-full overflow-hidden">
           <motion.div
             initial={{ width: 0 }}
             animate={{ width: `${(eligibility.used / eligibility.maxAmount) * 100}%` }}
             transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] }}
             className="h-full rounded-full"
-            style={{ background: isNearLimit ? 'linear-gradient(90deg, #FFD400, #FF4D00)' : 'linear-gradient(90deg, #C8FF00, #00D4FF)' }}
+            style={{ background: isNearLimit ? 'linear-gradient(90deg, rgb(var(--color-gold)), rgb(var(--color-ember)))' : 'linear-gradient(90deg, rgb(var(--color-acid)), rgb(var(--color-electric)))' }}
           />
         </div>
       </motion.div>
@@ -225,12 +225,12 @@ export default function Advances() {
         transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] }}
         className="relative rounded-[20px] p-8 overflow-hidden"
         style={{
-          background: 'linear-gradient(135deg, #0F0F1E 0%, rgba(255,77,0,0.04) 100%)',
-          border: '1px solid rgba(255,77,0,0.15)',
+          background: 'linear-gradient(135deg, rgb(var(--color-panel)) 0%, rgba(var(--ember-rgb),0.04) 100%)',
+          border: '1px solid rgba(var(--ember-rgb),0.15)',
         }}
       >
-        <h2 className="font-display text-[48px] tracking-[0.02em] text-white mb-2">Get an Advance</h2>
-        <p className="font-body text-[18px] text-[rgba(255,255,255,0.42)] mb-6">
+        <h2 className="font-display text-[48px] tracking-[0.02em] text-ink mb-2">Get an Advance</h2>
+        <p className="font-body text-[18px] text-[rgba(var(--fg-rgb),0.42)] mb-6">
           Access up to 60% of your projected monthly income instantly
         </p>
 
@@ -246,24 +246,24 @@ export default function Advances() {
                 className={`px-6 py-3 rounded-xl font-mono text-[14px] font-medium transition-all border ${
                   selectedAmount === amt
                     ? 'bg-acid text-void border-acid'
-                    : 'bg-transparent text-white border-[rgba(255,255,255,0.2)] hover:border-[rgba(255,255,255,0.4)] hover:bg-[rgba(255,255,255,0.06)]'
+                    : 'bg-transparent text-ink border-[rgba(var(--fg-rgb),0.2)] hover:border-[rgba(var(--fg-rgb),0.4)] hover:bg-[rgba(var(--fg-rgb),0.06)]'
                 }`}
               >
                 ${amt.toLocaleString()}
               </motion.button>
             ))}
             <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 font-mono text-[20px] text-[rgba(255,255,255,0.4)]">$</span>
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 font-mono text-[20px] text-[rgba(var(--fg-rgb),0.4)]">$</span>
               <input
                 type="number"
                 value={customAmount}
                 onChange={(e) => { setCustomAmount(e.target.value); setSelectedAmount(null); }}
                 placeholder="Custom"
-                className="bg-surface border border-[rgba(255,255,255,0.1)] rounded-xl pl-8 pr-4 py-3 font-mono text-[16px] text-white placeholder:text-[rgba(255,255,255,0.2)] focus:border-electric focus:shadow-[0_0_0_3px_rgba(0,212,255,0.15)] outline-none transition-all w-40"
+                className="bg-surface border border-[rgba(var(--fg-rgb),0.1)] rounded-xl pl-8 pr-4 py-3 font-mono text-[16px] text-ink placeholder:text-[rgba(var(--fg-rgb),0.2)] focus:border-electric focus:shadow-[0_0_0_3px_rgba(var(--electric-rgb),0.15)] outline-none transition-all w-40"
               />
             </div>
           </div>
-          <p className="font-mono text-[12px] tracking-[0.04em] text-[rgba(255,255,255,0.42)]">
+          <p className="font-mono text-[12px] tracking-[0.04em] text-[rgba(var(--fg-rgb),0.42)]">
             Fee: {eligibility.feePercent}% (${fee.toFixed(2)}) • Total repayment: ${totalRepay.toFixed(2)} • Est. {payoffMonths} month{payoffMonths !== 1 ? 's' : ''} at {repaymentPercent}% of income
           </p>
           <motion.button
@@ -282,14 +282,14 @@ export default function Advances() {
       {/* ── Section 3: Active Advances ── */}
       {active.length > 0 && (
         <div className="space-y-4">
-          <h3 className="font-display text-[36px] tracking-[0.02em] text-white">Active Advances</h3>
+          <h3 className="font-display text-[36px] tracking-[0.02em] text-ink">Active Advances</h3>
           {active.map((advance) => (
             <motion.div
               key={advance.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
-              className="bg-panel border border-[rgba(255,255,255,0.08)] rounded-2xl p-6"
+              className="bg-panel border border-[rgba(var(--fg-rgb),0.08)] rounded-2xl p-6"
             >
               <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
                 <div>
@@ -297,16 +297,16 @@ export default function Advances() {
                     <span className="font-mono text-[14px] text-electric font-medium">{advance.id}</span>
                     <StatusBadge status={`${advance.status}${advance.status === 'Active' ? ' — Repaying' : ''}`} />
                   </div>
-                  <p className="font-mono text-[12px] text-[rgba(255,255,255,0.42)] tracking-[0.04em] mt-1">
+                  <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em] mt-1">
                     Issued {advance.issued} • {advance.repaymentRate}
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="font-mono text-[24px] font-medium text-white">${advance.amount.toLocaleString()}</p>
-                  <p className="font-mono text-[12px] text-[rgba(255,255,255,0.42)]">+${advance.fee} fee ({advance.feePercent}%)</p>
+                  <p className="font-mono text-[24px] font-medium text-ink">${advance.amount.toLocaleString()}</p>
+                  <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)]">+${advance.fee} fee ({advance.feePercent}%)</p>
                 </div>
               </div>
-              <div className="h-2 bg-[rgba(255,255,255,0.06)] rounded-full overflow-hidden mb-2">
+              <div className="h-2 bg-[rgba(var(--fg-rgb),0.06)] rounded-full overflow-hidden mb-2">
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${percentRepaid(advance)}%` }}
@@ -315,8 +315,8 @@ export default function Advances() {
                 />
               </div>
               <div className="flex items-center justify-between">
-                <span className="font-mono text-[12px] text-[rgba(255,255,255,0.42)]">${advance.repaid.toLocaleString()} repaid</span>
-                <span className="font-mono text-[12px] text-[rgba(255,255,255,0.42)]">${advance.total.toLocaleString()} total</span>
+                <span className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)]">${advance.repaid.toLocaleString()} repaid</span>
+                <span className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)]">${advance.total.toLocaleString()} total</span>
               </div>
             </motion.div>
           ))}
@@ -329,15 +329,15 @@ export default function Advances() {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.5 }}
-        className="bg-panel border border-[rgba(255,255,255,0.08)] rounded-2xl p-6"
+        className="bg-panel border border-[rgba(var(--fg-rgb),0.08)] rounded-2xl p-6"
       >
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-full bg-[rgba(155,93,229,0.15)] flex items-center justify-center">
-            <Upload size={20} style={{ color: '#9B5DE5' }} />
+          <div className="w-10 h-10 rounded-full bg-[rgba(var(--violet-rgb),0.15)] flex items-center justify-center">
+            <Upload size={20} style={{ color: 'rgb(var(--color-violet))' }} />
           </div>
           <div>
-            <h3 className="font-display text-[36px] tracking-[0.02em] text-white">Sponsor-Backed Credit</h3>
-            <p className="font-mono text-[12px] text-[rgba(255,255,255,0.42)] tracking-[0.04em]">
+            <h3 className="font-display text-[36px] tracking-[0.02em] text-ink">Sponsor-Backed Credit</h3>
+            <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em]">
               Upload signed brand deals to increase your advance limit
             </p>
           </div>
@@ -348,8 +348,8 @@ export default function Advances() {
             {deals.map((deal) => (
               <div key={deal.brand} className="flex items-center justify-between py-3 px-4 rounded-xl bg-panel2">
                 <div>
-                  <p className="font-body text-[14px] text-white">{deal.brand}</p>
-                  <p className="font-mono text-[12px] text-[rgba(255,255,255,0.42)]">${deal.amount.toLocaleString()}</p>
+                  <p className="font-body text-[14px] text-ink">{deal.brand}</p>
+                  <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)]">${deal.amount.toLocaleString()}</p>
                 </div>
                 <StatusBadge status={deal.status} />
               </div>
@@ -357,7 +357,7 @@ export default function Advances() {
           </div>
         ) : (
           <div className="text-center py-8 mb-6">
-            <p className="font-body text-[14px] text-[rgba(255,255,255,0.42)]">No deals uploaded yet</p>
+            <p className="font-body text-[14px] text-[rgba(var(--fg-rgb),0.42)]">No deals uploaded yet</p>
           </div>
         )}
 
@@ -375,14 +375,14 @@ export default function Advances() {
                   value={dealBrand}
                   onChange={(e) => setDealBrand(e.target.value)}
                   placeholder="Brand / campaign name"
-                  className="flex-1 bg-surface border border-[rgba(255,255,255,0.1)] rounded-xl px-4 py-3 font-body text-[14px] text-white placeholder:text-[rgba(255,255,255,0.2)] focus:border-electric outline-none transition-colors"
+                  className="flex-1 bg-surface border border-[rgba(var(--fg-rgb),0.1)] rounded-xl px-4 py-3 font-body text-[14px] text-ink placeholder:text-[rgba(var(--fg-rgb),0.2)] focus:border-electric outline-none transition-colors"
                 />
                 <input
                   type="number"
                   value={dealAmount}
                   onChange={(e) => setDealAmount(e.target.value)}
                   placeholder="Deal amount ($)"
-                  className="sm:w-44 bg-surface border border-[rgba(255,255,255,0.1)] rounded-xl px-4 py-3 font-mono text-[14px] text-white placeholder:text-[rgba(255,255,255,0.2)] focus:border-electric outline-none transition-colors"
+                  className="sm:w-44 bg-surface border border-[rgba(var(--fg-rgb),0.1)] rounded-xl px-4 py-3 font-mono text-[14px] text-ink placeholder:text-[rgba(var(--fg-rgb),0.2)] focus:border-electric outline-none transition-colors"
                 />
                 <button
                   onClick={handleAddDeal}
@@ -399,7 +399,7 @@ export default function Advances() {
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={() => setShowDealForm((v) => !v)}
-          className="w-full py-3 rounded-xl border border-dashed border-[rgba(255,255,255,0.2)] text-[rgba(255,255,255,0.42)] hover:text-white hover:border-[rgba(255,255,255,0.4)] transition-all font-body text-[14px]"
+          className="w-full py-3 rounded-xl border border-dashed border-[rgba(var(--fg-rgb),0.2)] text-[rgba(var(--fg-rgb),0.42)] hover:text-ink hover:border-[rgba(var(--fg-rgb),0.4)] transition-all font-body text-[14px]"
         >
           {showDealForm ? 'Cancel' : '+ Upload Signed Contract'}
         </motion.button>
@@ -411,26 +411,26 @@ export default function Advances() {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.5 }}
-        className="bg-panel border border-[rgba(255,255,255,0.08)] rounded-2xl p-6"
+        className="bg-panel border border-[rgba(var(--fg-rgb),0.08)] rounded-2xl p-6"
       >
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-[rgba(0,212,255,0.15)] flex items-center justify-center">
-              <ShoppingBag size={20} style={{ color: '#00D4FF' }} />
+            <div className="w-10 h-10 rounded-full bg-[rgba(var(--electric-rgb),0.15)] flex items-center justify-center">
+              <ShoppingBag size={20} style={{ color: 'rgb(var(--color-electric))' }} />
             </div>
             <div>
-              <h3 className="font-display text-[36px] tracking-[0.02em] text-white">Equipment Credit</h3>
-              <p className="font-mono text-[12px] text-[rgba(255,255,255,0.42)] tracking-[0.04em]">
+              <h3 className="font-display text-[36px] tracking-[0.02em] text-ink">Equipment Credit</h3>
+              <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em]">
                 ${CREDIT_LINE_USED.toLocaleString()} / ${CREDIT_LINE_TOTAL.toLocaleString()} used
               </p>
             </div>
           </div>
-          <span className="font-mono text-[12px] tracking-[0.04em] text-[rgba(255,255,255,0.42)]">
+          <span className="font-mono text-[12px] tracking-[0.04em] text-[rgba(var(--fg-rgb),0.42)]">
             {Math.round((CREDIT_LINE_USED / CREDIT_LINE_TOTAL) * 100)}%
           </span>
         </div>
 
-        <div className="h-2 bg-[rgba(255,255,255,0.06)] rounded-full overflow-hidden mb-6">
+        <div className="h-2 bg-[rgba(var(--fg-rgb),0.06)] rounded-full overflow-hidden mb-6">
           <motion.div
             initial={{ width: 0 }}
             whileInView={{ width: `${(CREDIT_LINE_USED / CREDIT_LINE_TOTAL) * 100}%` }}
@@ -444,10 +444,10 @@ export default function Advances() {
           {EQUIPMENT_PURCHASES.map((purchase) => (
             <div key={purchase.item} className="flex items-center justify-between py-3 px-4 rounded-xl bg-panel2">
               <div>
-                <p className="font-body text-[14px] text-white">{purchase.item}</p>
-                <p className="font-mono text-[12px] text-[rgba(255,255,255,0.42)]">{purchase.date} • ${purchase.amount.toLocaleString()}</p>
+                <p className="font-body text-[14px] text-ink">{purchase.item}</p>
+                <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)]">{purchase.date} • ${purchase.amount.toLocaleString()}</p>
               </div>
-              <span className="font-mono text-[12px] text-[rgba(255,255,255,0.42)] tracking-[0.04em]">{purchase.status}</span>
+              <span className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em]">{purchase.status}</span>
             </div>
           ))}
         </div>
@@ -459,10 +459,10 @@ export default function Advances() {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.5 }}
-        className="bg-panel border border-[rgba(255,255,255,0.08)] rounded-2xl p-6"
+        className="bg-panel border border-[rgba(var(--fg-rgb),0.08)] rounded-2xl p-6"
       >
         <div className="flex items-center justify-between mb-6">
-          <h3 className="font-display text-[36px] tracking-[0.02em] text-white">Advance History</h3>
+          <h3 className="font-display text-[36px] tracking-[0.02em] text-ink">Advance History</h3>
           <div className="flex gap-2">
             {['All', 'Active', 'Repaid'].map((f) => (
               <button
@@ -471,7 +471,7 @@ export default function Advances() {
                 className={`px-4 py-2 rounded-lg font-mono text-[12px] tracking-[0.04em] transition-all ${
                   historyFilter === f
                     ? 'bg-acid text-void'
-                    : 'text-[rgba(255,255,255,0.42)] hover:text-white hover:bg-[rgba(255,255,255,0.06)]'
+                    : 'text-[rgba(var(--fg-rgb),0.42)] hover:text-ink hover:bg-[rgba(var(--fg-rgb),0.06)]'
                 }`}
               >
                 {f}
@@ -482,7 +482,7 @@ export default function Advances() {
 
         <div className="space-y-3">
           {filteredHistory.length === 0 ? (
-            <p className="text-center py-8 font-mono text-[12px] text-[rgba(255,255,255,0.42)]">
+            <p className="text-center py-8 font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)]">
               No {historyFilter !== 'All' ? historyFilter.toLowerCase() : ''} advances
             </p>
           ) : (
@@ -490,14 +490,14 @@ export default function Advances() {
               <div key={h.id} className="flex items-center justify-between py-3 px-4 rounded-xl bg-panel2">
                 <div>
                   <div className="flex items-center gap-3">
-                    <span className="font-mono text-[14px] text-white font-medium">{h.id}</span>
+                    <span className="font-mono text-[14px] text-ink font-medium">{h.id}</span>
                     <StatusBadge status={h.status} />
                   </div>
-                  <p className="font-mono text-[12px] text-[rgba(255,255,255,0.42)] tracking-[0.04em]">{h.issued}</p>
+                  <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em]">{h.issued}</p>
                 </div>
                 <div className="text-right">
-                  <p className="font-mono text-[14px] text-white">${h.amount.toLocaleString()}</p>
-                  <p className="font-mono text-[12px] text-[rgba(255,255,255,0.42)]">${h.repaid.toLocaleString()} repaid</p>
+                  <p className="font-mono text-[14px] text-ink">${h.amount.toLocaleString()}</p>
+                  <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)]">${h.repaid.toLocaleString()} repaid</p>
                 </div>
               </div>
             ))

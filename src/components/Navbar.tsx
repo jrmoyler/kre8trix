@@ -67,7 +67,7 @@ export default function Navbar() {
       {/* Mobile hamburger */}
       <button
         onClick={() => setMobileOpen(!mobileOpen)}
-        className="fixed top-4 left-4 z-[60] md:hidden bg-panel border border-[rgba(255,255,255,0.08)] rounded-lg p-2 text-white"
+        className="fixed top-4 left-4 z-[60] md:hidden bg-panel border border-[rgba(var(--fg-rgb),0.08)] rounded-lg p-2 text-ink"
       >
         {mobileOpen ? <X size={20} /> : <Menu size={20} />}
       </button>
@@ -82,7 +82,7 @@ export default function Navbar() {
 
       <aside
         className={`
-          fixed top-0 left-0 h-full bg-deep border-r border-[rgba(255,255,255,0.08)]
+          fixed top-0 left-0 h-full bg-deep border-r border-[rgba(var(--fg-rgb),0.08)]
           flex flex-col transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
           z-[56]
           ${sidebarWidth}
@@ -111,8 +111,8 @@ export default function Navbar() {
                 className={`
                   w-full flex items-center gap-3 h-12 px-4 rounded-xl transition-all duration-200
                   ${active
-                    ? 'text-acid bg-[rgba(200,255,0,0.08)] border-l-2 border-acid'
-                    : 'text-[rgba(255,255,255,0.42)] hover:text-white hover:bg-[rgba(255,255,255,0.06)] border-l-2 border-transparent'
+                    ? 'text-acid bg-[rgba(var(--acid-rgb),0.08)] border-l-2 border-acid'
+                    : 'text-[rgba(var(--fg-rgb),0.42)] hover:text-ink hover:bg-[rgba(var(--fg-rgb),0.06)] border-l-2 border-transparent'
                   }
                   ${collapsed ? 'justify-center px-2' : ''}
                 `}
@@ -132,15 +132,15 @@ export default function Navbar() {
         {/* Bottom: User */}
         <div
           className={`
-            border-t border-[rgba(255,255,255,0.08)] p-4 flex items-center gap-3
+            border-t border-[rgba(var(--fg-rgb),0.08)] p-4 flex items-center gap-3
             ${collapsed ? 'justify-center' : ''}
           `}
         >
           <InitialsAvatar name={user?.name ?? 'K'} size={40} />
           {!collapsed && (
             <div className="flex-1 min-w-0">
-              <p className="text-[14px] text-white font-medium truncate">{user?.name ?? 'Creator'}</p>
-              <p className="text-[12px] text-[rgba(255,255,255,0.42)] truncate">Creator</p>
+              <p className="text-[14px] text-ink font-medium truncate">{user?.name ?? 'Creator'}</p>
+              <p className="text-[12px] text-[rgba(var(--fg-rgb),0.42)] truncate">Creator</p>
             </div>
           )}
         </div>

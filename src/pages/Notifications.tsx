@@ -23,11 +23,11 @@ type Filter = 'all' | NotificationType;
 
 function NotificationsSkeleton() {
   return (
-    <div className="bg-panel border border-[rgba(255,255,255,0.08)] rounded-2xl p-6 space-y-5">
+    <div className="bg-panel border border-[rgba(var(--fg-rgb),0.08)] rounded-2xl p-6 space-y-5">
       <SkeletonBlock className="h-3 w-20" />
       {Array.from({ length: 6 }).map((_, i) => (
         <div key={i} className="flex items-center gap-4">
-          <div className="animate-pulse w-10 h-10 rounded-xl bg-[rgba(255,255,255,0.06)] flex-shrink-0" />
+          <div className="animate-pulse w-10 h-10 rounded-xl bg-[rgba(var(--fg-rgb),0.06)] flex-shrink-0" />
           <div className="flex-1 space-y-2">
             <SkeletonBlock className="h-3.5 w-48" />
             <SkeletonBlock className="h-2.5 w-72" />
@@ -117,10 +117,10 @@ export default function Notifications() {
       {/* Header */}
       <div className="flex items-end justify-between flex-wrap gap-4">
         <div>
-          <h2 className="font-display text-[48px] tracking-[0.02em] text-white leading-none">
+          <h2 className="font-display text-[48px] tracking-[0.02em] text-ink leading-none">
             Notification Center
           </h2>
-          <p className="font-body text-[14px] text-[rgba(255,255,255,0.42)] mt-3">
+          <p className="font-body text-[14px] text-[rgba(var(--fg-rgb),0.42)] mt-3">
             {unreadCount > 0
               ? `${unreadCount} unread notification${unreadCount === 1 ? '' : 's'}`
               : 'You’re all caught up'}
@@ -129,7 +129,7 @@ export default function Notifications() {
         {unreadCount > 0 && (
           <button
             onClick={markAllRead}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[rgba(255,255,255,0.06)] hover:bg-[rgba(255,255,255,0.1)] font-mono text-[12px] tracking-[0.04em] text-electric hover:text-acid transition-colors"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[rgba(var(--fg-rgb),0.06)] hover:bg-[rgba(var(--fg-rgb),0.1)] font-mono text-[12px] tracking-[0.04em] text-electric hover:text-acid transition-colors"
           >
             <CheckCheck size={14} />
             Mark all read
@@ -141,7 +141,7 @@ export default function Notifications() {
       <div className="flex flex-wrap gap-2">
         {filters.map((f) => {
           const active = filter === f.key;
-          const accent = f.key === 'all' ? '#C8FF00' : NOTIFICATION_TYPE_META[f.key].color;
+          const accent = f.key === 'all' ? 'rgb(var(--color-acid))' : NOTIFICATION_TYPE_META[f.key].color;
           return (
             <button
               key={f.key}
@@ -149,7 +149,7 @@ export default function Notifications() {
               className={`flex items-center gap-2 px-4 py-2 rounded-full font-mono text-[12px] tracking-[0.04em] border transition-colors ${
                 active
                   ? 'text-void'
-                  : 'text-[rgba(255,255,255,0.55)] border-[rgba(255,255,255,0.1)] hover:text-white hover:border-[rgba(255,255,255,0.25)]'
+                  : 'text-[rgba(var(--fg-rgb),0.55)] border-[rgba(var(--fg-rgb),0.1)] hover:text-ink hover:border-[rgba(var(--fg-rgb),0.25)]'
               }`}
               style={active ? { background: accent, borderColor: accent } : undefined}
             >
@@ -162,15 +162,15 @@ export default function Notifications() {
 
       {/* List */}
       {error ? (
-        <div className="bg-panel border border-[rgba(255,255,255,0.08)] rounded-2xl">
+        <div className="bg-panel border border-[rgba(var(--fg-rgb),0.08)] rounded-2xl">
           <ErrorNotice message={error} onRetry={refresh} />
         </div>
       ) : loading && !notifications ? (
         <NotificationsSkeleton />
       ) : groups.length === 0 ? (
-        <div className="bg-panel border border-[rgba(255,255,255,0.08)] rounded-2xl flex flex-col items-center justify-center gap-3 py-16">
-          <BellOff size={28} className="text-[rgba(255,255,255,0.25)]" />
-          <p className="font-body text-[14px] text-[rgba(255,255,255,0.42)]">
+        <div className="bg-panel border border-[rgba(var(--fg-rgb),0.08)] rounded-2xl flex flex-col items-center justify-center gap-3 py-16">
+          <BellOff size={28} className="text-[rgba(var(--fg-rgb),0.25)]" />
+          <p className="font-body text-[14px] text-[rgba(var(--fg-rgb),0.42)]">
             {filter === 'all' ? 'No notifications yet' : `No ${NOTIFICATION_TYPE_META[filter].label.toLowerCase()} notifications`}
           </p>
         </div>
@@ -178,10 +178,10 @@ export default function Notifications() {
         <div className="space-y-8">
           {groups.map(([label, items]) => (
             <div key={label}>
-              <h3 className="font-mono text-[12px] tracking-[0.12em] uppercase text-[rgba(255,255,255,0.42)] mb-3 px-1">
+              <h3 className="font-mono text-[12px] tracking-[0.12em] uppercase text-[rgba(var(--fg-rgb),0.42)] mb-3 px-1">
                 {label}
               </h3>
-              <div className="bg-panel border border-[rgba(255,255,255,0.08)] rounded-2xl overflow-hidden">
+              <div className="bg-panel border border-[rgba(var(--fg-rgb),0.08)] rounded-2xl overflow-hidden">
                 {items.map((n, i) => {
                   const meta = NOTIFICATION_TYPE_META[n.type] ?? NOTIFICATION_TYPE_META.system;
                   const Icon = meta.icon;
@@ -200,14 +200,14 @@ export default function Notifications() {
                           openNotification(n);
                         }
                       }}
-                      className={`group flex items-start gap-4 px-6 py-5 cursor-pointer border-b border-[rgba(255,255,255,0.05)] last:border-b-0 hover:bg-[rgba(255,255,255,0.03)] transition-colors ${
-                        n.read ? '' : 'bg-[rgba(255,255,255,0.015)]'
+                      className={`group flex items-start gap-4 px-6 py-5 cursor-pointer border-b border-[rgba(var(--fg-rgb),0.05)] last:border-b-0 hover:bg-[rgba(var(--fg-rgb),0.03)] transition-colors ${
+                        n.read ? '' : 'bg-[rgba(var(--fg-rgb),0.015)]'
                       }`}
                     >
                       <span
                         className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
                         style={{
-                          background: `${meta.color}1F`,
+                          background: `color-mix(in srgb, ${meta.color} 12%, transparent)`,
                           color: meta.color,
                           opacity: n.read ? 0.45 : 1,
                         }}
@@ -216,10 +216,10 @@ export default function Notifications() {
                       </span>
                       <div className={`flex-1 min-w-0 ${n.read ? 'opacity-60' : ''}`}>
                         <div className="flex items-center gap-2.5 flex-wrap">
-                          <p className="font-body text-[14px] font-semibold text-white">{n.title}</p>
+                          <p className="font-body text-[14px] font-semibold text-ink">{n.title}</p>
                           <span
                             className="inline-flex items-center px-2 py-0.5 rounded-full font-mono text-[10px] tracking-[0.06em]"
-                            style={{ background: `${meta.color}1F`, color: meta.color }}
+                            style={{ background: `color-mix(in srgb, ${meta.color} 12%, transparent)`, color: meta.color }}
                           >
                             {meta.label}
                           </span>
@@ -227,16 +227,16 @@ export default function Notifications() {
                             <span className="w-1.5 h-1.5 rounded-full" style={{ background: meta.color }} />
                           )}
                         </div>
-                        <p className="font-body text-[13px] text-[rgba(255,255,255,0.42)] mt-1">{n.body}</p>
+                        <p className="font-body text-[13px] text-[rgba(var(--fg-rgb),0.42)] mt-1">{n.body}</p>
                       </div>
                       <div className="flex flex-col items-end gap-2 flex-shrink-0">
-                        <span className="font-mono text-[11px] text-[rgba(255,255,255,0.42)]">
+                        <span className="font-mono text-[11px] text-[rgba(var(--fg-rgb),0.42)]">
                           {timeAgo(n.createdAt)}
                         </span>
                         <button
                           onClick={(e) => toggleRead(n, e)}
                           aria-label={n.read ? 'Mark unread' : 'Mark read'}
-                          className="flex items-center gap-1.5 font-mono text-[11px] tracking-[0.04em] text-[rgba(255,255,255,0.35)] hover:text-electric opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all"
+                          className="flex items-center gap-1.5 font-mono text-[11px] tracking-[0.04em] text-[rgba(var(--fg-rgb),0.35)] hover:text-electric opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all"
                         >
                           {n.read ? <Circle size={12} /> : <CircleCheck size={12} />}
                           {n.read ? 'Mark unread' : 'Mark read'}

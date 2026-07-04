@@ -68,9 +68,9 @@ function daysLeft(iso: string): number {
 }
 
 function matchColor(score: number): string {
-  if (score >= 80) return '#C8FF00';
-  if (score >= 65) return '#00D4FF';
-  return 'rgba(255,255,255,0.42)';
+  if (score >= 80) return 'rgb(var(--color-acid))';
+  if (score >= 65) return 'rgb(var(--color-electric))';
+  return 'rgba(var(--fg-rgb),0.42)';
 }
 
 function BrandLogo({ name, color, size = 48 }: { name: string; color: string; size?: number }) {
@@ -94,9 +94,9 @@ function BrandLogo({ name, color, size = 48 }: { name: string; color: string; si
 
 function StatusBadge({ status }: { status: 'Pending' | 'Accepted' | 'Applied' }) {
   const config: Record<string, { bg: string; text: string }> = {
-    Accepted: { bg: 'rgba(0,229,160,0.15)', text: '#00E5A0' },
-    Pending: { bg: 'rgba(255,212,0,0.15)', text: '#FFD400' },
-    Applied: { bg: 'rgba(0,212,255,0.15)', text: '#00D4FF' },
+    Accepted: { bg: 'rgba(var(--positive-rgb),0.15)', text: 'rgb(var(--color-positive))' },
+    Pending: { bg: 'rgba(var(--gold-rgb),0.15)', text: 'rgb(var(--color-gold))' },
+    Applied: { bg: 'rgba(var(--electric-rgb),0.15)', text: 'rgb(var(--color-electric))' },
   };
   const c = config[status];
   return (
@@ -133,9 +133,9 @@ function DealGridSkeleton() {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
       {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="bg-panel border border-[rgba(255,255,255,0.08)] rounded-2xl p-5">
+        <div key={i} className="bg-panel border border-[rgba(var(--fg-rgb),0.08)] rounded-2xl p-5">
           <div className="flex items-center gap-3 mb-4">
-            <div className="animate-pulse w-12 h-12 rounded-xl bg-[rgba(255,255,255,0.06)]" />
+            <div className="animate-pulse w-12 h-12 rounded-xl bg-[rgba(var(--fg-rgb),0.06)]" />
             <div className="flex-1 space-y-2">
               <SkeletonBlock className="h-4 w-32" />
               <SkeletonBlock className="h-3 w-20" />
@@ -208,11 +208,11 @@ function DealDetail({
             <BrandLogo name={deal.brand} color={deal.brandColor} size={64} />
             <div>
               <div className="flex flex-wrap items-center gap-3">
-                <h3 className="font-display text-[32px] tracking-[0.02em] text-white leading-none">{deal.brand}</h3>
+                <h3 className="font-display text-[32px] tracking-[0.02em] text-ink leading-none">{deal.brand}</h3>
                 {application && <StatusBadge status={application.status} />}
               </div>
-              <p className="font-body text-[15px] text-[rgba(255,255,255,0.62)] mt-1">{deal.tagline}</p>
-              <p className="font-mono text-[12px] tracking-[0.04em] text-[rgba(255,255,255,0.42)] mt-1">
+              <p className="font-body text-[15px] text-[rgba(var(--fg-rgb),0.62)] mt-1">{deal.tagline}</p>
+              <p className="font-mono text-[12px] tracking-[0.04em] text-[rgba(var(--fg-rgb),0.42)] mt-1">
                 {deal.category} • Apply by {formatDeadline(deal.deadline)}
                 {remaining > 0 && ` (${remaining}d left)`}
               </p>
@@ -220,7 +220,7 @@ function DealDetail({
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-lg text-[rgba(255,255,255,0.42)] hover:text-white hover:bg-[rgba(255,255,255,0.06)] transition-all"
+            className="p-2 rounded-lg text-[rgba(var(--fg-rgb),0.42)] hover:text-ink hover:bg-[rgba(var(--fg-rgb),0.06)] transition-all"
             aria-label="Close deal details"
           >
             <X size={18} />
@@ -231,14 +231,14 @@ function DealDetail({
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
           <div className="lg:col-span-2 space-y-5">
             <div>
-              <h4 className="font-mono text-[12px] tracking-[0.08em] text-[rgba(255,255,255,0.42)] uppercase mb-2">About the brand</h4>
-              <p className="font-body text-[14px] text-[rgba(255,255,255,0.72)] leading-relaxed">{deal.brandAbout}</p>
+              <h4 className="font-mono text-[12px] tracking-[0.08em] text-[rgba(var(--fg-rgb),0.42)] uppercase mb-2">About the brand</h4>
+              <p className="font-body text-[14px] text-[rgba(var(--fg-rgb),0.72)] leading-relaxed">{deal.brandAbout}</p>
             </div>
             <div>
-              <h4 className="font-mono text-[12px] tracking-[0.08em] text-[rgba(255,255,255,0.42)] uppercase mb-2">Deliverables</h4>
+              <h4 className="font-mono text-[12px] tracking-[0.08em] text-[rgba(var(--fg-rgb),0.42)] uppercase mb-2">Deliverables</h4>
               <ul className="space-y-1.5">
                 {deal.deliverables.map((d) => (
-                  <li key={d} className="flex items-start gap-2 font-body text-[14px] text-white">
+                  <li key={d} className="flex items-start gap-2 font-body text-[14px] text-ink">
                     <CheckCircle2 size={15} className="text-acid flex-shrink-0 mt-0.5" />
                     {d}
                   </li>
@@ -246,10 +246,10 @@ function DealDetail({
               </ul>
             </div>
             <div>
-              <h4 className="font-mono text-[12px] tracking-[0.08em] text-[rgba(255,255,255,0.42)] uppercase mb-2">Requirements</h4>
+              <h4 className="font-mono text-[12px] tracking-[0.08em] text-[rgba(var(--fg-rgb),0.42)] uppercase mb-2">Requirements</h4>
               <ul className="space-y-1.5">
                 {deal.requirements.map((r) => (
-                  <li key={r} className="flex items-start gap-2 font-body text-[14px] text-[rgba(255,255,255,0.72)]">
+                  <li key={r} className="flex items-start gap-2 font-body text-[14px] text-[rgba(var(--fg-rgb),0.72)]">
                     <span className="w-1.5 h-1.5 rounded-full bg-electric flex-shrink-0 mt-[7px]" />
                     {r}
                   </li>
@@ -260,16 +260,16 @@ function DealDetail({
 
           <div className="space-y-4">
             <div className="bg-panel2 rounded-xl p-5">
-              <p className="font-mono text-[12px] tracking-[0.08em] text-[rgba(255,255,255,0.42)] uppercase mb-1">Payout range</p>
+              <p className="font-mono text-[12px] tracking-[0.08em] text-[rgba(var(--fg-rgb),0.42)] uppercase mb-1">Payout range</p>
               <p className="font-mono text-[24px] font-medium text-acid">{payoutRange(deal)}</p>
             </div>
             <div className="bg-panel2 rounded-xl p-5">
-              <p className="font-mono text-[12px] tracking-[0.08em] text-[rgba(255,255,255,0.42)] uppercase mb-2">Payout terms</p>
-              <p className="font-body text-[13px] text-[rgba(255,255,255,0.72)] leading-relaxed">{deal.payoutTerms}</p>
+              <p className="font-mono text-[12px] tracking-[0.08em] text-[rgba(var(--fg-rgb),0.42)] uppercase mb-2">Payout terms</p>
+              <p className="font-body text-[13px] text-[rgba(var(--fg-rgb),0.72)] leading-relaxed">{deal.payoutTerms}</p>
             </div>
             <div className="bg-panel2 rounded-xl p-5 flex items-center justify-between">
               <div>
-                <p className="font-mono text-[12px] tracking-[0.08em] text-[rgba(255,255,255,0.42)] uppercase mb-1">Match score</p>
+                <p className="font-mono text-[12px] tracking-[0.08em] text-[rgba(var(--fg-rgb),0.42)] uppercase mb-1">Match score</p>
                 <p className="font-mono text-[24px] font-medium" style={{ color: matchColor(deal.matchScore) }}>
                   {deal.matchScore}%
                 </p>
@@ -281,10 +281,10 @@ function DealDetail({
 
         {/* Apply / applied footer */}
         {deal.applied ? (
-          <div className="flex flex-wrap items-center justify-between gap-4 pt-5 border-t border-[rgba(255,255,255,0.08)]">
+          <div className="flex flex-wrap items-center justify-between gap-4 pt-5 border-t border-[rgba(var(--fg-rgb),0.08)]">
             <div className="flex items-center gap-3">
               <CheckCircle2 size={20} className={accepted ? 'text-positive' : 'text-electric'} />
-              <p className="font-body text-[14px] text-white">
+              <p className="font-body text-[14px] text-ink">
                 {accepted
                   ? 'Accepted — the brand wants to work with you. Funds arrive on the deal terms above.'
                   : `Application submitted${application ? ` on ${application.submitted}` : ''} — the brand usually responds within 5 days.`}
@@ -293,8 +293,8 @@ function DealDetail({
             {showAdvanceCta && <AdvanceCta onClick={() => navigate('/advances')} />}
           </div>
         ) : (
-          <div className="pt-5 border-t border-[rgba(255,255,255,0.08)] space-y-3">
-            <label htmlFor="deal-pitch" className="font-mono text-[12px] tracking-[0.08em] text-[rgba(255,255,255,0.42)] uppercase block">
+          <div className="pt-5 border-t border-[rgba(var(--fg-rgb),0.08)] space-y-3">
+            <label htmlFor="deal-pitch" className="font-mono text-[12px] tracking-[0.08em] text-[rgba(var(--fg-rgb),0.42)] uppercase block">
               Your pitch
             </label>
             <textarea
@@ -303,7 +303,7 @@ function DealDetail({
               onChange={(e) => setPitch(e.target.value)}
               rows={3}
               placeholder={`Tell ${deal.brand} why your audience is the right fit (min. 10 characters)...`}
-              className="w-full bg-surface border border-[rgba(255,255,255,0.1)] rounded-xl px-4 py-3 font-body text-[14px] text-white placeholder:text-[rgba(255,255,255,0.2)] focus:border-electric focus:shadow-[0_0_0_3px_rgba(0,212,255,0.15)] outline-none transition-all resize-none"
+              className="w-full bg-surface border border-[rgba(var(--fg-rgb),0.1)] rounded-xl px-4 py-3 font-body text-[14px] text-ink placeholder:text-[rgba(var(--fg-rgb),0.2)] focus:border-electric focus:shadow-[0_0_0_3px_rgba(var(--electric-rgb),0.15)] outline-none transition-all resize-none"
             />
             <div className="flex flex-wrap items-center justify-between gap-4">
               <motion.button
@@ -317,7 +317,7 @@ function DealDetail({
                 Apply to {deal.brand}
               </motion.button>
               {showAdvanceCta && (
-                <p className="font-mono text-[12px] tracking-[0.04em] text-[rgba(255,255,255,0.42)]">
+                <p className="font-mono text-[12px] tracking-[0.04em] text-[rgba(var(--fg-rgb),0.42)]">
                   High-value deal — eligible for a sponsorship advance once accepted
                 </p>
               )}
@@ -380,8 +380,8 @@ export default function Marketplace() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: EASE }}
       >
-        <h1 className="font-display text-[48px] tracking-[0.02em] text-white leading-none">Brand Deal Marketplace</h1>
-        <p className="font-body text-[16px] text-[rgba(255,255,255,0.42)] mt-2">
+        <h1 className="font-display text-[48px] tracking-[0.02em] text-ink leading-none">Brand Deal Marketplace</h1>
+        <p className="font-body text-[16px] text-[rgba(var(--fg-rgb),0.42)] mt-2">
           Sponsorships matched to your audience — apply in one pitch, get paid through your wallet
         </p>
       </motion.div>
@@ -398,7 +398,7 @@ export default function Marketplace() {
             className={`px-5 py-2.5 rounded-xl font-body text-[14px] font-medium transition-all ${
               tab === t.key
                 ? 'bg-acid text-void'
-                : 'text-[rgba(255,255,255,0.42)] hover:text-white hover:bg-[rgba(255,255,255,0.06)]'
+                : 'text-[rgba(var(--fg-rgb),0.42)] hover:text-ink hover:bg-[rgba(var(--fg-rgb),0.06)]'
             }`}
           >
             {t.label}
@@ -409,28 +409,28 @@ export default function Marketplace() {
       {tab === 'browse' ? (
         <>
           {/* ── Filters ── */}
-          <div className="bg-panel border border-[rgba(255,255,255,0.08)] rounded-2xl p-4 space-y-4">
+          <div className="bg-panel border border-[rgba(var(--fg-rgb),0.08)] rounded-2xl p-4 space-y-4">
             <div className="flex flex-col md:flex-row gap-3">
               <div className="relative flex-1">
-                <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-[rgba(255,255,255,0.3)]" />
+                <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-[rgba(var(--fg-rgb),0.3)]" />
                 <input
                   type="text"
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
                   placeholder="Search brands, campaigns, categories..."
-                  className="w-full bg-surface border border-[rgba(255,255,255,0.1)] rounded-xl pl-11 pr-4 py-3 font-body text-[14px] text-white placeholder:text-[rgba(255,255,255,0.2)] focus:border-electric outline-none transition-colors"
+                  className="w-full bg-surface border border-[rgba(var(--fg-rgb),0.1)] rounded-xl pl-11 pr-4 py-3 font-body text-[14px] text-ink placeholder:text-[rgba(var(--fg-rgb),0.2)] focus:border-electric outline-none transition-colors"
                 />
               </div>
               <div className="flex items-center gap-2">
-                <ArrowUpDown size={14} className="text-[rgba(255,255,255,0.3)] flex-shrink-0" />
+                <ArrowUpDown size={14} className="text-[rgba(var(--fg-rgb),0.3)] flex-shrink-0" />
                 {SORT_OPTIONS.map((opt) => (
                   <button
                     key={opt.value}
                     onClick={() => setSort(opt.value)}
                     className={`px-4 py-2 rounded-lg font-mono text-[12px] tracking-[0.04em] transition-all ${
                       sort === opt.value
-                        ? 'bg-[rgba(0,212,255,0.15)] text-electric'
-                        : 'text-[rgba(255,255,255,0.42)] hover:text-white hover:bg-[rgba(255,255,255,0.06)]'
+                        ? 'bg-[rgba(var(--electric-rgb),0.15)] text-electric'
+                        : 'text-[rgba(var(--fg-rgb),0.42)] hover:text-ink hover:bg-[rgba(var(--fg-rgb),0.06)]'
                     }`}
                   >
                     {opt.label}
@@ -446,7 +446,7 @@ export default function Marketplace() {
                   className={`px-4 py-1.5 rounded-full font-mono text-[12px] tracking-[0.04em] transition-all border ${
                     category === c
                       ? 'bg-acid text-void border-acid'
-                      : 'text-[rgba(255,255,255,0.42)] border-[rgba(255,255,255,0.12)] hover:text-white hover:border-[rgba(255,255,255,0.3)]'
+                      : 'text-[rgba(var(--fg-rgb),0.42)] border-[rgba(var(--fg-rgb),0.12)] hover:text-ink hover:border-[rgba(var(--fg-rgb),0.3)]'
                   }`}
                 >
                   {c}
@@ -470,14 +470,14 @@ export default function Marketplace() {
 
           {/* ── Deal grid ── */}
           {dealsQuery.error ? (
-            <div className="bg-panel border border-[rgba(255,255,255,0.08)] rounded-2xl">
+            <div className="bg-panel border border-[rgba(var(--fg-rgb),0.08)] rounded-2xl">
               <ErrorNotice message={dealsQuery.error} onRetry={dealsQuery.refresh} />
             </div>
           ) : dealsQuery.loading && deals.length === 0 ? (
             <DealGridSkeleton />
           ) : deals.length === 0 ? (
-            <div className="bg-panel border border-[rgba(255,255,255,0.08)] rounded-2xl py-14 text-center">
-              <p className="font-body text-[14px] text-[rgba(255,255,255,0.42)]">
+            <div className="bg-panel border border-[rgba(var(--fg-rgb),0.08)] rounded-2xl py-14 text-center">
+              <p className="font-body text-[14px] text-[rgba(var(--fg-rgb),0.42)]">
                 No deals match your filters — try another category or search
               </p>
             </div>
@@ -494,29 +494,29 @@ export default function Marketplace() {
                     transition={{ duration: 0.35, delay: i * 0.04, ease: EASE }}
                     onClick={() => setSelectedId(selected ? null : deal.id)}
                     className={`text-left bg-panel rounded-2xl p-5 transition-all hover:bg-panel2 ${
-                      selected ? 'border border-acid' : 'border border-[rgba(255,255,255,0.08)] hover:border-[rgba(255,255,255,0.18)]'
+                      selected ? 'border border-acid' : 'border border-[rgba(var(--fg-rgb),0.08)] hover:border-[rgba(var(--fg-rgb),0.18)]'
                     }`}
                   >
                     <div className="flex items-start justify-between gap-3 mb-4">
                       <div className="flex items-center gap-3 min-w-0">
                         <BrandLogo name={deal.brand} color={deal.brandColor} />
                         <div className="min-w-0">
-                          <p className="font-body text-[16px] font-semibold text-white truncate">{deal.brand}</p>
-                          <p className="font-mono text-[11px] tracking-[0.04em] text-[rgba(255,255,255,0.42)]">{deal.category}</p>
+                          <p className="font-body text-[16px] font-semibold text-ink truncate">{deal.brand}</p>
+                          <p className="font-mono text-[11px] tracking-[0.04em] text-[rgba(var(--fg-rgb),0.42)]">{deal.category}</p>
                         </div>
                       </div>
                       <span
                         className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full font-mono text-[11px] tracking-[0.04em] flex-shrink-0"
-                        style={{ color: matchColor(deal.matchScore), backgroundColor: `${matchColor(deal.matchScore) === 'rgba(255,255,255,0.42)' ? 'rgba(255,255,255,0.06)' : `${matchColor(deal.matchScore)}26`}` }}
+                        style={{ color: matchColor(deal.matchScore), backgroundColor: matchColor(deal.matchScore) === 'rgba(var(--fg-rgb),0.42)' ? 'rgba(var(--fg-rgb),0.06)' : `color-mix(in srgb, ${matchColor(deal.matchScore)} 15%, transparent)` }}
                       >
                         <Sparkles size={11} />
                         {deal.matchScore}%
                       </span>
                     </div>
 
-                    <p className="font-body text-[13px] text-[rgba(255,255,255,0.62)] leading-snug mb-3 line-clamp-2">{deal.tagline}</p>
+                    <p className="font-body text-[13px] text-[rgba(var(--fg-rgb),0.62)] leading-snug mb-3 line-clamp-2">{deal.tagline}</p>
 
-                    <p className="font-mono text-[11px] tracking-[0.04em] text-[rgba(255,255,255,0.42)] mb-4 truncate">
+                    <p className="font-mono text-[11px] tracking-[0.04em] text-[rgba(var(--fg-rgb),0.42)] mb-4 truncate">
                       {deal.deliverables.length} deliverable{deal.deliverables.length !== 1 ? 's' : ''} • {deal.deliverables[0]}
                     </p>
 
@@ -527,7 +527,7 @@ export default function Marketplace() {
                       ) : (
                         <span
                           className={`inline-flex items-center gap-1.5 font-mono text-[11px] tracking-[0.04em] ${
-                            remaining <= 14 ? 'text-ember' : 'text-[rgba(255,255,255,0.42)]'
+                            remaining <= 14 ? 'text-ember' : 'text-[rgba(var(--fg-rgb),0.42)]'
                           }`}
                         >
                           <CalendarClock size={12} />
@@ -543,15 +543,15 @@ export default function Marketplace() {
         </>
       ) : (
         /* ── Applications tab ── */
-        <div className="bg-panel border border-[rgba(255,255,255,0.08)] rounded-2xl p-6">
-          <h3 className="font-display text-[36px] tracking-[0.02em] text-white mb-6">Your Applications</h3>
+        <div className="bg-panel border border-[rgba(var(--fg-rgb),0.08)] rounded-2xl p-6">
+          <h3 className="font-display text-[36px] tracking-[0.02em] text-ink mb-6">Your Applications</h3>
           {appsQuery.error ? (
             <ErrorNotice message={appsQuery.error} onRetry={appsQuery.refresh} />
           ) : appsQuery.loading && applications.length === 0 ? (
             <div className="space-y-3">
               {Array.from({ length: 3 }).map((_, i) => (
                 <div key={i} className="flex items-center gap-4 py-4 px-4 rounded-xl bg-panel2">
-                  <div className="animate-pulse w-12 h-12 rounded-xl bg-[rgba(255,255,255,0.06)] flex-shrink-0" />
+                  <div className="animate-pulse w-12 h-12 rounded-xl bg-[rgba(var(--fg-rgb),0.06)] flex-shrink-0" />
                   <div className="flex-1 space-y-2">
                     <SkeletonBlock className="h-4 w-40" />
                     <SkeletonBlock className="h-3 w-64" />
@@ -562,7 +562,7 @@ export default function Marketplace() {
             </div>
           ) : applications.length === 0 ? (
             <div className="text-center py-12">
-              <p className="font-body text-[14px] text-[rgba(255,255,255,0.42)] mb-4">
+              <p className="font-body text-[14px] text-[rgba(var(--fg-rgb),0.42)] mb-4">
                 No applications yet — browse deals and send your first pitch
               </p>
               <button
@@ -585,13 +585,13 @@ export default function Marketplace() {
                   <BrandLogo name={app.brand} color={app.brandColor} />
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-3">
-                      <p className="font-body text-[15px] font-semibold text-white">{app.brand}</p>
+                      <p className="font-body text-[15px] font-semibold text-ink">{app.brand}</p>
                       <StatusBadge status={app.status} />
                     </div>
-                    <p className="font-mono text-[12px] tracking-[0.04em] text-[rgba(255,255,255,0.42)] mt-0.5">
+                    <p className="font-mono text-[12px] tracking-[0.04em] text-[rgba(var(--fg-rgb),0.42)] mt-0.5">
                       {app.category} • {payoutRange(app)} • Submitted {app.submitted}
                     </p>
-                    <p className="font-body text-[13px] text-[rgba(255,255,255,0.55)] mt-1.5 line-clamp-2 italic">
+                    <p className="font-body text-[13px] text-[rgba(var(--fg-rgb),0.55)] mt-1.5 line-clamp-2 italic">
                       &ldquo;{app.pitch}&rdquo;
                     </p>
                   </div>

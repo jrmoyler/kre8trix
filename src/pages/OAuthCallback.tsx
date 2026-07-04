@@ -114,15 +114,15 @@ export default function OAuthCallback() {
         initial={{ opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: easeOutExpo }}
-        className="w-full max-w-[440px] bg-panel border border-[rgba(255,255,255,0.08)] rounded-2xl p-8 text-center"
+        className="w-full max-w-[440px] bg-panel border border-[rgba(var(--fg-rgb),0.08)] rounded-2xl p-8 text-center"
       >
         {phase === 'exchanging' && (
           <>
             <Loader2 size={32} className="animate-spin text-electric mx-auto mb-4" />
-            <h1 className="font-display text-[28px] tracking-[0.02em] text-white mb-2">
+            <h1 className="font-display text-[28px] tracking-[0.02em] text-ink mb-2">
               Completing Connection
             </h1>
-            <p className="font-body text-[14px] text-[rgba(255,255,255,0.42)]">
+            <p className="font-body text-[14px] text-[rgba(var(--fg-rgb),0.42)]">
               Verifying the state token and exchanging the authorization code…
             </p>
           </>
@@ -134,14 +134,14 @@ export default function OAuthCallback() {
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ type: 'spring', stiffness: 260, damping: 20 }}
-              className="w-14 h-14 rounded-full bg-[rgba(0,229,160,0.15)] flex items-center justify-center mx-auto mb-4"
+              className="w-14 h-14 rounded-full bg-[rgba(var(--positive-rgb),0.15)] flex items-center justify-center mx-auto mb-4"
             >
               <Check size={28} className="text-positive" />
             </motion.div>
-            <h1 className="font-display text-[28px] tracking-[0.02em] text-white mb-2">
+            <h1 className="font-display text-[28px] tracking-[0.02em] text-ink mb-2">
               {platformName ?? 'Platform'} Connected
             </h1>
-            <p className="font-body text-[14px] text-[rgba(255,255,255,0.42)] mb-6">
+            <p className="font-body text-[14px] text-[rgba(var(--fg-rgb),0.42)] mb-6">
               Access granted. Taking you back…
             </p>
             <button
@@ -155,13 +155,13 @@ export default function OAuthCallback() {
 
         {phase === 'denied' && (
           <>
-            <div className="w-14 h-14 rounded-full bg-[rgba(255,212,0,0.12)] flex items-center justify-center mx-auto mb-4">
-              <ShieldOff size={26} className="text-[#FFD400]" />
+            <div className="w-14 h-14 rounded-full bg-[rgba(var(--gold-rgb),0.12)] flex items-center justify-center mx-auto mb-4">
+              <ShieldOff size={26} className="text-[rgb(var(--color-gold))]" />
             </div>
-            <h1 className="font-display text-[28px] tracking-[0.02em] text-white mb-2">
+            <h1 className="font-display text-[28px] tracking-[0.02em] text-ink mb-2">
               Access Denied
             </h1>
-            <p className="font-body text-[14px] text-[rgba(255,255,255,0.42)] mb-6">{message}</p>
+            <p className="font-body text-[14px] text-[rgba(var(--fg-rgb),0.42)] mb-6">{message}</p>
             <button
               onClick={() => navigate(returnTo, { replace: true })}
               className="bg-acid text-void font-body text-[14px] font-semibold px-6 py-3 rounded-2xl hover:brightness-110 transition-all"
@@ -173,10 +173,10 @@ export default function OAuthCallback() {
 
         {phase === 'error' && (
           <>
-            <div className="w-14 h-14 rounded-full bg-[rgba(255,77,77,0.12)] flex items-center justify-center mx-auto mb-4">
+            <div className="w-14 h-14 rounded-full bg-[rgba(var(--negative-rgb),0.12)] flex items-center justify-center mx-auto mb-4">
               <AlertTriangle size={26} className="text-negative" />
             </div>
-            <h1 className="font-display text-[28px] tracking-[0.02em] text-white mb-2">
+            <h1 className="font-display text-[28px] tracking-[0.02em] text-ink mb-2">
               Connection Failed
             </h1>
             <p className="font-body text-[14px] text-negative mb-6" role="alert">

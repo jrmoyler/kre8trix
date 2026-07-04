@@ -214,7 +214,7 @@ registerMock('POST', '/wallet/send', (ctx) => {
       currency: body.currency,
       amount: -body.amount,
       status: 'Completed',
-      iconColor: '#C8FF00',
+      iconColor: 'rgb(var(--color-acid))',
       /* C1: record who the money went to */
       recipientHandle: creator?.handle,
       recipientAddress:
@@ -285,7 +285,7 @@ registerMock('POST', '/wallet/request', (ctx) => {
       currency: body.currency,
       amount: body.amount,
       status: 'Pending',
-      iconColor: '#00D4FF',
+      iconColor: 'rgb(var(--color-electric))',
     };
     s.transactions.unshift(transaction);
   });
@@ -324,7 +324,7 @@ registerMock('POST', '/wallet/convert', (ctx) => {
       currency: to,
       amount: body.amount,
       status: 'Completed',
-      iconColor: '#C8FF00',
+      iconColor: 'rgb(var(--color-acid))',
     };
     s.transactions.unshift(transaction);
   });
@@ -355,9 +355,9 @@ registerMock('GET', '/revenue/platforms', (ctx) => {
 /* ─────────────────────────── cash flow ─────────────────────────── */
 
 const FORECAST_SUMMARY: ForecastSummaryItem[] = [
-  { window: '30D', label: '30-Day', amount: 18400, color: '#00D4FF' },
-  { window: '60D', label: '60-Day', amount: 31200, color: '#C8FF00' },
-  { window: '90D', label: '90-Day', amount: 44800, color: '#9B5DE5' },
+  { window: '30D', label: '30-Day', amount: 18400, color: 'rgb(var(--color-electric))' },
+  { window: '60D', label: '60-Day', amount: 31200, color: 'rgb(var(--color-acid))' },
+  { window: '90D', label: '90-Day', amount: 44800, color: 'rgb(var(--color-violet))' },
 ];
 
 const FORECAST_CONFIG: Record<
@@ -469,13 +469,13 @@ registerMock('PUT', '/cashflow/reserve', (ctx) => {
 /* ─────────────────────────── CCS score ─────────────────────────── */
 
 const CCS_SIGNALS = [
-  { name: 'Income Consistency', weight: 22, score: 720, color: '#C8FF00' },
-  { name: 'Monetization Diversification', weight: 18, score: 580, color: '#00D4FF' },
-  { name: 'Audience Durability', weight: 17, score: 640, color: '#9B5DE5' },
-  { name: 'Financial Behavior', weight: 16, score: 510, color: '#FF4D00' },
-  { name: 'Platform Risk', weight: 13, score: 680, color: '#FF4D4D' },
-  { name: 'Business Maturity', weight: 10, score: 490, color: '#FFD400' },
-  { name: 'Growth Trajectory', weight: 4, score: 620, color: '#00E5A0' },
+  { name: 'Income Consistency', weight: 22, score: 720, color: 'rgb(var(--color-acid))' },
+  { name: 'Monetization Diversification', weight: 18, score: 580, color: 'rgb(var(--color-electric))' },
+  { name: 'Audience Durability', weight: 17, score: 640, color: 'rgb(var(--color-violet))' },
+  { name: 'Financial Behavior', weight: 16, score: 510, color: 'rgb(var(--color-ember))' },
+  { name: 'Platform Risk', weight: 13, score: 680, color: 'rgb(var(--color-negative))' },
+  { name: 'Business Maturity', weight: 10, score: 490, color: 'rgb(var(--color-gold))' },
+  { name: 'Growth Trajectory', weight: 4, score: 620, color: 'rgb(var(--color-positive))' },
 ];
 
 function tierForScore(score: number): string {
@@ -606,7 +606,7 @@ registerMock('POST', '/advances/apply', (ctx) => {
       currency: 'USD',
       amount,
       status: 'Completed',
-      iconColor: '#FF4D00',
+      iconColor: 'rgb(var(--color-ember))',
     });
   });
 

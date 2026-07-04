@@ -46,12 +46,12 @@ export default function OAuthAuthorize() {
   if (!provider || !state) {
     return (
       <div className="min-h-[70dvh] flex items-center justify-center p-6">
-        <div className="w-full max-w-[440px] bg-panel border border-[rgba(255,255,255,0.08)] rounded-2xl p-8 text-center">
+        <div className="w-full max-w-[440px] bg-panel border border-[rgba(var(--fg-rgb),0.08)] rounded-2xl p-8 text-center">
           <AlertTriangle size={32} className="text-negative mx-auto mb-4" />
-          <h1 className="font-display text-[28px] tracking-[0.02em] text-white mb-2">
+          <h1 className="font-display text-[28px] tracking-[0.02em] text-ink mb-2">
             Invalid Authorization Request
           </h1>
-          <p className="font-body text-[14px] text-[rgba(255,255,255,0.42)] mb-6">
+          <p className="font-body text-[14px] text-[rgba(var(--fg-rgb),0.42)] mb-6">
             This authorization link is missing required OAuth parameters (platform or state).
             Start the connection again from Settings.
           </p>
@@ -75,14 +75,14 @@ export default function OAuthAuthorize() {
         className="w-full max-w-[440px]"
       >
         {/* Fake provider address bar to sell the "you left the app" moment */}
-        <div className="flex items-center gap-2 bg-deep border border-[rgba(255,255,255,0.08)] border-b-0 rounded-t-2xl px-4 py-2.5">
+        <div className="flex items-center gap-2 bg-deep border border-[rgba(var(--fg-rgb),0.08)] border-b-0 rounded-t-2xl px-4 py-2.5">
           <Lock size={12} className="text-positive" />
-          <span className="font-mono text-[12px] text-[rgba(255,255,255,0.42)] truncate">
+          <span className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] truncate">
             https://{provider.authHost}/oauth/authorize
           </span>
         </div>
 
-        <div className="bg-panel border border-[rgba(255,255,255,0.08)] rounded-b-2xl p-8">
+        <div className="bg-panel border border-[rgba(var(--fg-rgb),0.08)] rounded-b-2xl p-8">
           {/* Provider identity */}
           <div className="flex items-center gap-3 mb-6">
             <span
@@ -94,32 +94,32 @@ export default function OAuthAuthorize() {
               </span>
             </span>
             <div>
-              <p className="font-body text-[16px] text-white font-medium">{provider.name}</p>
-              <p className="font-mono text-[12px] text-[rgba(255,255,255,0.42)]">Authorization request</p>
+              <p className="font-body text-[16px] text-ink font-medium">{provider.name}</p>
+              <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)]">Authorization request</p>
             </div>
           </div>
 
-          <h1 className="font-display text-[28px] tracking-[0.02em] text-white mb-1">
+          <h1 className="font-display text-[28px] tracking-[0.02em] text-ink mb-1">
             Kre8trix wants to access your {provider.name} account
           </h1>
-          <p className="font-mono text-[12px] text-[rgba(255,255,255,0.42)] mb-6">
+          <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] mb-6">
             {user ? `Signed in as ${user.email}` : 'Signed in'} · client: {clientId}
           </p>
 
           {/* Requested scopes */}
-          <p className="font-mono text-[12px] tracking-[0.04em] text-[rgba(255,255,255,0.42)] uppercase mb-3">
+          <p className="font-mono text-[12px] tracking-[0.04em] text-[rgba(var(--fg-rgb),0.42)] uppercase mb-3">
             This will allow Kre8trix to
           </p>
           <div className="space-y-3 mb-8">
             {provider.scopes.map((scope) => (
               <div
                 key={scope.id}
-                className="flex items-start gap-3 p-3 rounded-xl bg-panel2 border border-[rgba(255,255,255,0.06)]"
+                className="flex items-start gap-3 p-3 rounded-xl bg-panel2 border border-[rgba(var(--fg-rgb),0.06)]"
               >
                 <ShieldCheck size={16} className="text-electric mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="font-body text-[14px] text-white">{scope.description}</p>
-                  <p className="font-mono text-[11px] text-[rgba(255,255,255,0.42)]">{scope.id}</p>
+                  <p className="font-body text-[14px] text-ink">{scope.description}</p>
+                  <p className="font-mono text-[11px] text-[rgba(var(--fg-rgb),0.42)]">{scope.id}</p>
                 </div>
               </div>
             ))}
@@ -136,7 +136,7 @@ export default function OAuthAuthorize() {
             <button
               onClick={() => decide('deny')}
               disabled={deciding !== null}
-              className="flex-1 flex items-center justify-center gap-2 px-5 py-3 rounded-2xl border border-[rgba(255,255,255,0.14)] font-body text-[14px] text-white hover:bg-[rgba(255,255,255,0.06)] transition-colors disabled:opacity-50"
+              className="flex-1 flex items-center justify-center gap-2 px-5 py-3 rounded-2xl border border-[rgba(var(--fg-rgb),0.14)] font-body text-[14px] text-ink hover:bg-[rgba(var(--fg-rgb),0.06)] transition-colors disabled:opacity-50"
             >
               {deciding === 'deny' && <Loader2 size={14} className="animate-spin" />}
               Deny
@@ -151,7 +151,7 @@ export default function OAuthAuthorize() {
             </button>
           </div>
 
-          <p className="font-mono text-[11px] text-[rgba(255,255,255,0.28)] mt-6 text-center">
+          <p className="font-mono text-[11px] text-[rgba(var(--fg-rgb),0.28)] mt-6 text-center">
             You can revoke access at any time from Kre8trix Settings → Connected Accounts.
           </p>
         </div>

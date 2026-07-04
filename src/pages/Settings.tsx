@@ -11,12 +11,17 @@ import {
   Loader2,
   Save,
   Check,
+  Monitor,
+  Moon,
+  Sun,
+  SunMoon,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { api, ApiError } from '@/lib/api';
 /* C4: OAuth connect flow for YouTube / TikTok / Stripe */
 import { oauthSlugForConnection, startOAuthFlow } from '@/lib/oauth';
 import { useApi } from '@/hooks/use-api';
+import { useTheme, type ThemePreference } from '@/lib/theme-context';
 import type { AppSettings, PlatformConnection, Profile } from '@/lib/types';
 import { ErrorNotice, SkeletonBlock } from '@/components/Skeletons';
 
@@ -25,6 +30,7 @@ const easeOutExpo = [0.16, 1, 0.3, 1] as [number, number, number, number];
 
 const SETTINGS_TABS = [
   { key: 'profile', label: 'Profile', icon: User },
+  { key: 'display', label: 'Display', icon: SunMoon },
   { key: 'notifications', label: 'Notifications', icon: Bell },
   { key: 'security', label: 'Security', icon: Shield },
   { key: 'wallet', label: 'Wallet', icon: Wallet },
@@ -32,7 +38,7 @@ const SETTINGS_TABS = [
 ];
 
 const inputClass =
-  'w-full bg-surface border border-[rgba(255,255,255,0.1)] rounded-xl px-4 py-3 text-white font-body focus:border-electric outline-none transition-colors';
+  'w-full bg-surface border border-[rgba(var(--fg-rgb),0.1)] rounded-xl px-4 py-3 text-ink font-body focus:border-electric outline-none transition-colors';
 
 function ContentSkeleton() {
   return (
@@ -138,7 +144,7 @@ export default function Settings() {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: easeOutExpo }}
-        className="font-display text-[48px] tracking-[0.02em] text-white"
+        className="font-display text-[48px] tracking-[0.02em] text-ink"
       >
         Settings
       </motion.h2>
@@ -158,7 +164,7 @@ export default function Settings() {
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
                 activeTab === tab.key
                   ? 'bg-panel text-acid border-l-2 border-acid'
-                  : 'text-[rgba(255,255,255,0.42)] hover:text-white hover:bg-[rgba(255,255,255,0.04)]'
+                  : 'text-[rgba(var(--fg-rgb),0.42)] hover:text-ink hover:bg-[rgba(var(--fg-rgb),0.04)]'
               }`}
             >
               <tab.icon size={18} />
@@ -172,7 +178,7 @@ export default function Settings() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, ease: easeOutExpo, delay: 0.1 }}
-          className="lg:col-span-3 bg-panel border border-[rgba(255,255,255,0.08)] rounded-2xl p-6"
+          className="lg:col-span-3 bg-panel border border-[rgba(var(--fg-rgb),0.08)] rounded-2xl p-6"
         >
           {loadError ? (
             <ErrorNotice
@@ -188,10 +194,10 @@ export default function Settings() {
             <>
               {activeTab === 'profile' && (
                 <div className="space-y-6">
-                  <h3 className="font-display text-[28px] tracking-[0.02em] text-white">Profile</h3>
+                  <h3 className="font-display text-[28px] tracking-[0.02em] text-ink">Profile</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block font-mono text-[12px] text-[rgba(255,255,255,0.42)] tracking-[0.04em] mb-2">Display Name</label>
+                      <label className="block font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em] mb-2">Display Name</label>
                       <input
                         type="text"
                         value={profile.name}
@@ -200,7 +206,7 @@ export default function Settings() {
                       />
                     </div>
                     <div>
-                      <label className="block font-mono text-[12px] text-[rgba(255,255,255,0.42)] tracking-[0.04em] mb-2">Email</label>
+                      <label className="block font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em] mb-2">Email</label>
                       <input
                         type="email"
                         value={profile.email}
@@ -209,7 +215,7 @@ export default function Settings() {
                       />
                     </div>
                     <div>
-                      <label className="block font-mono text-[12px] text-[rgba(255,255,255,0.42)] tracking-[0.04em] mb-2">Phone</label>
+                      <label className="block font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em] mb-2">Phone</label>
                       <input
                         type="tel"
                         value={profile.phone}
@@ -218,7 +224,7 @@ export default function Settings() {
                       />
                     </div>
                     <div>
-                      <label className="block font-mono text-[12px] text-[rgba(255,255,255,0.42)] tracking-[0.04em] mb-2">Creator Handle</label>
+                      <label className="block font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em] mb-2">Creator Handle</label>
                       <input
                         type="text"
                         value={profile.handle}
@@ -230,15 +236,17 @@ export default function Settings() {
                 </div>
               )}
 
+              {activeTab === 'display' && <DisplayTab />}
+
               {activeTab === 'notifications' && (
                 <div className="space-y-6">
-                  <h3 className="font-display text-[28px] tracking-[0.02em] text-white">Notifications</h3>
+                  <h3 className="font-display text-[28px] tracking-[0.02em] text-ink">Notifications</h3>
                   <div className="space-y-4">
                     {settings.notifications.map((item) => (
                       <div key={item.key} className="flex items-center justify-between py-3">
                         <div>
-                          <p className="font-body text-[14px] text-white">{item.label}</p>
-                          <p className="font-mono text-[12px] text-[rgba(255,255,255,0.42)]">{item.description}</p>
+                          <p className="font-body text-[14px] text-ink">{item.label}</p>
+                          <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)]">{item.description}</p>
                         </div>
                         <Toggle on={item.enabled} onChange={(v) => setNotification(item.key, v)} />
                       </div>
@@ -249,25 +257,25 @@ export default function Settings() {
 
               {activeTab === 'security' && (
                 <div className="space-y-6">
-                  <h3 className="font-display text-[28px] tracking-[0.02em] text-white">Security</h3>
+                  <h3 className="font-display text-[28px] tracking-[0.02em] text-ink">Security</h3>
                   <div className="space-y-4">
                     <button
                       onClick={() => toast.success(`Password reset link sent to ${profile.email}`)}
-                      className="w-full flex items-center justify-between p-4 rounded-xl bg-panel2 border border-[rgba(255,255,255,0.08)] hover:border-[rgba(255,255,255,0.14)] transition-colors"
+                      className="w-full flex items-center justify-between p-4 rounded-xl bg-panel2 border border-[rgba(var(--fg-rgb),0.08)] hover:border-[rgba(var(--fg-rgb),0.14)] transition-colors"
                     >
                       <div className="text-left">
-                        <p className="font-body text-[14px] text-white">Change Password</p>
-                        <p className="font-mono text-[12px] text-[rgba(255,255,255,0.42)]">Last changed 30 days ago</p>
+                        <p className="font-body text-[14px] text-ink">Change Password</p>
+                        <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)]">Last changed 30 days ago</p>
                       </div>
-                      <ChevronRight size={16} className="text-[rgba(255,255,255,0.42)]" />
+                      <ChevronRight size={16} className="text-[rgba(var(--fg-rgb),0.42)]" />
                     </button>
                     <button
                       onClick={() => toast('Two-factor authentication is managed in your authenticator app')}
-                      className="w-full flex items-center justify-between p-4 rounded-xl bg-panel2 border border-[rgba(255,255,255,0.08)] hover:border-[rgba(255,255,255,0.14)] transition-colors"
+                      className="w-full flex items-center justify-between p-4 rounded-xl bg-panel2 border border-[rgba(var(--fg-rgb),0.08)] hover:border-[rgba(var(--fg-rgb),0.14)] transition-colors"
                     >
                       <div className="text-left">
-                        <p className="font-body text-[14px] text-white">Two-Factor Authentication</p>
-                        <p className="font-mono text-[12px] text-[rgba(255,255,255,0.42)]">Enabled via authenticator app</p>
+                        <p className="font-body text-[14px] text-ink">Two-Factor Authentication</p>
+                        <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)]">Enabled via authenticator app</p>
                       </div>
                       <span className="text-positive font-mono text-[12px]">Enabled</span>
                     </button>
@@ -277,12 +285,12 @@ export default function Settings() {
 
               {activeTab === 'wallet' && (
                 <div className="space-y-6">
-                  <h3 className="font-display text-[28px] tracking-[0.02em] text-white">Wallet Settings</h3>
+                  <h3 className="font-display text-[28px] tracking-[0.02em] text-ink">Wallet Settings</h3>
                   <div className="space-y-4">
                     <div className="flex items-center justify-between p-4 rounded-xl bg-panel2">
                       <div>
-                        <p className="font-body text-[14px] text-white">Auto-Convert USDC to USD</p>
-                        <p className="font-mono text-[12px] text-[rgba(255,255,255,0.42)]">On payout day</p>
+                        <p className="font-body text-[14px] text-ink">Auto-Convert USDC to USD</p>
+                        <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)]">On payout day</p>
                       </div>
                       <Toggle
                         on={settings.autoConvertUsdc}
@@ -294,13 +302,13 @@ export default function Settings() {
                         const next = settings.defaultPayoutWallet === 'USDC (Solana)' ? 'USD (Bank ····4821)' : 'USDC (Solana)';
                         setSettings({ ...settings, defaultPayoutWallet: next });
                       }}
-                      className="w-full flex items-center justify-between p-4 rounded-xl bg-panel2 hover:bg-[rgba(255,255,255,0.08)] transition-colors"
+                      className="w-full flex items-center justify-between p-4 rounded-xl bg-panel2 hover:bg-[rgba(var(--fg-rgb),0.08)] transition-colors"
                     >
                       <div className="text-left">
-                        <p className="font-body text-[14px] text-white">Default Payout Wallet</p>
-                        <p className="font-mono text-[12px] text-[rgba(255,255,255,0.42)]">{settings.defaultPayoutWallet}</p>
+                        <p className="font-body text-[14px] text-ink">Default Payout Wallet</p>
+                        <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)]">{settings.defaultPayoutWallet}</p>
                       </div>
-                      <ChevronRight size={16} className="text-[rgba(255,255,255,0.42)]" />
+                      <ChevronRight size={16} className="text-[rgba(var(--fg-rgb),0.42)]" />
                     </button>
                   </div>
                 </div>
@@ -308,7 +316,7 @@ export default function Settings() {
 
               {activeTab === 'connections' && (
                 <div className="space-y-6">
-                  <h3 className="font-display text-[28px] tracking-[0.02em] text-white">Connected Accounts</h3>
+                  <h3 className="font-display text-[28px] tracking-[0.02em] text-ink">Connected Accounts</h3>
                   {connectionsQuery.error ? (
                     <ErrorNotice message={connectionsQuery.error} onRetry={connectionsQuery.refresh} />
                   ) : connectionsQuery.loading || !connectionsQuery.data ? (
@@ -318,13 +326,13 @@ export default function Settings() {
                       {connectionsQuery.data.map((account) => (
                         <div key={account.name} className="flex items-center justify-between p-4 rounded-xl bg-panel2">
                           <div className="flex items-center gap-3">
-                            <span className="w-8 h-8 rounded-full bg-panel flex items-center justify-center font-body text-[12px] text-white">
+                            <span className="w-8 h-8 rounded-full bg-panel flex items-center justify-center font-body text-[12px] text-ink">
                               {account.name[0]}
                             </span>
                             <div>
-                              <p className="font-body text-[14px] text-white">{account.name}</p>
+                              <p className="font-body text-[14px] text-ink">{account.name}</p>
                               {account.user && account.connected && (
-                                <p className="font-mono text-[12px] text-[rgba(255,255,255,0.42)]">{account.user}</p>
+                                <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)]">{account.user}</p>
                               )}
                             </div>
                           </div>
@@ -337,7 +345,7 @@ export default function Settings() {
                             disabled={togglingPlatform === account.name}
                             className={`flex items-center gap-2 px-4 py-2 rounded-lg font-mono text-[12px] transition-all disabled:opacity-50 ${
                               account.connected
-                                ? 'bg-[rgba(255,77,77,0.1)] text-negative hover:bg-[rgba(255,77,77,0.2)]'
+                                ? 'bg-[rgba(var(--negative-rgb),0.1)] text-negative hover:bg-[rgba(var(--negative-rgb),0.2)]'
                                 : 'bg-acid text-void hover:brightness-110'
                             }`}
                           >
@@ -351,7 +359,7 @@ export default function Settings() {
                 </div>
               )}
 
-              <div className="mt-6 pt-6 border-t border-[rgba(255,255,255,0.08)]">
+              <div className="mt-6 pt-6 border-t border-[rgba(var(--fg-rgb),0.08)]">
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
@@ -371,11 +379,58 @@ export default function Settings() {
   );
 }
 
+/* ── C7: Display tab — dark/light/system theme control ─────── */
+const THEME_OPTIONS: {
+  value: ThemePreference;
+  label: string;
+  icon: typeof Sun;
+  description: string;
+}[] = [
+  { value: 'dark', label: 'Dark', icon: Moon, description: 'The default Kre8trix look' },
+  { value: 'light', label: 'Light', icon: Sun, description: 'Bright, high-contrast palette' },
+  { value: 'system', label: 'System', icon: Monitor, description: 'Follows your OS appearance setting' },
+];
+
+function DisplayTab() {
+  const { theme, setTheme } = useTheme();
+  return (
+    <div className="space-y-6">
+      <h3 className="font-display text-[28px] tracking-[0.02em] text-ink">Display</h3>
+      <div>
+        <p className="font-body text-[14px] text-ink mb-1">Theme</p>
+        <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] mb-4">
+          Applies instantly and is remembered on this device
+        </p>
+        <div className="inline-flex p-1 rounded-xl bg-panel2 border border-[rgba(var(--fg-rgb),0.08)]">
+          {THEME_OPTIONS.map((option) => (
+            <button
+              key={option.value}
+              onClick={() => setTheme(option.value)}
+              aria-pressed={theme === option.value}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-body text-[14px] font-medium transition-all ${
+                theme === option.value
+                  ? 'bg-acid text-void'
+                  : 'text-[rgba(var(--fg-rgb),0.42)] hover:text-ink'
+              }`}
+            >
+              <option.icon size={15} />
+              {option.label}
+            </button>
+          ))}
+        </div>
+        <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] mt-3">
+          {THEME_OPTIONS.find((o) => o.value === theme)?.description}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
   return (
     <button
       onClick={() => onChange(!on)}
-      className={`relative w-[44px] h-[24px] rounded-full transition-colors ${on ? 'bg-acid' : 'bg-[rgba(255,255,255,0.12)]'}`}
+      className={`relative w-[44px] h-[24px] rounded-full transition-colors ${on ? 'bg-acid' : 'bg-[rgba(var(--fg-rgb),0.12)]'}`}
     >
       <motion.div
         animate={{ x: on ? 20 : 4 }}

@@ -89,9 +89,9 @@ export default function CommandPalette({ open, onOpenChange }: CommandPalettePro
       key={item.label}
       value={`${item.label} ${item.keywords}`}
       onSelect={item.action}
-      className="flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer font-body text-[14px] text-[#E8E8F0] data-[selected=true]:bg-[rgba(200,255,0,0.08)] data-[selected=true]:text-white transition-colors"
+      className="flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer font-body text-[14px] text-[rgb(var(--color-ink))] data-[selected=true]:bg-[rgba(var(--acid-rgb),0.08)] data-[selected=true]:text-ink transition-colors"
     >
-      <item.icon size={16} className="text-[rgba(255,255,255,0.42)]" />
+      <item.icon size={16} className="text-[rgba(var(--fg-rgb),0.42)]" />
       {item.label}
     </Command.Item>
   );
@@ -106,37 +106,37 @@ export default function CommandPalette({ open, onOpenChange }: CommandPalettePro
 
       <Command
         label="Search"
-        className="relative w-full max-w-[560px] bg-panel border border-[rgba(255,255,255,0.1)] rounded-2xl overflow-hidden shadow-[0_25px_80px_rgba(0,0,0,0.6)]"
+        className="relative w-full max-w-[560px] bg-panel border border-[rgba(var(--fg-rgb),0.1)] rounded-2xl overflow-hidden shadow-[0_25px_80px_rgba(0,0,0,0.6)]"
       >
-        <div className="flex items-center gap-3 px-4 border-b border-[rgba(255,255,255,0.08)]">
-          <Search size={18} className="text-[rgba(255,255,255,0.42)] flex-shrink-0" />
+        <div className="flex items-center gap-3 px-4 border-b border-[rgba(var(--fg-rgb),0.08)]">
+          <Search size={18} className="text-[rgba(var(--fg-rgb),0.42)] flex-shrink-0" />
           <Command.Input
             autoFocus
             value={query}
             onValueChange={setQuery}
             placeholder="Search pages and actions…"
-            className="flex-1 h-14 bg-transparent font-body text-[15px] text-white placeholder:text-[rgba(255,255,255,0.3)] outline-none"
+            className="flex-1 h-14 bg-transparent font-body text-[15px] text-ink placeholder:text-[rgba(var(--fg-rgb),0.3)] outline-none"
           />
-          <kbd className="font-mono text-[10px] tracking-[0.04em] text-[rgba(255,255,255,0.42)] bg-panel2 border border-[rgba(255,255,255,0.08)] rounded-md px-1.5 py-0.5">
+          <kbd className="font-mono text-[10px] tracking-[0.04em] text-[rgba(var(--fg-rgb),0.42)] bg-panel2 border border-[rgba(var(--fg-rgb),0.08)] rounded-md px-1.5 py-0.5">
             ESC
           </kbd>
         </div>
 
         <Command.List className="max-h-[380px] overflow-y-auto p-2">
-          <Command.Empty className="py-10 text-center font-body text-[14px] text-[rgba(255,255,255,0.42)]">
+          <Command.Empty className="py-10 text-center font-body text-[14px] text-[rgba(var(--fg-rgb),0.42)]">
             No results for “{query}”
           </Command.Empty>
 
           <Command.Group
             heading="Quick Actions"
-            className="[&_[cmdk-group-heading]]:px-4 [&_[cmdk-group-heading]]:py-2 [&_[cmdk-group-heading]]:font-mono [&_[cmdk-group-heading]]:text-[11px] [&_[cmdk-group-heading]]:tracking-[0.08em] [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:text-[rgba(255,255,255,0.3)]"
+            className="[&_[cmdk-group-heading]]:px-4 [&_[cmdk-group-heading]]:py-2 [&_[cmdk-group-heading]]:font-mono [&_[cmdk-group-heading]]:text-[11px] [&_[cmdk-group-heading]]:tracking-[0.08em] [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:text-[rgba(var(--fg-rgb),0.3)]"
           >
             {actions.map(renderItem)}
           </Command.Group>
 
           <Command.Group
             heading="Pages"
-            className="[&_[cmdk-group-heading]]:px-4 [&_[cmdk-group-heading]]:py-2 [&_[cmdk-group-heading]]:font-mono [&_[cmdk-group-heading]]:text-[11px] [&_[cmdk-group-heading]]:tracking-[0.08em] [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:text-[rgba(255,255,255,0.3)]"
+            className="[&_[cmdk-group-heading]]:px-4 [&_[cmdk-group-heading]]:py-2 [&_[cmdk-group-heading]]:font-mono [&_[cmdk-group-heading]]:text-[11px] [&_[cmdk-group-heading]]:tracking-[0.08em] [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:text-[rgba(var(--fg-rgb),0.3)]"
           >
             {pages.map(renderItem)}
           </Command.Group>

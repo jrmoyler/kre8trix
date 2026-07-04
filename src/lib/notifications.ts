@@ -12,17 +12,17 @@ import type { NotificationType } from './types';
 export interface NotificationTypeMeta {
   label: string;
   icon: LucideIcon;
-  /** Hex accent color (design-token palette). */
+  /** Theme-variable accent color (design-token palette). */
   color: string;
 }
 
 export const NOTIFICATION_TYPE_META: Record<NotificationType, NotificationTypeMeta> = {
-  payment: { label: 'Payment', icon: DollarSign, color: '#00E5A0' },
-  advance: { label: 'Advance', icon: HandCoins, color: '#FF4D00' },
-  ccs: { label: 'CCS', icon: Gauge, color: '#00D4FF' },
-  tax: { label: 'Tax', icon: Landmark, color: '#FFD400' },
-  platform: { label: 'Platform', icon: Plug, color: '#9B5DE5' },
-  system: { label: 'System', icon: Info, color: '#C8FF00' },
+  payment: { label: 'Payment', icon: DollarSign, color: 'rgb(var(--color-positive))' },
+  advance: { label: 'Advance', icon: HandCoins, color: 'rgb(var(--color-ember))' },
+  ccs: { label: 'CCS', icon: Gauge, color: 'rgb(var(--color-electric))' },
+  tax: { label: 'Tax', icon: Landmark, color: 'rgb(var(--color-gold))' },
+  platform: { label: 'Platform', icon: Plug, color: 'rgb(var(--color-violet))' },
+  system: { label: 'System', icon: Info, color: 'rgb(var(--color-acid))' },
 };
 
 export const NOTIFICATION_TYPES: NotificationType[] = [
