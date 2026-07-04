@@ -320,3 +320,48 @@ export interface Ten99kRow {
 }
 
 /* ─────────────── end C3: Tax Center ─────────────── */
+/* ── C4: platform connect OAuth (authorization-code flow) ────── */
+
+/** Platforms that connect via the OAuth 2.0 authorization-code flow. */
+export type OAuthPlatform = 'youtube' | 'tiktok' | 'stripe';
+
+/** Response of GET /oauth/:platform/start. */
+export interface OAuthStartResponse {
+  platform: OAuthPlatform;
+  /** SPA path of the provider consent screen, carrying the OAuth params. */
+  authorizeUrl: string;
+  /** Random CSRF state token — also persisted client-side for validation. */
+  state: string;
+}
+
+/** Body of POST /oauth/authorize/decision (mock provider consent screen). */
+export interface OAuthDecisionPayload {
+  state: string;
+  decision: 'allow' | 'deny';
+}
+
+/** Response of POST /oauth/authorize/decision. */
+export interface OAuthDecisionResponse {
+  /** SPA path the provider redirects back to (the client redirect_uri). */
+  redirect: string;
+}
+
+/** Body of POST /oauth/token. */
+export interface OAuthTokenPayload {
+  grant_type: 'authorization_code';
+  code: string;
+  redirect_uri: string;
+  client_id: string;
+}
+
+/** Response of POST /oauth/token. */
+export interface OAuthTokenResponse {
+  access_token: string;
+  token_type: 'Bearer';
+  expires_in: number;
+  refresh_token: string;
+  scope: string;
+  platform: OAuthPlatform;
+  /** Updated connections snapshot so the UI can reflect the new link. */
+  connections: PlatformConnection[];
+}

@@ -13,6 +13,9 @@ import Analytics from './pages/Analytics'
 import Onboarding from './pages/Onboarding'
 import Settings from './pages/Settings'
 import TaxCenter from './pages/TaxCenter' // C3: Tax Center
+/* C4: platform connect OAuth */
+import OAuthAuthorize from './pages/OAuthAuthorize'
+import OAuthCallback from './pages/OAuthCallback'
 
 export default function App() {
   return (
@@ -36,6 +39,9 @@ export default function App() {
                 <Route path="/analytics" element={<Analytics />} />
                 <Route path="/onboarding" element={<Onboarding />} />
                 <Route path="/settings" element={<Settings />} />
+                {/* C4: mock OAuth provider consent screen + redirect_uri */}
+                <Route path="/oauth/authorize" element={<OAuthAuthorize />} />
+                <Route path="/oauth/callback" element={<OAuthCallback />} />
               </Routes>
             </Layout>
           </ProtectedRoute>

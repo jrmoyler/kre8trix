@@ -20,6 +20,14 @@ import type {
   WalletTransaction,
 } from '../types';
 
+/* C4: server-side half of the OAuth authorization-code flow. */
+export interface OAuthMockState {
+  /** CSRF state token → pending authorization request. */
+  pending: Record<string, { platform: string; createdAt: number }>;
+  /** Authorization code → issued grant awaiting exchange. */
+  codes: Record<string, { platform: string; state: string; createdAt: number; used: boolean }>;
+}
+
 export interface MockState {
   user: User;
   profile: Profile;
@@ -44,6 +52,8 @@ export interface MockState {
   /* C3: Tax Center */
   taxEstimates: TaxEstimateSettings;
   turbotax: TurboTaxConnection;
+  /* C4: OAuth pending states + authorization codes. */
+  oauth: OAuthMockState;
 }
 
 const STORAGE_KEY = 'kre8trix.mock.state';
@@ -163,6 +173,7 @@ function defaultState(): MockState {
     /* C3: Tax Center */
     taxEstimates: { effectiveRatePercent: 24, filingStatus: 'single' },
     turbotax: { connected: false, account: null, lastSync: null },
+    oauth: { pending: {}, codes: {} },
   };
 }
 
@@ -215,6 +226,8 @@ export function getState(): MockState {
     const raw = sessionStorage.getItem(STORAGE_KEY);
     if (raw) {
       cached = JSON.parse(raw) as MockState;
+      /* C4: migrate state persisted before the OAuth flow existed. */
+      if (!cached.oauth) cached.oauth = { pending: {}, codes: {} };
       return cached;
     }
   } catch {
