@@ -6,7 +6,7 @@
  */
 
 import { ApiError, registerMock, type MockContext } from '../api';
-import { ensureCreatorState, getState, mutate, SELF_WALLET_ADDRESS } from './state';
+import { ensureCreatorState, getState, mutate, NOTIF_COUNTER_START, seedNotifications, SELF_WALLET_ADDRESS } from './state';
 import { SOLANA_ADDRESS_RE } from '../types';
 /* C4: OAuth provider metadata shared with the consent screen UI. */
 import { OAUTH_CLIENT_ID, OAUTH_PROVIDERS, OAUTH_REDIRECT_PATH } from '../oauth';
@@ -669,19 +669,107 @@ registerMock('PUT', '/settings', (ctx) => {
   return getState().settings;
 });
 
-/* ─────────────────────────── notifications ─────────────────────────── */
+/* ─────────────────────────── notifications (C5) ─────────────────────────── */
+
+const NOTIFICATION_TEMPLATES: Array<Pick<AppNotification, 'type' | 'title' | 'body' | 'actionPath'>> = [
+  { type: 'payment', title: 'Payout received', body: 'Stripe payout of $1,240 landed in your USD balance.', actionPath: '/wallet?action=history' },
+  { type: 'payment', title: 'TikTok Creator Fund', body: 'A $312 Creator Fund payment just cleared.', actionPath: '/wallet?action=history' },
+  { type: 'advance', title: 'Advance approved', body: 'You are pre-approved for up to $2,500 at 2.5% flat.', actionPath: '/advances' },
+  { type: 'advance', title: 'Repayment processed', body: '$212 auto-deducted toward advance KRA-2847.', actionPath: '/advances' },
+  { type: 'ccs', title: 'CCS signal improved', body: 'Income Consistency ticked up — your score may follow.', actionPath: '/credit-score' },
+  { type: 'tax', title: 'Tax reserve nudge', body: 'You are $340 behind this month’s set-aside target.', actionPath: '/cash-flow' },
+  { type: 'platform', title: 'New brand deal match', body: 'A sponsor is looking for creators in your niche.', actionPath: '/marketplace' },
+  { type: 'platform', title: 'Platform sync complete', body: 'YouTube revenue re-synced — figures are up to date.', actionPath: '/settings' },
+  { type: 'system', title: 'Weekly digest ready', body: 'Your creator finance summary for the week is in.', actionPath: '/dashboard' },
+];
+
+const NOTIF_GENERATION_MIN_GAP_MS = 90_000;
+const NOTIF_GENERATION_CHANCE = 0.5;
+const NOTIF_MAX_STORED = 30;
+
+/** Sessions cached before C5 hold notifications without type/createdAt — re-seed them. */
+function ensureNotificationShape() {
+  const { notifications } = getState();
+  const legacy = notifications.some(
+    (n) => typeof (n as { type?: unknown }).type !== 'string' || typeof (n as { createdAt?: unknown }).createdAt !== 'string',
+  );
+  if (!legacy) return;
+  mutate((s) => {
+    s.notifications = seedNotifications();
+    s.notifCounter = NOTIF_COUNTER_START;
+    s.notifLastGeneratedAt = Date.now();
+  });
+}
+
+/** Occasionally emit a fresh mock notification so polling has something to find. */
+function maybeGenerateNotification() {
+  const state = getState();
+  const last = state.notifLastGeneratedAt ?? 0;
+  if (last === 0) {
+    mutate((s) => {
+      s.notifLastGeneratedAt = Date.now();
+    });
+    return;
+  }
+  if (Date.now() - last < NOTIF_GENERATION_MIN_GAP_MS) return;
+  if (Math.random() >= NOTIF_GENERATION_CHANCE) return;
+  mutate((s) => {
+    const template = NOTIFICATION_TEMPLATES[Math.floor(Math.random() * NOTIFICATION_TEMPLATES.length)];
+    const nextId = s.notifCounter ?? 100;
+    s.notifCounter = nextId + 1;
+    s.notifications.unshift({
+      ...template,
+      id: `ntf_${nextId}`,
+      read: false,
+      createdAt: new Date().toISOString(),
+    });
+    if (s.notifications.length > NOTIF_MAX_STORED) s.notifications.length = NOTIF_MAX_STORED;
+    s.notifLastGeneratedAt = Date.now();
+  });
+}
+
+/** Newest-first copy of the stored notifications. */
+function notificationsSnapshot(): AppNotification[] {
+  return [...getState().notifications].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+function setNotificationRead(id: string, read: boolean): AppNotification[] {
+  const { notifications } = getState();
+  if (!notifications.some((n) => n.id === id)) {
+    throw new ApiError(404, `Unknown notification: ${id}`);
+  }
+  mutate((s) => {
+    s.notifications = s.notifications.map((n): AppNotification => (n.id === id ? { ...n, read } : n));
+  });
+  return notificationsSnapshot();
+}
 
 registerMock('GET', '/notifications', (ctx) => {
   requireAuth(ctx);
-  return getState().notifications;
+  ensureNotificationShape();
+  maybeGenerateNotification();
+  return notificationsSnapshot();
 });
 
 registerMock('POST', '/notifications/read-all', (ctx) => {
   requireAuth(ctx);
+  ensureNotificationShape();
   mutate((s) => {
     s.notifications = s.notifications.map((n): AppNotification => ({ ...n, read: true }));
   });
-  return getState().notifications;
+  return notificationsSnapshot();
+});
+
+registerMock('POST', '/notifications/:id/read', (ctx) => {
+  requireAuth(ctx);
+  ensureNotificationShape();
+  return setNotificationRead(ctx.params.id, true);
+});
+
+registerMock('POST', '/notifications/:id/unread', (ctx) => {
+  requireAuth(ctx);
+  ensureNotificationShape();
+  return setNotificationRead(ctx.params.id, false);
 });
 
 /* ─────────────────── C2: brand deal marketplace ─────────────────── */

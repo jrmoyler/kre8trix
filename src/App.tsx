@@ -16,6 +16,7 @@ import TaxCenter from './pages/TaxCenter' // C3: Tax Center
 /* C4: platform connect OAuth */
 import OAuthAuthorize from './pages/OAuthAuthorize'
 import OAuthCallback from './pages/OAuthCallback'
+import Notifications from './pages/Notifications' // C5
 
 export default function App() {
   return (
@@ -42,6 +43,8 @@ export default function App() {
                 {/* C4: mock OAuth provider consent screen + redirect_uri */}
                 <Route path="/oauth/authorize" element={<OAuthAuthorize />} />
                 <Route path="/oauth/callback" element={<OAuthCallback />} />
+                {/* C5: full notification center (no Navbar item by design) */}
+                <Route path="/notifications-center" element={<Notifications />} />
               </Routes>
             </Layout>
           </ProtectedRoute>
