@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#06060E"/>
+  <!-- Blocky "K8" mark shrunk into the maskable safe zone (center 80%) -->
+  <g transform="translate(256 256) scale(0.75) translate(-256 -256)">
+    <g fill="#C8FF00" transform="translate(107.5, 161.5)">
+      <!-- K -->
+      <rect x="0" y="0" width="27" height="189"/>
+      <rect x="108" y="0" width="27" height="27"/>
+      <rect x="81" y="27" width="27" height="27"/>
+      <rect x="54" y="54" width="27" height="27"/>
+      <rect x="27" y="81" width="27" height="27"/>
+      <rect x="54" y="108" width="27" height="27"/>
+      <rect x="81" y="135" width="27" height="27"/>
+      <rect x="108" y="162" width="27" height="27"/>
+      <!-- 8 -->
+      <rect x="189" y="0" width="81" height="27"/>
+      <rect x="189" y="81" width="81" height="27"/>
+      <rect x="189" y="162" width="81" height="27"/>
+      <rect x="162" y="27" width="27" height="54"/>
+      <rect x="162" y="108" width="27" height="54"/>
+      <rect x="270" y="27" width="27" height="54"/>
+      <rect x="270" y="108" width="27" height="54"/>
+    </g>
+  </g>
+</svg>
