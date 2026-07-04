@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, Lock, Mail, User } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { ApiError } from '@/lib/api';
+import { EMAIL_RE } from '@/lib/types';
 
 type Mode = 'login' | 'signup';
 
@@ -26,6 +27,19 @@ export default function Login() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
+    // Client-side validation mirroring the API boundary rules.
+    if (mode === 'signup' && !name.trim()) {
+      setError('Name is required');
+      return;
+    }
+    if (!EMAIL_RE.test(email.trim())) {
+      setError('Enter a valid email address');
+      return;
+    }
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
+    }
     setSubmitting(true);
     try {
       if (mode === 'login') {

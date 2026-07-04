@@ -7,7 +7,7 @@
 
 import { ApiError, registerMock, type MockContext } from '../api';
 import { ensureCreatorState, getState, mutate, NOTIF_COUNTER_START, seedNotifications, SELF_WALLET_ADDRESS } from './state';
-import { SOLANA_ADDRESS_RE } from '../types';
+import { EMAIL_RE, SOLANA_ADDRESS_RE } from '../types';
 /* C4: OAuth provider metadata shared with the consent screen UI. */
 import { OAUTH_CLIENT_ID, OAUTH_PROVIDERS, OAUTH_REDIRECT_PATH } from '../oauth';
 import type {
@@ -59,6 +59,24 @@ function requireAuth(ctx: MockContext) {
   if (!ctx.token) throw new ApiError(401, 'Not authenticated');
 }
 
+/** Upper bound for any single money movement — mirrors a real API's sanity cap. */
+const MAX_AMOUNT = 1_000_000;
+
+/**
+ * Validate a money amount at the API boundary: must be an actual number
+ * (not a numeric string), finite (rejects NaN/Infinity), positive, and
+ * within the per-transaction cap.
+ */
+function assertAmount(value: unknown): number {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
+    throw new ApiError(400, 'Amount must be greater than zero');
+  }
+  if (value > MAX_AMOUNT) {
+    throw new ApiError(400, `Amount exceeds the $${MAX_AMOUNT.toLocaleString()} per-transaction limit`);
+  }
+  return value;
+}
+
 function base64Url(value: string): string {
   return btoa(value).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
@@ -86,7 +104,7 @@ function todayLabel(): string {
 
 registerMock('POST', '/auth/login', (ctx) => {
   const body = ctx.body as { email?: string; password?: string };
-  if (!body?.email || !body.email.includes('@')) {
+  if (!body?.email || !EMAIL_RE.test(body.email.trim())) {
     throw new ApiError(400, 'Enter a valid email address');
   }
   if (!body?.password || body.password.length < 6) {
@@ -100,7 +118,7 @@ registerMock('POST', '/auth/login', (ctx) => {
 registerMock('POST', '/auth/signup', (ctx) => {
   const body = ctx.body as { name?: string; email?: string; password?: string };
   if (!body?.name?.trim()) throw new ApiError(400, 'Name is required');
-  if (!body?.email || !body.email.includes('@')) {
+  if (!body?.email || !EMAIL_RE.test(body.email.trim())) {
     throw new ApiError(400, 'Enter a valid email address');
   }
   if (!body?.password || body.password.length < 6) {
@@ -164,7 +182,8 @@ registerMock('POST', '/wallet/send', (ctx) => {
   ensureCreatorState();
   const body = ctx.body as SendPayload;
   if (!body?.recipient?.trim()) throw new ApiError(400, 'Recipient is required');
-  if (!body.amount || body.amount <= 0) throw new ApiError(400, 'Amount must be greater than zero');
+  if (body.recipient.trim().length > 100) throw new ApiError(400, 'Recipient must be 100 characters or fewer');
+  assertAmount(body.amount);
 
   const state = getState();
   const recipientRaw = body.recipient.trim();
@@ -272,7 +291,8 @@ registerMock('POST', '/wallet/request', (ctx) => {
   requireAuth(ctx);
   const body = ctx.body as SendPayload;
   if (!body?.recipient?.trim()) throw new ApiError(400, 'Enter who to request from');
-  if (!body.amount || body.amount <= 0) throw new ApiError(400, 'Amount must be greater than zero');
+  if (body.recipient.trim().length > 100) throw new ApiError(400, 'Recipient must be 100 characters or fewer');
+  assertAmount(body.amount);
 
   let transaction: WalletTransaction | undefined;
   mutate((s) => {
@@ -297,7 +317,7 @@ registerMock('POST', '/wallet/request', (ctx) => {
 registerMock('POST', '/wallet/convert', (ctx) => {
   requireAuth(ctx);
   const body = ctx.body as ConvertPayload;
-  if (!body?.amount || body.amount <= 0) throw new ApiError(400, 'Amount must be greater than zero');
+  assertAmount(body?.amount);
 
   const state = getState();
   const available = body.from === 'USD' ? state.balances.usd : state.balances.usdc;
@@ -460,8 +480,24 @@ registerMock('GET', '/cashflow/reserve', (ctx) => {
 registerMock('PUT', '/cashflow/reserve', (ctx) => {
   requireAuth(ctx);
   const body = ctx.body as Partial<ReserveBuilder>;
+  // Whitelist known fields and validate numerics so arbitrary or
+  // non-finite values can never land in persisted state.
+  const numericFields = ['goal', 'current', 'monthlyTarget'] as const;
+  for (const field of numericFields) {
+    const value = body?.[field];
+    if (value === undefined) continue;
+    if (typeof value !== 'number' || !Number.isFinite(value) || value < 0 || value > MAX_AMOUNT) {
+      throw new ApiError(400, `Invalid value for ${field}`);
+    }
+  }
+  if (body?.autoContribute !== undefined && typeof body.autoContribute !== 'boolean') {
+    throw new ApiError(400, 'Invalid value for autoContribute');
+  }
   mutate((s) => {
-    s.reserve = { ...s.reserve, ...body };
+    for (const field of numericFields) {
+      if (body?.[field] !== undefined) s.reserve[field] = body[field];
+    }
+    if (body?.autoContribute !== undefined) s.reserve.autoContribute = body.autoContribute;
   });
   return getState().reserve;
 });
@@ -571,8 +607,7 @@ registerMock('GET', '/advances', (ctx) => {
 registerMock('POST', '/advances/apply', (ctx) => {
   requireAuth(ctx);
   const body = ctx.body as { amount?: number };
-  const amount = body?.amount ?? 0;
-  if (amount <= 0) throw new ApiError(400, 'Amount must be greater than zero');
+  const amount = assertAmount(body?.amount);
 
   const state = getState();
   const available = ADVANCE_MAX - state.advanceUsed;
@@ -623,7 +658,7 @@ registerMock('GET', '/profile', (ctx) => {
 registerMock('PUT', '/profile', (ctx) => {
   requireAuth(ctx);
   const body = ctx.body as Partial<Profile>;
-  if (body.email !== undefined && !body.email.includes('@')) {
+  if (body.email !== undefined && !EMAIL_RE.test(body.email.trim())) {
     throw new ApiError(400, 'Enter a valid email address');
   }
   mutate((s) => {
@@ -972,6 +1007,9 @@ for (const deal of MARKETPLACE_DEALS) {
     const pitch = body?.pitch?.trim() ?? '';
     if (pitch.length < 10) {
       throw new ApiError(400, 'Add a short pitch (at least 10 characters)');
+    }
+    if (pitch.length > 1000) {
+      throw new ApiError(400, 'Pitch must be 1,000 characters or fewer');
     }
     if (marketplaceApps().some((a) => a.dealId === deal.id)) {
       throw new ApiError(409, 'You already applied to this deal');

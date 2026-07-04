@@ -302,6 +302,7 @@ function DealDetail({
               value={pitch}
               onChange={(e) => setPitch(e.target.value)}
               rows={3}
+              maxLength={1000}
               placeholder={`Tell ${deal.brand} why your audience is the right fit (min. 10 characters)...`}
               className="w-full bg-surface border border-[rgba(var(--fg-rgb),0.1)] rounded-xl px-4 py-3 font-body text-[14px] text-ink placeholder:text-[rgba(var(--fg-rgb),0.2)] focus:border-electric focus:shadow-[0_0_0_3px_rgba(var(--electric-rgb),0.15)] outline-none transition-all resize-none"
             />

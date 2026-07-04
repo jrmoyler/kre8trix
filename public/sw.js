@@ -87,6 +87,11 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
+  // Security: never intercept or cache API traffic or any authenticated
+  // request — only static assets belong in the cache. The auth token lives
+  // in localStorage and is never written to the cache by this worker.
+  if (url.pathname.startsWith('/api') || request.headers.get('authorization')) return;
+
   // Navigations: network-first, fall back to cached shell, then offline page.
   if (request.mode === 'navigate') {
     event.respondWith(

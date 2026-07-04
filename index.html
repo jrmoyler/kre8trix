@@ -3,6 +3,18 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Security hardening: CSP + referrer policy.
+         script-src hashes: first covers the inline theme script below (recompute if it
+         changes), second covers the react-refresh preamble @vitejs/plugin-react injects
+         in dev. 'unsafe-inline' is style-src only (framer-motion/recharts/sonner set
+         inline styles). connect-src allows https: so VITE_API_URL stays pluggable and
+         ws: for the dev-server HMR socket. frame-ancestors/X-Frame-Options cannot be
+         set via <meta> — configure those at the hosting server. -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'sha256-pEUDG3Gn7yfUKO864Iv/hu7ElUgRnEh9xCcA7L1rGN4=' 'sha256-Z2/iFzh9VMlVkEOar1f/oSHWwQk3ve1qk/C2WdsC4Xk='; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https: ws:; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
     <title>Kre8trix — Creator Financial OS</title>
     <!-- C6: PWA -->
     <link rel="manifest" href="/manifest.webmanifest" />

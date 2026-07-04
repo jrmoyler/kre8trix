@@ -271,6 +271,20 @@ export function resetState() {
   saveState();
 }
 
+/**
+ * Wipe the persisted mock-backend state entirely (called on logout so no
+ * per-user data — balances, transactions, profile, OAuth codes — outlives
+ * the session).
+ */
+export function clearPersistedState() {
+  cached = null;
+  try {
+    sessionStorage.removeItem(STORAGE_KEY);
+  } catch {
+    /* storage unavailable — in-memory cache is already dropped */
+  }
+}
+
 /** Update state and persist in one step. */
 export function mutate(fn: (state: MockState) => void) {
   const state = getState();

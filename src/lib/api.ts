@@ -160,10 +160,17 @@ async function dispatchFetch(method: HttpMethod, path: string, body?: unknown): 
 /* ─────────────────────────── public API ─────────────────────────── */
 
 async function request<T>(method: HttpMethod, path: string, body?: unknown): Promise<T> {
-  if (API_URL) {
-    return (await dispatchFetch(method, path, body)) as T;
+  try {
+    if (API_URL) {
+      return (await dispatchFetch(method, path, body)) as T;
+    }
+    return (await dispatchMock(method, path, body)) as T;
+  } catch (err) {
+    // A 401 means the session is no longer valid — drop the stored token
+    // regardless of which transport (real or mock) produced it.
+    if (err instanceof ApiError && err.status === 401) clearToken();
+    throw err;
   }
-  return (await dispatchMock(method, path, body)) as T;
 }
 
 export const api = {

@@ -237,6 +237,10 @@ export interface RecentRecipient {
 /** Solana wallet address check: base58 alphabet, 32-44 chars. */
 export const SOLANA_ADDRESS_RE = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 
+/** Pragmatic email shape check (local@domain.tld) shared by the login form
+ *  and the mock API boundary — mirrors what a real API must enforce. */
+export const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 /* ── C2: brand deal marketplace ──────────────────────────────────── */
 
 export type DealSort = 'match' | 'payout' | 'deadline';
