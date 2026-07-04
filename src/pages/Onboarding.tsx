@@ -1,8 +1,12 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronRight, Check, Link, Wallet, Shield, Sparkles } from 'lucide-react';
-import { api } from '@/lib/api';
+import { ChevronRight, Check, Link, Loader2, Wallet, Shield, Sparkles } from 'lucide-react';
+import { toast } from 'sonner';
+import { api, ApiError } from '@/lib/api';
+/* C4: OAuth connect flow for YouTube / TikTok / Stripe */
+import { oauthSlugForConnection, startOAuthFlow } from '@/lib/oauth';
+import { useApi } from '@/hooks/use-api';
 import type { PlatformConnection } from '@/lib/types';
 
 /* ── steps ────────────────────────────────────────────────── */
@@ -26,9 +30,37 @@ export default function Onboarding() {
   const [step, setStep] = useState(0);
   const [connected, setConnected] = useState<string[]>([]);
   const [walletType, setWalletType] = useState<'new' | 'existing'>('new');
+  /* C4: platform whose OAuth flow is being started (button spinner). */
+  const [startingOAuth, setStartingOAuth] = useState<string | null>(null);
 
-  const connectPlatform = (name: string) => {
+  /* C4: seed the connected list from the server once, so returning from
+   * the OAuth redirect shows the platform as connected. */
+  const connectionsQuery = useApi<PlatformConnection[]>('/profile/connections');
+  const seededRef = useRef(false);
+  useEffect(() => {
+    if (seededRef.current || !connectionsQuery.data) return;
+    seededRef.current = true;
+    setConnected(connectionsQuery.data.filter((c) => c.connected).map((c) => c.name));
+  }, [connectionsQuery.data]);
+
+  const connectPlatform = async (name: string) => {
     const isConnected = connected.includes(name);
+    const oauthSlug = oauthSlugForConnection(name);
+
+    /* C4: connecting an OAuth platform goes through the real
+     * authorization-code flow; the callback returns here afterwards. */
+    if (!isConnected && oauthSlug) {
+      setStartingOAuth(name);
+      try {
+        const authorizeUrl = await startOAuthFlow(oauthSlug, '/onboarding');
+        navigate(authorizeUrl);
+      } catch (err) {
+        toast.error(err instanceof ApiError ? err.message : `Could not start the ${name} connect flow`);
+        setStartingOAuth(null);
+      }
+      return;
+    }
+
     setConnected((prev) => (isConnected ? prev.filter((n) => n !== name) : [...prev, name]));
     // Persist to the creator profile so Settings → Connected Accounts reflects it.
     api
@@ -105,6 +137,10 @@ export default function Onboarding() {
                       {isConnected ? (
                         <span className="flex items-center gap-1 text-positive font-mono text-[12px]">
                           <Check size={14} /> Connected
+                        </span>
+                      ) : startingOAuth === p.name ? (
+                        <span className="flex items-center gap-1 font-mono text-[12px] text-[rgba(255,255,255,0.42)]">
+                          <Loader2 size={14} className="animate-spin" /> Redirecting…
                         </span>
                       ) : (
                         <span className="font-mono text-[12px] text-[rgba(255,255,255,0.42)]">Connect</span>

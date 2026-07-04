@@ -7,6 +7,8 @@
 
 import { ApiError, registerMock, type MockContext } from '../api';
 import { getState, mutate } from './state';
+/* C4: OAuth provider metadata shared with the consent screen UI. */
+import { OAUTH_CLIENT_ID, OAUTH_PROVIDERS, OAUTH_REDIRECT_PATH } from '../oauth';
 import type {
   AdvancesOverview,
   AppNotification,
@@ -20,6 +22,12 @@ import type {
   ForecastPoint,
   ForecastSummaryItem,
   ForecastWindow,
+  OAuthDecisionPayload,
+  OAuthDecisionResponse,
+  OAuthPlatform,
+  OAuthStartResponse,
+  OAuthTokenPayload,
+  OAuthTokenResponse,
   PlatformConnection,
   PlatformRevenueSummary,
   Profile,
@@ -587,4 +595,144 @@ registerMock('POST', '/notifications/read-all', (ctx) => {
     s.notifications = s.notifications.map((n): AppNotification => ({ ...n, read: true }));
   });
   return getState().notifications;
+});
+
+/* ─────────────── C4: platform connect OAuth (mock provider) ───────────────
+ *
+ * Realistic OAuth 2.0 authorization-code flow against the mock backend:
+ *   GET  /oauth/:platform/start      → authorize URL + CSRF state token
+ *   POST /oauth/authorize/decision   → provider consent (Allow/Deny) mints
+ *                                      a code or an access_denied redirect
+ *   POST /oauth/token                → code exchange, marks connected
+ */
+
+const OAUTH_STATE_TTL_MS = 10 * 60 * 1000;
+const OAUTH_CODE_TTL_MS = 5 * 60 * 1000;
+
+function randomToken(bytes = 16): string {
+  const buf = new Uint8Array(bytes);
+  crypto.getRandomValues(buf);
+  return Array.from(buf, (b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+function providerScope(platform: OAuthPlatform): string {
+  return OAUTH_PROVIDERS[platform].scopes.map((s) => s.id).join(' ');
+}
+
+for (const provider of Object.values(OAUTH_PROVIDERS)) {
+  registerMock('GET', `/oauth/${provider.slug}/start`, (ctx) => {
+    requireAuth(ctx);
+    const state = randomToken();
+    mutate((s) => {
+      // Prune expired pending authorizations while we're here.
+      for (const [key, entry] of Object.entries(s.oauth.pending)) {
+        if (Date.now() - entry.createdAt > OAUTH_STATE_TTL_MS) delete s.oauth.pending[key];
+      }
+      s.oauth.pending[state] = { platform: provider.slug, createdAt: Date.now() };
+    });
+    const params = new URLSearchParams({
+      platform: provider.slug,
+      client_id: OAUTH_CLIENT_ID,
+      redirect_uri: OAUTH_REDIRECT_PATH,
+      response_type: 'code',
+      scope: providerScope(provider.slug),
+      state,
+    });
+    const response: OAuthStartResponse = {
+      platform: provider.slug,
+      authorizeUrl: `/oauth/authorize?${params.toString()}`,
+      state,
+    };
+    return response;
+  });
+}
+
+registerMock('POST', '/oauth/authorize/decision', (ctx) => {
+  requireAuth(ctx);
+  const body = ctx.body as OAuthDecisionPayload;
+  if (!body?.state) throw new ApiError(400, 'invalid_request: missing state parameter');
+  if (body.decision !== 'allow' && body.decision !== 'deny') {
+    throw new ApiError(400, 'invalid_request: decision must be "allow" or "deny"');
+  }
+  const pending = getState().oauth.pending[body.state];
+  if (!pending || Date.now() - pending.createdAt > OAUTH_STATE_TTL_MS) {
+    throw new ApiError(400, 'invalid_request: unknown or expired state token — restart the connect flow');
+  }
+
+  if (body.decision === 'deny') {
+    mutate((s) => {
+      delete s.oauth.pending[body.state];
+    });
+    const params = new URLSearchParams({ error: 'access_denied', state: body.state });
+    const response: OAuthDecisionResponse = {
+      redirect: `${OAUTH_REDIRECT_PATH}?${params.toString()}`,
+    };
+    return response;
+  }
+
+  const code = `mock_${randomToken(24)}`;
+  mutate((s) => {
+    delete s.oauth.pending[body.state];
+    // Prune expired/used codes while we're here.
+    for (const [key, grant] of Object.entries(s.oauth.codes)) {
+      if (grant.used || Date.now() - grant.createdAt > OAUTH_CODE_TTL_MS) delete s.oauth.codes[key];
+    }
+    s.oauth.codes[code] = {
+      platform: pending.platform,
+      state: body.state,
+      createdAt: Date.now(),
+      used: false,
+    };
+  });
+  const params = new URLSearchParams({ code, state: body.state });
+  const response: OAuthDecisionResponse = {
+    redirect: `${OAUTH_REDIRECT_PATH}?${params.toString()}`,
+  };
+  return response;
+});
+
+registerMock('POST', '/oauth/token', (ctx) => {
+  requireAuth(ctx);
+  const body = ctx.body as OAuthTokenPayload;
+  if (body?.grant_type !== 'authorization_code') {
+    throw new ApiError(400, 'unsupported_grant_type: expected "authorization_code"');
+  }
+  if (!body.code) throw new ApiError(400, 'invalid_request: missing authorization code');
+  if (body.client_id !== OAUTH_CLIENT_ID) {
+    throw new ApiError(401, 'invalid_client: unknown client_id');
+  }
+  if (body.redirect_uri !== OAUTH_REDIRECT_PATH) {
+    throw new ApiError(400, 'invalid_grant: redirect_uri does not match the authorization request');
+  }
+
+  const grant = getState().oauth.codes[body.code];
+  if (!grant || grant.used) {
+    throw new ApiError(400, 'invalid_grant: authorization code is unknown or was already used');
+  }
+  if (Date.now() - grant.createdAt > OAUTH_CODE_TTL_MS) {
+    throw new ApiError(400, 'invalid_grant: authorization code expired — restart the connect flow');
+  }
+
+  const provider = OAUTH_PROVIDERS[grant.platform as OAuthPlatform];
+  mutate((s) => {
+    s.oauth.codes[body.code].used = true;
+    const connection = s.connections.find((c) => c.name === provider.name);
+    if (connection) {
+      connection.connected = true;
+      if (!connection.user) connection.user = s.profile.handle;
+    } else {
+      s.connections.push({ name: provider.name, user: s.profile.handle, connected: true });
+    }
+  });
+
+  const response: OAuthTokenResponse = {
+    access_token: `mock_at_${randomToken(24)}`,
+    token_type: 'Bearer',
+    expires_in: 3600,
+    refresh_token: `mock_rt_${randomToken(24)}`,
+    scope: providerScope(provider.slug),
+    platform: provider.slug,
+    connections: getState().connections,
+  };
+  return response;
 });

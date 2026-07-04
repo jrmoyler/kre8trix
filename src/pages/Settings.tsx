@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router';
 import { motion } from 'framer-motion';
 import {
   User,
@@ -13,6 +14,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { api, ApiError } from '@/lib/api';
+/* C4: OAuth connect flow for YouTube / TikTok / Stripe */
+import { oauthSlugForConnection, startOAuthFlow } from '@/lib/oauth';
 import { useApi } from '@/hooks/use-api';
 import type { AppSettings, PlatformConnection, Profile } from '@/lib/types';
 import { ErrorNotice, SkeletonBlock } from '@/components/Skeletons';
@@ -43,7 +46,13 @@ function ContentSkeleton() {
 }
 
 export default function Settings() {
-  const [activeTab, setActiveTab] = useState('profile');
+  const navigate = useNavigate();
+  /* C4: honor ?tab=… so the OAuth flow can return to Connected Accounts. */
+  const [searchParams] = useSearchParams();
+  const requestedTab = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState(
+    SETTINGS_TABS.some((t) => t.key === requestedTab) ? (requestedTab as string) : 'profile',
+  );
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -78,6 +87,21 @@ export default function Settings() {
       toast.error(err instanceof ApiError ? err.message : 'Could not save settings');
     } finally {
       setSaving(false);
+    }
+  };
+
+  /* C4: OAuth platforms connect via the authorization-code flow; the
+   * rest (and every disconnect) keep the direct toggle endpoint. */
+  const connectViaOAuth = async (platform: PlatformConnection) => {
+    const slug = oauthSlugForConnection(platform.name);
+    if (!slug) return;
+    setTogglingPlatform(platform.name);
+    try {
+      const authorizeUrl = await startOAuthFlow(slug, '/settings?tab=connections');
+      navigate(authorizeUrl);
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : `Could not start the ${platform.name} connect flow`);
+      setTogglingPlatform(null);
     }
   };
 
@@ -305,7 +329,11 @@ export default function Settings() {
                             </div>
                           </div>
                           <button
-                            onClick={() => toggleConnection(account)}
+                            onClick={() =>
+                              !account.connected && oauthSlugForConnection(account.name)
+                                ? connectViaOAuth(account)
+                                : toggleConnection(account)
+                            }
                             disabled={togglingPlatform === account.name}
                             className={`flex items-center gap-2 px-4 py-2 rounded-lg font-mono text-[12px] transition-all disabled:opacity-50 ${
                               account.connected
