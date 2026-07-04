@@ -38,6 +38,14 @@ export default function Navbar() {
   const { user } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [prevPathname, setPrevPathname] = useState(location.pathname);
+
+  // Close the mobile menu whenever the route changes (state adjustment
+  // during render, per https://react.dev/learn/you-might-not-need-an-effect).
+  if (prevPathname !== location.pathname) {
+    setPrevPathname(location.pathname);
+    setMobileOpen(false);
+  }
 
   useEffect(() => {
     const handleResize = () => {
@@ -53,10 +61,6 @@ export default function Navbar() {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
-
-  useEffect(() => {
-    setMobileOpen(false);
-  }, [location.pathname]);
 
   const isActive = (path: string) => location.pathname === path;
 
