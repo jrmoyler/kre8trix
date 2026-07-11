@@ -141,14 +141,18 @@ function QuarterlyCalculator({
                 <span className="font-mono text-[14px] text-acid">{rate}%</span>
               </div>
               <input
+                id="effective-tax-rate"
+                aria-label="Effective tax rate"
                 type="range"
                 min={10}
                 max={50}
                 step={1}
                 value={rate}
+                disabled={saving}
                 onChange={(e) => setPendingRate(Number(e.target.value))}
                 onMouseUp={() => saveEstimates({ effectiveRatePercent: rate })}
                 onTouchEnd={() => saveEstimates({ effectiveRatePercent: rate })}
+                onKeyUp={() => saveEstimates({ effectiveRatePercent: rate })}
                 className="w-full accent-acid cursor-pointer"
               />
               <p className="font-mono text-[11px] text-[rgba(var(--fg-rgb),0.42)] mt-1">
@@ -162,6 +166,7 @@ function QuarterlyCalculator({
               <select
                 id="filing-status"
                 value={summary.settings.filingStatus}
+                disabled={saving}
                 onChange={(e) => saveEstimates({ filingStatus: e.target.value as FilingStatus })}
                 className="w-full bg-panel2 border border-[rgba(var(--fg-rgb),0.08)] rounded-xl px-4 py-2.5 font-body text-[14px] text-ink focus:outline-none focus:border-acid cursor-pointer"
               >
@@ -179,7 +184,10 @@ function QuarterlyCalculator({
               {Math.round(coveredPercent)}% of estimated taxes reserved
             </span>
             <span className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)]">
-              Next due: {summary.quarters.find((q) => q.status !== 'Covered')?.dueDate ?? summary.quarters[3].dueDate}
+              {(() => {
+                const nextDue = summary.quarters.find((q) => q.status !== 'Covered');
+                return nextDue ? `Next due: ${nextDue.dueDate}` : 'All quarters covered';
+              })()}
             </span>
           </div>
           <div className="h-2.5 bg-[rgba(var(--fg-rgb),0.06)] rounded-full overflow-hidden mb-6">

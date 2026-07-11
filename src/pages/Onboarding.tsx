@@ -65,8 +65,10 @@ export default function Onboarding() {
     // Persist to the creator profile so Settings → Connected Accounts reflects it.
     api
       .put<PlatformConnection[]>('/profile/connections', { name, connected: !isConnected })
-      .catch(() => {
-        /* non-blocking during onboarding */
+      .catch((err) => {
+        // Roll back the optimistic update since the server never persisted it.
+        setConnected((prev) => (isConnected ? [...prev, name] : prev.filter((n) => n !== name)));
+        toast.error(err instanceof ApiError ? err.message : `Could not connect ${name}`);
       });
   };
 

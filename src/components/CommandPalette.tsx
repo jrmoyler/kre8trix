@@ -1,4 +1,4 @@
-import { useEffect, useState, type ComponentType } from 'react';
+import { useEffect, useRef, useState, type ComponentType } from 'react';
 import { useNavigate } from 'react-router';
 import { Command } from 'cmdk';
 import {
@@ -27,29 +27,39 @@ interface PaletteItem {
 }
 
 interface CommandPaletteProps {
-  open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
 /*
- * The palette is conditionally mounted by its parent (Layout), so the
- * query input state resets naturally between openings.
+ * The palette is only ever mounted by its parent (Layout) while open, so
+ * the query input state resets naturally between openings and this
+ * component can assume it is always visible for its whole lifetime.
  */
-export default function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
+export default function CommandPalette({ onOpenChange }: CommandPaletteProps) {
   const navigate = useNavigate();
   const { logout } = useAuth();
   const [query, setQuery] = useState('');
 
   useEffect(() => {
-    if (!open) return;
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onOpenChange(false);
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [open, onOpenChange]);
+  }, [onOpenChange]);
 
-  if (!open) return null;
+  // Return focus to whatever triggered the palette once it unmounts. Captured
+  // as the ref's lazy initial value (evaluated during this component's first
+  // render) rather than in an effect, since a child effect (Command.Input's
+  // autoFocus) commits before this component's own effects would run and
+  // would already have stolen focus by then.
+  const previouslyFocused = useRef<HTMLElement | null>(document.activeElement as HTMLElement | null);
+  useEffect(() => {
+    const toRestore = previouslyFocused.current;
+    return () => {
+      toRestore?.focus?.();
+    };
+  }, []);
 
   const go = (path: string) => {
     onOpenChange(false);
@@ -97,7 +107,7 @@ export default function CommandPalette({ open, onOpenChange }: CommandPalettePro
   );
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-start justify-center pt-[15vh] px-4">
+    <div role="dialog" aria-modal="true" aria-label="Command palette" className="fixed inset-0 z-[100] flex items-start justify-center pt-[15vh] px-4">
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/70 backdrop-blur-sm"

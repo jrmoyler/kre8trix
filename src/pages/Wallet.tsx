@@ -166,8 +166,10 @@ export default function Wallet() {
   const [submitting, setSubmitting] = useState(false);
 
   const handleCopy = (text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopied(true);
+    navigator.clipboard
+      .writeText(text)
+      .then(() => setCopied(true))
+      .catch(() => toast.error('Could not copy to clipboard'));
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -452,6 +454,7 @@ export default function Wallet() {
             <button
               key={tab.key}
               onClick={() => selectTab(tab.key)}
+              aria-label={tab.label}
               className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-body text-[14px] font-medium transition-all ${
                 activeTab === tab.key
                   ? 'bg-acid text-void'
@@ -477,6 +480,7 @@ export default function Wallet() {
                   value={sendAmount}
                   onChange={(e) => setSendAmount(e.target.value)}
                   placeholder={`Amount (${sendCurrency})`}
+                  aria-label="Amount to send"
                   className="w-full bg-surface border border-[rgba(var(--fg-rgb),0.1)] rounded-xl px-4 py-4 font-mono text-[24px] text-ink placeholder:text-[rgba(var(--fg-rgb),0.2)] focus:border-electric outline-none transition-colors"
                 />
                 <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)]">
@@ -484,12 +488,14 @@ export default function Wallet() {
                 </p>
 
                 {/* C1 — Recent recipients */}
-                {(recipientsQuery.loading || (recipientsQuery.data?.length ?? 0) > 0) && (
+                {(recipientsQuery.loading || recipientsQuery.error || (recipientsQuery.data?.length ?? 0) > 0) && (
                   <div className="space-y-2">
                     <p className="font-mono text-[12px] tracking-[0.04em] text-[rgba(var(--fg-rgb),0.42)]">
                       Recent recipients
                     </p>
-                    {recipientsQuery.loading && !recipientsQuery.data ? (
+                    {recipientsQuery.error ? (
+                      <ErrorNotice message={recipientsQuery.error} onRetry={recipientsQuery.refresh} />
+                    ) : recipientsQuery.loading && !recipientsQuery.data ? (
                       <div className="flex gap-2">
                         {[0, 1, 2].map((i) => (
                           <SkeletonBlock key={i} className="h-9 w-32 rounded-full" />
@@ -532,6 +538,7 @@ export default function Wallet() {
                     onFocus={() => setRecipientFocused(true)}
                     onBlur={() => setRecipientFocused(false)}
                     placeholder="@handle or Solana wallet address"
+                    aria-label="Recipient"
                     aria-invalid={recipientError !== null}
                     className={`w-full bg-surface border rounded-xl px-4 py-3 font-body text-[16px] text-ink placeholder:text-[rgba(var(--fg-rgb),0.2)] outline-none transition-colors ${
                       recipientError
@@ -613,6 +620,7 @@ export default function Wallet() {
                   value={requestAmount}
                   onChange={(e) => setRequestAmount(e.target.value)}
                   placeholder={`Amount (${requestCurrency})`}
+                  aria-label="Amount to request"
                   className="w-full bg-surface border border-[rgba(var(--fg-rgb),0.1)] rounded-xl px-4 py-4 font-mono text-[24px] text-ink placeholder:text-[rgba(var(--fg-rgb),0.2)] focus:border-electric outline-none transition-colors"
                 />
                 <input
@@ -620,6 +628,7 @@ export default function Wallet() {
                   value={requestFrom}
                   onChange={(e) => setRequestFrom(e.target.value)}
                   placeholder="Request from (email, username, or address)"
+                  aria-label="Request from"
                   className="w-full bg-surface border border-[rgba(var(--fg-rgb),0.1)] rounded-xl px-4 py-3 font-body text-[16px] text-ink placeholder:text-[rgba(var(--fg-rgb),0.2)] focus:border-electric outline-none transition-colors"
                 />
                 <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)]">
@@ -651,7 +660,7 @@ export default function Wallet() {
               <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] mb-2">Your Wallet Address</p>
               <div className="flex items-center justify-center gap-2">
                 <code className="font-mono text-[14px] text-ink bg-panel px-4 py-2 rounded-xl">{WALLET_ADDRESS.slice(0, 16)}...{WALLET_ADDRESS.slice(-4)}</code>
-                <button onClick={() => handleCopy(WALLET_ADDRESS)} className="p-2 rounded-xl bg-panel text-[rgba(var(--fg-rgb),0.42)] hover:text-ink transition-colors">
+                <button onClick={() => handleCopy(WALLET_ADDRESS)} aria-label="Copy wallet address" className="p-2 rounded-xl bg-panel text-[rgba(var(--fg-rgb),0.42)] hover:text-ink transition-colors">
                   {copied ? <Check size={16} className="text-positive" /> : <Copy size={16} />}
                 </button>
               </div>
@@ -670,6 +679,7 @@ export default function Wallet() {
                   value={convertAmount}
                   onChange={(e) => setConvertAmount(e.target.value)}
                   placeholder={`Amount in ${convertFrom}`}
+                  aria-label="Amount to convert"
                   className="w-full bg-surface border border-[rgba(var(--fg-rgb),0.1)] rounded-xl px-4 py-4 font-mono text-[24px] text-ink placeholder:text-[rgba(var(--fg-rgb),0.2)] focus:border-electric outline-none transition-colors"
                 />
                 <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)]">

@@ -42,6 +42,8 @@ function NotificationsSkeleton() {
 export default function Notifications() {
   const navigate = useNavigate();
   const [filter, setFilter] = useState<Filter>('all');
+  const [markingAllRead, setMarkingAllRead] = useState(false);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
   const { data: notifications, loading, error, refresh, setData } =
     useApi<AppNotification[]>('/notifications');
 
@@ -72,16 +74,22 @@ export default function Notifications() {
   }, [notifications, filter]);
 
   const markAllRead = async () => {
+    if (markingAllRead) return;
+    setMarkingAllRead(true);
     try {
       const updated = await api.post<AppNotification[]>('/notifications/read-all');
       setData(updated);
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Could not mark notifications read');
+    } finally {
+      setMarkingAllRead(false);
     }
   };
 
   const toggleRead = async (notification: AppNotification, e: React.MouseEvent) => {
     e.stopPropagation();
+    if (togglingId) return;
+    setTogglingId(notification.id);
     try {
       const updated = await api.post<AppNotification[]>(
         `/notifications/${notification.id}/${notification.read ? 'unread' : 'read'}`,
@@ -89,6 +97,8 @@ export default function Notifications() {
       setData(updated);
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Could not update notification');
+    } finally {
+      setTogglingId(null);
     }
   };
 
@@ -129,7 +139,8 @@ export default function Notifications() {
         {unreadCount > 0 && (
           <button
             onClick={markAllRead}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[rgba(var(--fg-rgb),0.06)] hover:bg-[rgba(var(--fg-rgb),0.1)] font-mono text-[12px] tracking-[0.04em] text-electric hover:text-acid transition-colors"
+            disabled={markingAllRead}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[rgba(var(--fg-rgb),0.06)] hover:bg-[rgba(var(--fg-rgb),0.1)] font-mono text-[12px] tracking-[0.04em] text-electric hover:text-acid transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <CheckCheck size={14} />
             Mark all read
@@ -191,43 +202,47 @@ export default function Notifications() {
                       initial={{ opacity: 0, y: 6 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.2, delay: Math.min(i * 0.03, 0.3) }}
-                      onClick={() => openNotification(n)}
-                      role="button"
-                      tabIndex={0}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          openNotification(n);
-                        }
-                      }}
-                      className={`group flex items-start gap-4 px-6 py-5 cursor-pointer border-b border-[rgba(var(--fg-rgb),0.05)] last:border-b-0 hover:bg-[rgba(var(--fg-rgb),0.03)] transition-colors ${
+                      className={`group flex items-start gap-4 px-6 py-5 border-b border-[rgba(var(--fg-rgb),0.05)] last:border-b-0 hover:bg-[rgba(var(--fg-rgb),0.03)] transition-colors ${
                         n.read ? '' : 'bg-[rgba(var(--fg-rgb),0.015)]'
                       }`}
                     >
-                      <span
-                        className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                        style={{
-                          background: `color-mix(in srgb, ${meta.color} 12%, transparent)`,
-                          color: meta.color,
-                          opacity: n.read ? 0.45 : 1,
+                      <div
+                        onClick={() => openNotification(n)}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            openNotification(n);
+                          }
                         }}
+                        className="flex items-start gap-4 flex-1 min-w-0 cursor-pointer"
                       >
-                        <Icon size={18} />
-                      </span>
-                      <div className={`flex-1 min-w-0 ${n.read ? 'opacity-60' : ''}`}>
-                        <div className="flex items-center gap-2.5 flex-wrap">
-                          <p className="font-body text-[14px] font-semibold text-ink">{n.title}</p>
-                          <span
-                            className="inline-flex items-center px-2 py-0.5 rounded-full font-mono text-[10px] tracking-[0.06em]"
-                            style={{ background: `color-mix(in srgb, ${meta.color} 12%, transparent)`, color: meta.color }}
-                          >
-                            {meta.label}
-                          </span>
-                          {!n.read && (
-                            <span className="w-1.5 h-1.5 rounded-full" style={{ background: meta.color }} />
-                          )}
+                        <span
+                          className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                          style={{
+                            background: `color-mix(in srgb, ${meta.color} 12%, transparent)`,
+                            color: meta.color,
+                            opacity: n.read ? 0.45 : 1,
+                          }}
+                        >
+                          <Icon size={18} />
+                        </span>
+                        <div className={`flex-1 min-w-0 ${n.read ? 'opacity-60' : ''}`}>
+                          <div className="flex items-center gap-2.5 flex-wrap">
+                            <p className="font-body text-[14px] font-semibold text-ink">{n.title}</p>
+                            <span
+                              className="inline-flex items-center px-2 py-0.5 rounded-full font-mono text-[10px] tracking-[0.06em]"
+                              style={{ background: `color-mix(in srgb, ${meta.color} 12%, transparent)`, color: meta.color }}
+                            >
+                              {meta.label}
+                            </span>
+                            {!n.read && (
+                              <span className="w-1.5 h-1.5 rounded-full" style={{ background: meta.color }} />
+                            )}
+                          </div>
+                          <p className="font-body text-[13px] text-[rgba(var(--fg-rgb),0.42)] mt-1">{n.body}</p>
                         </div>
-                        <p className="font-body text-[13px] text-[rgba(var(--fg-rgb),0.42)] mt-1">{n.body}</p>
                       </div>
                       <div className="flex flex-col items-end gap-2 flex-shrink-0">
                         <span className="font-mono text-[11px] text-[rgba(var(--fg-rgb),0.42)]">
@@ -235,8 +250,9 @@ export default function Notifications() {
                         </span>
                         <button
                           onClick={(e) => toggleRead(n, e)}
+                          disabled={togglingId === n.id}
                           aria-label={n.read ? 'Mark unread' : 'Mark read'}
-                          className="flex items-center gap-1.5 font-mono text-[11px] tracking-[0.04em] text-[rgba(var(--fg-rgb),0.35)] hover:text-electric opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all"
+                          className="flex items-center gap-1.5 font-mono text-[11px] tracking-[0.04em] text-[rgba(var(--fg-rgb),0.35)] hover:text-electric opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all disabled:opacity-50"
                         >
                           {n.read ? <Circle size={12} /> : <CircleCheck size={12} />}
                           {n.read ? 'Mark unread' : 'Mark read'}

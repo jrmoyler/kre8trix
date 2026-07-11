@@ -4,7 +4,6 @@ import { defineConfig } from "vite"
 import { inspectAttr } from 'plugin-inspect-react-code'
 
 export default defineConfig({
-  base: './',
   plugins: [inspectAttr(), react()],
   server: {
     port: 3000,

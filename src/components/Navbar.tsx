@@ -49,9 +49,13 @@ export default function Navbar() {
 
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth <= 768) {
+      // Mirrors the Tailwind md (>=768px) / lg (>=1024px) breakpoints used
+      // for the content margin in Layout.tsx (md:ml-[72px] lg:ml-[260px]):
+      // collapsed (72px) exactly across the md-but-not-lg range, expanded
+      // (260px) at lg and up.
+      if (window.innerWidth < 768) {
         setCollapsed(false);
-      } else if (window.innerWidth <= 1024) {
+      } else if (window.innerWidth < 1024) {
         setCollapsed(true);
       } else {
         setCollapsed(false);

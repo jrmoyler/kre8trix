@@ -17,7 +17,9 @@ const pageTitles: Record<string, string> = {
   '/wallet': 'Wallet',
   '/credit-score': 'Credit Score',
   '/cash-flow': 'Cash Flow',
+  '/taxes': 'Tax Center',
   '/advances': 'Advances',
+  '/marketplace': 'Marketplace',
   '/cards': 'Cards',
   '/analytics': 'Analytics',
   '/settings': 'Settings',
@@ -31,13 +33,20 @@ function UserMenu() {
 
   useEffect(() => {
     if (!open) return;
-    const handler = (e: MouseEvent) => {
+    const handleClick = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setOpen(false);
       }
     };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('mousedown', handleClick);
+    document.addEventListener('keydown', handleKey);
+    return () => {
+      document.removeEventListener('mousedown', handleClick);
+      document.removeEventListener('keydown', handleKey);
+    };
   }, [open]);
 
   return (
@@ -45,6 +54,8 @@ function UserMenu() {
       <button
         onClick={() => setOpen((v) => !v)}
         aria-label="Account menu"
+        aria-haspopup="menu"
+        aria-expanded={open}
         className="rounded-full hover:brightness-110 transition-all"
       >
         <InitialsAvatar name={user?.name ?? 'K'} />
@@ -147,7 +158,7 @@ export default function Layout({ children }: { children: ReactNode }) {
       />
 
       {/* Cmd+K palette (mounted only while open so its state resets) */}
-      {paletteOpen && <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />}
+      {paletteOpen && <CommandPalette onOpenChange={setPaletteOpen} />}
 
       {/* Sidebar */}
       <Navbar />
@@ -165,6 +176,8 @@ export default function Layout({ children }: { children: ReactNode }) {
             <button
               onClick={() => setPaletteOpen(true)}
               aria-label="Search (Cmd+K)"
+              aria-haspopup="dialog"
+              aria-expanded={paletteOpen}
               className="group flex items-center gap-3 h-10 px-3 rounded-xl text-[rgba(var(--fg-rgb),0.42)] hover:text-ink hover:bg-[rgba(var(--fg-rgb),0.06)] transition-all duration-200"
             >
               <Search size={20} />

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import { motion } from 'framer-motion';
 import {
@@ -61,6 +61,13 @@ export default function Settings() {
   );
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
+  const savedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (savedTimeoutRef.current) clearTimeout(savedTimeoutRef.current);
+    };
+  }, []);
 
   const profileQuery = useApi<Profile>('/profile');
   const settingsQuery = useApi<AppSettings>('/settings');
@@ -80,17 +87,28 @@ export default function Settings() {
     if (!profile || !settings) return;
     setSaving(true);
     try {
-      const [savedProfile, savedSettings] = await Promise.all([
+      const [profileResult, settingsResult] = await Promise.allSettled([
         api.put<Profile>('/profile', profile),
         api.put<AppSettings>('/settings', settings),
       ]);
-      setProfile(savedProfile);
-      setSettings(savedSettings);
-      setSaved(true);
-      toast.success('Settings saved');
-      setTimeout(() => setSaved(false), 2000);
-    } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : 'Could not save settings');
+
+      if (profileResult.status === 'fulfilled') setProfile(profileResult.value);
+      if (settingsResult.status === 'fulfilled') setSettings(settingsResult.value);
+
+      if (profileResult.status === 'fulfilled' && settingsResult.status === 'fulfilled') {
+        setSaved(true);
+        toast.success('Settings saved');
+        if (savedTimeoutRef.current) clearTimeout(savedTimeoutRef.current);
+        savedTimeoutRef.current = setTimeout(() => setSaved(false), 2000);
+      } else if (profileResult.status === 'rejected' && settingsResult.status === 'rejected') {
+        toast.error('Could not save settings');
+      } else if (profileResult.status === 'rejected') {
+        const reason = profileResult.reason;
+        toast.error(reason instanceof ApiError ? reason.message : 'Could not save profile');
+      } else if (settingsResult.status === 'rejected') {
+        const reason = settingsResult.reason;
+        toast.error(reason instanceof ApiError ? reason.message : 'Could not save settings');
+      }
     } finally {
       setSaving(false);
     }
@@ -260,7 +278,7 @@ export default function Settings() {
                   <h3 className="font-display text-[28px] tracking-[0.02em] text-ink">Security</h3>
                   <div className="space-y-4">
                     <button
-                      onClick={() => toast.success(`Password reset link sent to ${profile.email}`)}
+                      onClick={() => toast('Password reset isn’t available in this demo yet')}
                       className="w-full flex items-center justify-between p-4 rounded-xl bg-panel2 border border-[rgba(var(--fg-rgb),0.08)] hover:border-[rgba(var(--fg-rgb),0.14)] transition-colors"
                     >
                       <div className="text-left">
@@ -430,6 +448,8 @@ function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void 
   return (
     <button
       onClick={() => onChange(!on)}
+      role="switch"
+      aria-checked={on}
       className={`relative w-[44px] h-[24px] rounded-full transition-colors ${on ? 'bg-acid' : 'bg-[rgba(var(--fg-rgb),0.12)]'}`}
     >
       <motion.div

@@ -104,10 +104,10 @@ function AIInsightBanner() {
 /*  SECTION 2 — FORECAST CHART                                */
 /* ═══════════════════════════════════════════════════════════ */
 function ForecastChart() {
-  const [window, setWindow] = useState<ForecastWindow>('30D');
+  const [timeWindow, setTimeWindow] = useState<ForecastWindow>('30D');
   const [showConfidence, setShowConfidence] = useState(true);
   const { data: forecast, loading, error, refresh } = useApi<CashFlowForecast>(
-    `/cashflow/forecast?window=${window}`,
+    `/cashflow/forecast?window=${timeWindow}`,
   );
 
   return (
@@ -123,7 +123,7 @@ function ForecastChart() {
           <h2 className="font-display text-[48px] tracking-[0.02em] text-ink">Income Forecast</h2>
           {forecast && (
             <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em]">
-              {forecast.confidencePercent}% model confidence over {window}
+              {forecast.confidencePercent}% model confidence over {timeWindow}
             </p>
           )}
         </div>
@@ -132,8 +132,8 @@ function ForecastChart() {
             {FORECAST_WINDOWS.map((w) => (
               <button
                 key={w}
-                onClick={() => setWindow(w)}
-                className={`px-4 py-2 rounded-lg font-mono text-[12px] font-medium transition-all ${w === window ? 'bg-acid text-void' : 'text-[rgba(var(--fg-rgb),0.42)] hover:text-ink'}`}
+                onClick={() => setTimeWindow(w)}
+                className={`px-4 py-2 rounded-lg font-mono text-[12px] font-medium transition-all ${w === timeWindow ? 'bg-acid text-void' : 'text-[rgba(var(--fg-rgb),0.42)] hover:text-ink'}`}
               >
                 {w}
               </button>
@@ -205,8 +205,8 @@ function ForecastChart() {
           {forecast.summary.map((pill) => (
             <button
               key={pill.window}
-              onClick={() => setWindow(pill.window)}
-              className={`flex items-center gap-2 transition-opacity ${window === pill.window ? '' : 'opacity-50 hover:opacity-80'}`}
+              onClick={() => setTimeWindow(pill.window)}
+              className={`flex items-center gap-2 transition-opacity ${timeWindow === pill.window ? '' : 'opacity-50 hover:opacity-80'}`}
             >
               <span className="w-2.5 h-2.5 rounded-full" style={{ background: pill.color }} />
               <span className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em]">
@@ -283,6 +283,7 @@ function Seasonality() {
 /* ═══════════════════════════════════════════════════════════ */
 function TaxTrackerCard() {
   const { data: tax, loading, error, refresh } = useApi<TaxTracker>('/cashflow/tax');
+  const taxCoveredPct = tax ? Math.min(100, Math.round((tax.setAside / tax.estimatedOwed) * 100)) : 0;
 
   return (
     <motion.section
@@ -334,7 +335,7 @@ function TaxTrackerCard() {
 
           <div className="mb-2 flex items-center justify-between">
             <span className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)]">
-              {Math.round((tax.setAside / tax.estimatedOwed) * 100)}% covered
+              {taxCoveredPct}% covered
             </span>
             <span className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)]">
               Next deadline: {tax.nextDeadline}
@@ -343,7 +344,7 @@ function TaxTrackerCard() {
           <div className="h-2.5 bg-[rgba(var(--fg-rgb),0.06)] rounded-full overflow-hidden">
             <motion.div
               initial={{ width: 0 }}
-              whileInView={{ width: `${Math.min(100, (tax.setAside / tax.estimatedOwed) * 100)}%` }}
+              whileInView={{ width: `${taxCoveredPct}%` }}
               viewport={{ once: true }}
               transition={{ duration: 0.8, ease: easeOutExpo }}
               className="h-full rounded-full"
@@ -362,6 +363,7 @@ function TaxTrackerCard() {
 function ReserveBuilderCard() {
   const { data: reserve, loading, error, refresh, setData } = useApi<ReserveBuilder>('/cashflow/reserve');
   const [saving, setSaving] = useState(false);
+  const reserveGoalPct = reserve ? Math.min(100, Math.round((reserve.current / reserve.goal) * 100)) : 0;
 
   const updateReserve = async (patch: Partial<ReserveBuilder>) => {
     setSaving(true);
@@ -421,14 +423,14 @@ function ReserveBuilderCard() {
               </p>
             </div>
             <span className="font-mono text-[13px] text-positive">
-              {Math.round((reserve.current / reserve.goal) * 100)}% of goal
+              {reserveGoalPct}% of goal
             </span>
           </div>
 
           <div className="h-2.5 bg-[rgba(var(--fg-rgb),0.06)] rounded-full overflow-hidden mb-6">
             <motion.div
               initial={{ width: 0 }}
-              whileInView={{ width: `${Math.min(100, (reserve.current / reserve.goal) * 100)}%` }}
+              whileInView={{ width: `${reserveGoalPct}%` }}
               viewport={{ once: true }}
               transition={{ duration: 0.8, ease: easeOutExpo }}
               className="h-full rounded-full"
@@ -439,10 +441,11 @@ function ReserveBuilderCard() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <span className="font-body text-[14px] text-ink">Monthly contribution</span>
+                <label htmlFor="reserve-monthly-contribution" className="font-body text-[14px] text-ink">Monthly contribution</label>
                 <span className="font-mono text-[14px] text-positive">${reserve.monthlyTarget.toLocaleString()}</span>
               </div>
               <input
+                id="reserve-monthly-contribution"
                 type="range"
                 min={100}
                 max={2500}
@@ -451,6 +454,7 @@ function ReserveBuilderCard() {
                 onChange={(e) => setData({ ...reserve, monthlyTarget: Number(e.target.value) })}
                 onMouseUp={() => updateReserve({ monthlyTarget: reserve.monthlyTarget })}
                 onTouchEnd={() => updateReserve({ monthlyTarget: reserve.monthlyTarget })}
+                onKeyUp={() => updateReserve({ monthlyTarget: reserve.monthlyTarget })}
                 className="w-full accent-acid cursor-pointer"
               />
               <p className="font-mono text-[11px] text-[rgba(var(--fg-rgb),0.42)] mt-1">
@@ -467,6 +471,8 @@ function ReserveBuilderCard() {
               </div>
               <button
                 onClick={() => updateReserve({ autoContribute: !reserve.autoContribute })}
+                role="switch"
+                aria-checked={reserve.autoContribute}
                 className={`relative w-[44px] h-[24px] rounded-full transition-colors flex-shrink-0 ${reserve.autoContribute ? 'bg-acid' : 'bg-[rgba(var(--fg-rgb),0.12)]'}`}
               >
                 <motion.div

@@ -45,6 +45,7 @@ export default function App() {
                 <Route path="/oauth/callback" element={<OAuthCallback />} />
                 {/* C5: full notification center (no Navbar item by design) */}
                 <Route path="/notifications-center" element={<Notifications />} />
+                <Route path="*" element={<Navigate to="/dashboard" replace />} />
               </Routes>
             </Layout>
           </ProtectedRoute>

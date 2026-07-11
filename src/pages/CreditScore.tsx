@@ -238,6 +238,7 @@ function WhatIfSimulator({ score }: { score: CcsScore }) {
   const [simulating, setSimulating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const requestIdRef = useRef(0);
 
   const dirty = score.signals.some((s) => adjustments[s.name] !== s.score);
 
@@ -247,6 +248,7 @@ function WhatIfSimulator({ score }: { score: CcsScore }) {
     if (!dirty) return;
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
+      const requestId = ++requestIdRef.current;
       setSimulating(true);
       setError(null);
       try {
@@ -257,11 +259,13 @@ function WhatIfSimulator({ score }: { score: CcsScore }) {
         const simulation = await api.post<CcsSimulationResult>('/ccs/simulate', {
           adjustments: changed,
         });
+        if (requestId !== requestIdRef.current) return;
         setResult(simulation);
       } catch (err) {
+        if (requestId !== requestIdRef.current) return;
         setError(err instanceof ApiError ? err.message : 'Simulation failed');
       } finally {
-        setSimulating(false);
+        if (requestId === requestIdRef.current) setSimulating(false);
       }
     }, 350);
     return () => {
@@ -350,6 +354,7 @@ function WhatIfSimulator({ score }: { score: CcsScore }) {
               onChange={(e) =>
                 setAdjustments((prev) => ({ ...prev, [signal.name]: Number(e.target.value) }))
               }
+              aria-label={signal.name}
               className="w-full accent-acid cursor-pointer"
             />
           </div>

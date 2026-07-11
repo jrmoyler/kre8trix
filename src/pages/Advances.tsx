@@ -43,7 +43,7 @@ const CREDIT_LINE_USED = 2500;
 /* ------------------------------------------------------------------ */
 /*  Status badge helpers                                               */
 /* ------------------------------------------------------------------ */
-function StatusBadge({ status }: { status: string }) {
+function StatusBadge({ status, colorKey }: { status: string; colorKey?: string }) {
   const config: Record<string, { bg: string; text: string }> = {
     'Completed': { bg: 'rgba(var(--positive-rgb),0.15)', text: 'rgb(var(--color-positive))' },
     'Active': { bg: 'rgba(var(--positive-rgb),0.15)', text: 'rgb(var(--color-positive))' },
@@ -53,7 +53,7 @@ function StatusBadge({ status }: { status: string }) {
     'Verified': { bg: 'rgba(var(--positive-rgb),0.15)', text: 'rgb(var(--color-positive))' },
     'Pending verification': { bg: 'rgba(var(--gold-rgb),0.15)', text: 'rgb(var(--color-gold))' },
   };
-  const c = config[status] || config['Pending'];
+  const c = config[colorKey ?? status] || config['Pending'];
   return (
     <span className="inline-flex items-center px-3 py-1 rounded-full font-mono text-[11px] tracking-[0.04em]" style={{ backgroundColor: c.bg, color: c.text }}>
       {status}
@@ -119,7 +119,7 @@ export default function Advances() {
 
   const { eligibility, active, history } = overview;
 
-  const advanceAmount = selectedAmount || parseFloat(customAmount) || 0;
+  const advanceAmount = Math.max(0, selectedAmount || parseFloat(customAmount) || 0);
   const fee = advanceAmount * (eligibility.feePercent / 100);
   const totalRepay = advanceAmount + fee;
   const monthlyIncome = 8200;
@@ -256,9 +256,11 @@ export default function Advances() {
               <span className="absolute left-4 top-1/2 -translate-y-1/2 font-mono text-[20px] text-[rgba(var(--fg-rgb),0.4)]">$</span>
               <input
                 type="number"
+                min={0}
                 value={customAmount}
                 onChange={(e) => { setCustomAmount(e.target.value); setSelectedAmount(null); }}
                 placeholder="Custom"
+                aria-label="Custom advance amount"
                 className="bg-surface border border-[rgba(var(--fg-rgb),0.1)] rounded-xl pl-8 pr-4 py-3 font-mono text-[16px] text-ink placeholder:text-[rgba(var(--fg-rgb),0.2)] focus:border-electric focus:shadow-[0_0_0_3px_rgba(var(--electric-rgb),0.15)] outline-none transition-all w-40"
               />
             </div>
@@ -295,7 +297,10 @@ export default function Advances() {
                 <div>
                   <div className="flex items-center gap-3">
                     <span className="font-mono text-[14px] text-electric font-medium">{advance.id}</span>
-                    <StatusBadge status={`${advance.status}${advance.status === 'Active' ? ' — Repaying' : ''}`} />
+                    <StatusBadge
+                      colorKey={advance.status}
+                      status={`${advance.status}${advance.status === 'Active' ? ' — Repaying' : ''}`}
+                    />
                   </div>
                   <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em] mt-1">
                     Issued {advance.issued} • {advance.repaymentRate}
@@ -464,7 +469,7 @@ export default function Advances() {
         <div className="flex items-center justify-between mb-6">
           <h3 className="font-display text-[36px] tracking-[0.02em] text-ink">Advance History</h3>
           <div className="flex gap-2">
-            {['All', 'Active', 'Repaid'].map((f) => (
+            {['All', 'Repaid', 'Defaulted'].map((f) => (
               <button
                 key={f}
                 onClick={() => setHistoryFilter(f)}
@@ -483,7 +488,7 @@ export default function Advances() {
         <div className="space-y-3">
           {filteredHistory.length === 0 ? (
             <p className="text-center py-8 font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)]">
-              No {historyFilter !== 'All' ? historyFilter.toLowerCase() : ''} advances
+              No {historyFilter !== 'All' ? `${historyFilter.toLowerCase()} ` : ''}advances
             </p>
           ) : (
             filteredHistory.map((h) => (
