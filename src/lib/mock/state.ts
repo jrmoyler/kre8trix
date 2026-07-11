@@ -6,6 +6,7 @@
 
 import type {
   Advance,
+  AmlAlert,
   AppNotification,
   AppSettings,
   Creator,
@@ -62,6 +63,11 @@ export interface MockState {
      this feature shipped still parses; handlers backfill via ensureKycState(). */
   kyc?: KycProfile;
   kycDocCounter?: number;
+  /* D2: AML monitoring — optional so state persisted before this feature
+     shipped still parses; handlers backfill via ensureAmlState(). */
+  amlAlerts?: AmlAlert[];
+  amlAlertCounter?: number;
+  sarCounter?: number;
 }
 
 const STORAGE_KEY = 'kre8trix.mock.state';
@@ -219,6 +225,10 @@ function defaultState(): MockState {
     /* D1: KYC/KYB */
     kyc: seedKyc(),
     kycDocCounter: 1,
+    /* D2: AML monitoring */
+    amlAlerts: seedAmlAlerts(),
+    amlAlertCounter: 3,
+    sarCounter: 1,
   };
 }
 
@@ -274,6 +284,60 @@ export function ensureKycState() {
     if (!s.kyc) s.kyc = seedKyc();
     if (s.kycDocCounter === undefined) s.kycDocCounter = 1;
   });
+}
+
+/**
+ * Backfill D2 fields for sessions whose persisted mock state predates
+ * the AML monitoring feature.
+ */
+export function ensureAmlState() {
+  const state = getState();
+  if (state.amlAlerts && state.amlAlertCounter !== undefined && state.sarCounter !== undefined) return;
+  mutate((s) => {
+    if (!s.amlAlerts) s.amlAlerts = seedAmlAlerts();
+    if (s.amlAlertCounter === undefined) s.amlAlertCounter = 3;
+    if (s.sarCounter === undefined) s.sarCounter = 1;
+  });
+}
+
+/* ── D2: AML monitoring seed ──
+   Two illustrative alerts referencing real seed transactions, so the
+   dashboard reads naturally on first load alongside whatever the
+   handlers' automatic transaction scan turns up. */
+export function seedAmlAlerts(): AmlAlert[] {
+  return [
+    {
+      id: 'aml_01',
+      createdAt: hoursAgo(30),
+      severity: 'medium',
+      status: 'open',
+      reason: 'velocity',
+      subjectHandle: '@alexcreates',
+      summary: '3 income deposits totaling $10,630 landed within a 72-hour window.',
+      relatedTransactionIds: ['tx_02', 'tx_07', 'tx_10'],
+      amountInvolved: 10630,
+      notes: [],
+    },
+    {
+      id: 'aml_02',
+      createdAt: hoursAgo(120),
+      severity: 'low',
+      status: 'cleared',
+      reason: 'round_trip',
+      subjectHandle: '@alexcreates',
+      summary: 'Rapid USD → USDC → USD round-trip conversion flagged for review.',
+      relatedTransactionIds: ['tx_01', 'tx_09'],
+      amountInvolved: 850,
+      notes: [
+        {
+          id: 'note_01',
+          author: 'Compliance Ops',
+          body: 'Reviewed — consistent with normal payout scheduling. No further action.',
+          createdAt: hoursAgo(110),
+        },
+      ],
+    },
+  ];
 }
 
 let cached: MockState | null = null;

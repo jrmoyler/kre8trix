@@ -23,6 +23,8 @@ const pageTitles: Record<string, string> = {
   '/cards': 'Cards',
   '/analytics': 'Analytics',
   '/settings': 'Settings',
+  '/compliance/aml': 'Compliance · AML Monitoring',
+  '/compliance/audit-log': 'Compliance · Audit Log',
 };
 
 function UserMenu() {

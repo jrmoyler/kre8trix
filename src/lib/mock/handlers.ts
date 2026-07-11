@@ -7,6 +7,7 @@
 
 import { ApiError, registerMock, type MockContext } from '../api';
 import {
+  ensureAmlState,
   ensureCreatorState,
   ensureKycState,
   getState,
@@ -16,6 +17,7 @@ import {
   seedNotifications,
   SELF_WALLET_ADDRESS,
 } from './state';
+import { AML_STATUS_OPTIONS } from '../aml';
 import { EMAIL_RE, SOLANA_ADDRESS_RE } from '../types';
 /* C4: OAuth provider metadata shared with the consent screen UI. */
 import { OAUTH_CLIENT_ID, OAUTH_PROVIDERS, OAUTH_REDIRECT_PATH } from '../oauth';
@@ -65,6 +67,12 @@ import type {
   KycDocumentType,
   KycPersonalInfo,
   KycProfile,
+  AmlAlert,
+  AmlAlertReason,
+  AmlAlertSeverity,
+  AmlAlertStatus,
+  AmlSummary,
+  SarFiling,
 } from '../types';
 
 /* ─────────────────────────── helpers ─────────────────────────── */
@@ -1528,4 +1536,222 @@ registerMock('POST', '/kyc/reset', (ctx) => {
     s.user.kycStatus = 'unverified';
   });
   return getState().kyc!;
+});
+
+/* ─────────────────────── D2: AML transaction monitoring ───────────────────────
+ *
+ * Alerts are derived from the existing wallet transaction ledger (no
+ * separate synthetic dataset) plus a couple of illustrative seed alerts
+ * (see seedAmlAlerts in mock/state.ts) so the console isn't empty before
+ * the demo user sends anything. This is a realistic-looking mock — no
+ * real FinCEN/SAR e-filing integration exists.
+ */
+
+const AML_LARGE_TX_THRESHOLD = 5000;
+const AML_STRUCTURING_MIN = 2700;
+const AML_STRUCTURING_MAX = 3000;
+const AML_VELOCITY_MIN_COUNT = 3;
+const AML_REPEATED_RECIPIENT_MIN_COUNT = 3;
+
+/** Re-scan the transaction ledger for new patterns and append any fresh alerts. */
+function runAmlScan() {
+  ensureAmlState();
+  const state = getState();
+  const alertedTxIds = new Set(state.amlAlerts!.flatMap((a) => a.relatedTransactionIds));
+  const additions: Omit<AmlAlert, 'id'>[] = [];
+
+  const flagTransactions = (
+    ids: string[],
+    reason: AmlAlertReason,
+    severity: AmlAlertSeverity,
+    summary: string,
+    amount: number,
+  ) => {
+    if (ids.some((id) => alertedTxIds.has(id))) return;
+    ids.forEach((id) => alertedTxIds.add(id));
+    additions.push({
+      createdAt: new Date().toISOString(),
+      severity,
+      status: 'open',
+      reason,
+      subjectHandle: state.user.handle,
+      summary,
+      relatedTransactionIds: ids,
+      amountInvolved: amount,
+      notes: [],
+    });
+  };
+
+  // 1. Large single transaction (any type).
+  for (const tx of state.transactions) {
+    const amount = Math.abs(tx.amount);
+    if (amount >= AML_LARGE_TX_THRESHOLD) {
+      flagTransactions(
+        [tx.id],
+        'large_transaction',
+        amount >= AML_LARGE_TX_THRESHOLD * 2 ? 'critical' : 'high',
+        `Large ${tx.type.toLowerCase()} of $${amount.toLocaleString()} — ${tx.description}.`,
+        amount,
+      );
+    }
+  }
+
+  const sends = state.transactions.filter((t) => t.type === 'Send');
+
+  // 2. Velocity — 3+ sends on the same day.
+  const byDate = new Map<string, typeof sends>();
+  for (const tx of sends) byDate.set(tx.date, [...(byDate.get(tx.date) ?? []), tx]);
+  for (const [date, list] of byDate) {
+    if (list.length >= AML_VELOCITY_MIN_COUNT) {
+      const total = list.reduce((sum, t) => sum + Math.abs(t.amount), 0);
+      flagTransactions(
+        list.map((t) => t.id),
+        'velocity',
+        'medium',
+        `${list.length} sends totaling $${total.toLocaleString()} on ${date}.`,
+        total,
+      );
+    }
+  }
+
+  // 3. Structuring — 2+ sends just under the $3,000 reporting threshold.
+  const structuring = sends.filter(
+    (t) => Math.abs(t.amount) >= AML_STRUCTURING_MIN && Math.abs(t.amount) < AML_STRUCTURING_MAX,
+  );
+  if (structuring.length >= 2) {
+    const total = structuring.reduce((sum, t) => sum + Math.abs(t.amount), 0);
+    flagTransactions(
+      structuring.map((t) => t.id),
+      'structuring',
+      'high',
+      `${structuring.length} sends just under the $3,000 reporting threshold.`,
+      total,
+    );
+  }
+
+  // 4. Repeated transfers to the same wallet address.
+  const byRecipient = new Map<string, typeof sends>();
+  for (const tx of sends) {
+    if (!tx.recipientAddress) continue;
+    byRecipient.set(tx.recipientAddress, [...(byRecipient.get(tx.recipientAddress) ?? []), tx]);
+  }
+  for (const [address, list] of byRecipient) {
+    if (list.length >= AML_REPEATED_RECIPIENT_MIN_COUNT) {
+      const total = list.reduce((sum, t) => sum + Math.abs(t.amount), 0);
+      flagTransactions(
+        list.map((t) => t.id),
+        'cross_wallet_pattern',
+        'medium',
+        `${list.length} transfers to the same wallet (${address.slice(0, 4)}…${address.slice(-4)}).`,
+        total,
+      );
+    }
+  }
+
+  if (additions.length === 0) return;
+  mutate((s) => {
+    let counter = s.amlAlertCounter ?? 3;
+    for (const addition of additions) {
+      s.amlAlerts!.push({ id: `aml_${counter++}`, ...addition });
+    }
+    s.amlAlertCounter = counter;
+  });
+}
+
+function amlAlertsSnapshot(): AmlAlert[] {
+  runAmlScan();
+  return [...getState().amlAlerts!].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+registerMock('GET', '/aml/summary', (ctx) => {
+  requireAuth(ctx);
+  const alerts = amlAlertsSnapshot();
+  const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+  const summary: AmlSummary = {
+    openAlerts: alerts.filter((a) => a.status === 'open' || a.status === 'under_review' || a.status === 'escalated').length,
+    criticalAlerts: alerts.filter((a) => a.severity === 'critical').length,
+    sarsFiledYtd: alerts.filter((a) => a.sar).length,
+    monitoredVolume30d: getState()
+      .transactions.filter((t) => new Date(t.date).getTime() >= thirtyDaysAgo || Number.isNaN(new Date(t.date).getTime()))
+      .reduce((sum, t) => sum + Math.abs(t.amount), 0),
+  };
+  return summary;
+});
+
+registerMock('GET', '/aml/alerts', (ctx) => {
+  requireAuth(ctx);
+  let alerts = amlAlertsSnapshot();
+  const { status, severity } = ctx.query;
+  if (status) alerts = alerts.filter((a) => a.status === status);
+  if (severity) alerts = alerts.filter((a) => a.severity === severity);
+  return alerts;
+});
+
+function findAmlAlert(id: string): AmlAlert {
+  ensureAmlState();
+  const alert = getState().amlAlerts!.find((a) => a.id === id);
+  if (!alert) throw new ApiError(404, `Unknown alert: ${id}`);
+  return alert;
+}
+
+registerMock('GET', '/aml/alerts/:id', (ctx) => {
+  requireAuth(ctx);
+  return findAmlAlert(ctx.params.id);
+});
+
+registerMock('PUT', '/aml/alerts/:id/status', (ctx) => {
+  requireAuth(ctx);
+  findAmlAlert(ctx.params.id);
+  const body = ctx.body as { status?: AmlAlertStatus };
+  if (!body?.status || !AML_STATUS_OPTIONS.includes(body.status)) {
+    throw new ApiError(400, `Unknown status: ${body?.status}`);
+  }
+  mutate((s) => {
+    const alert = s.amlAlerts!.find((a) => a.id === ctx.params.id)!;
+    alert.status = body.status!;
+  });
+  return findAmlAlert(ctx.params.id);
+});
+
+registerMock('POST', '/aml/alerts/:id/notes', (ctx) => {
+  requireAuth(ctx);
+  findAmlAlert(ctx.params.id);
+  const body = ctx.body as { body?: string };
+  if (!body?.body?.trim()) throw new ApiError(400, 'Note body is required');
+  if (body.body.trim().length > 2000) throw new ApiError(400, 'Note must be 2,000 characters or fewer');
+  mutate((s) => {
+    const alert = s.amlAlerts!.find((a) => a.id === ctx.params.id)!;
+    alert.notes.push({
+      id: `note_${alert.notes.length + 1}_${Date.now()}`,
+      author: 'Compliance Ops',
+      body: body.body!.trim(),
+      createdAt: new Date().toISOString(),
+    });
+  });
+  return findAmlAlert(ctx.params.id);
+});
+
+registerMock('POST', '/aml/alerts/:id/sar', (ctx) => {
+  requireAuth(ctx);
+  const alert = findAmlAlert(ctx.params.id);
+  if (alert.sar) throw new ApiError(409, 'A SAR has already been filed for this alert');
+  const body = ctx.body as { narrative?: string };
+  if (!body?.narrative?.trim()) throw new ApiError(400, 'A filing narrative is required');
+  if (body.narrative.trim().length > 4000) throw new ApiError(400, 'Narrative must be 4,000 characters or fewer');
+
+  mutate((s) => {
+    const target = s.amlAlerts!.find((a) => a.id === ctx.params.id)!;
+    const counter = s.sarCounter ?? 1;
+    s.sarCounter = counter + 1;
+    const sar: SarFiling = {
+      id: `sar_${counter}`,
+      filedAt: new Date().toISOString(),
+      filingRef: `SAR-${new Date().getFullYear()}-${String(counter).padStart(5, '0')}`,
+      narrative: body.narrative!.trim(),
+      status: 'filed',
+    };
+    target.sar = sar;
+    target.status = 'filed_sar';
+  });
+  return findAmlAlert(ctx.params.id);
 });
