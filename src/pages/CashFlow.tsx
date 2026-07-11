@@ -76,7 +76,7 @@ function AIInsightBanner() {
         <div className="flex-1">
           <div className="flex items-center gap-3 mb-2">
             <h5 className="font-body text-[20px] font-semibold text-acid">Kre8trix AI</h5>
-            <span className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em]">Just now</span>
+            <span className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] tracking-[0.04em]">Just now</span>
           </div>
           <div className="border-l-[3px] border-acid pl-4">
             <p className="font-body text-[18px] text-[rgb(var(--color-ink))] leading-relaxed">
@@ -122,7 +122,7 @@ function ForecastChart() {
         <div>
           <h2 className="font-display text-[48px] tracking-[0.02em] text-ink">Income Forecast</h2>
           {forecast && (
-            <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em]">
+            <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] tracking-[0.04em]">
               {forecast.confidencePercent}% model confidence over {timeWindow}
             </p>
           )}
@@ -133,7 +133,7 @@ function ForecastChart() {
               <button
                 key={w}
                 onClick={() => setTimeWindow(w)}
-                className={`px-4 py-2 rounded-lg font-mono text-[12px] font-medium transition-all ${w === timeWindow ? 'bg-acid text-void' : 'text-[rgba(var(--fg-rgb),0.42)] hover:text-ink'}`}
+                className={`px-4 py-2 rounded-lg font-mono text-[12px] font-medium transition-all ${w === timeWindow ? 'bg-acid text-void' : 'text-[rgba(var(--fg-rgb),var(--muted-alpha))] hover:text-ink'}`}
               >
                 {w}
               </button>
@@ -146,7 +146,7 @@ function ForecastChart() {
               onChange={(e) => setShowConfidence(e.target.checked)}
               className="w-4 h-4 accent-acid"
             />
-            <span className="font-body text-[14px] text-[rgba(var(--fg-rgb),0.42)]">Confidence bands</span>
+            <span className="font-body text-[14px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">Confidence bands</span>
           </label>
         </div>
       </div>
@@ -174,8 +174,8 @@ function ForecastChart() {
                 </linearGradient>
               </defs>
               <CartesianGrid stroke="var(--chart-grid)" vertical={false} />
-              <XAxis dataKey="label" tick={{ fill: 'rgba(var(--fg-rgb),0.42)', fontSize: 12, fontFamily: 'JetBrains Mono' }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: 'rgba(var(--fg-rgb),0.42)', fontSize: 12, fontFamily: 'JetBrains Mono' }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `$${v.toLocaleString()}`} />
+              <XAxis dataKey="label" tick={{ fill: 'rgba(var(--fg-rgb),var(--muted-alpha))', fontSize: 12, fontFamily: 'JetBrains Mono' }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fill: 'rgba(var(--fg-rgb),var(--muted-alpha))', fontSize: 12, fontFamily: 'JetBrains Mono' }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `$${v.toLocaleString()}`} />
               <Tooltip
                 contentStyle={{
                   background: 'rgb(var(--color-panel2))',
@@ -209,7 +209,7 @@ function ForecastChart() {
               className={`flex items-center gap-2 transition-opacity ${timeWindow === pill.window ? '' : 'opacity-50 hover:opacity-80'}`}
             >
               <span className="w-2.5 h-2.5 rounded-full" style={{ background: pill.color }} />
-              <span className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em]">
+              <span className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] tracking-[0.04em]">
                 {pill.label}:
               </span>
               <span className="font-mono text-[18px] font-medium text-ink tracking-[-0.02em]">
@@ -238,7 +238,7 @@ function Seasonality() {
       className="bg-panel border border-[rgba(var(--fg-rgb),0.08)] rounded-2xl p-6"
     >
       <h3 className="font-display text-[36px] tracking-[0.02em] text-ink mb-1">Seasonality</h3>
-      <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em] mb-6">
+      <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] tracking-[0.04em] mb-6">
         Your income index by month (100 = your average)
       </p>
       {error ? (
@@ -253,7 +253,7 @@ function Seasonality() {
             const isTrough = m.index <= 85;
             return (
               <div key={m.month} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end">
-                <span className="font-mono text-[10px] text-[rgba(var(--fg-rgb),0.42)]">{m.index}</span>
+                <span className="font-mono text-[10px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">{m.index}</span>
                 <motion.div
                   initial={{ height: 0 }}
                   whileInView={{ height: `${(m.index / max) * 100}%` }}
@@ -268,7 +268,7 @@ function Seasonality() {
                       : 'rgba(var(--electric-rgb),0.3)',
                   }}
                 />
-                <span className="font-mono text-[10px] text-[rgba(var(--fg-rgb),0.42)]">{m.month}</span>
+                <span className="font-mono text-[10px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">{m.month}</span>
               </div>
             );
           })}
@@ -300,7 +300,7 @@ function TaxTrackerCard() {
         </div>
         <div>
           <h3 className="font-display text-[36px] tracking-[0.02em] text-ink">Tax Tracker</h3>
-          <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em]">
+          <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] tracking-[0.04em]">
             Estimated self-employment taxes
           </p>
         </div>
@@ -325,7 +325,7 @@ function TaxTrackerCard() {
               { label: 'Set Aside', value: `$${tax.setAside.toLocaleString()}` },
             ].map((stat) => (
               <div key={stat.label} className="bg-panel2 rounded-xl p-4">
-                <p className="font-mono text-[11px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em] mb-1">
+                <p className="font-mono text-[11px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] tracking-[0.04em] mb-1">
                   {stat.label}
                 </p>
                 <p className="font-mono text-[18px] font-medium text-ink tracking-[-0.02em]">{stat.value}</p>
@@ -334,10 +334,10 @@ function TaxTrackerCard() {
           </div>
 
           <div className="mb-2 flex items-center justify-between">
-            <span className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)]">
+            <span className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">
               {taxCoveredPct}% covered
             </span>
-            <span className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)]">
+            <span className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">
               Next deadline: {tax.nextDeadline}
             </span>
           </div>
@@ -394,7 +394,7 @@ function ReserveBuilderCard() {
           </div>
           <div>
             <h3 className="font-display text-[36px] tracking-[0.02em] text-ink">Reserve Builder</h3>
-            <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em]">
+            <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] tracking-[0.04em]">
               Smooth out slow months with an income buffer
             </p>
           </div>
@@ -414,12 +414,12 @@ function ReserveBuilderCard() {
         <>
           <div className="flex flex-wrap items-end justify-between gap-4 mb-3">
             <div>
-              <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em] mb-1">
+              <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] tracking-[0.04em] mb-1">
                 Saved so far
               </p>
               <p className="font-mono text-[40px] font-medium text-ink tracking-[-0.02em] leading-none">
                 ${reserve.current.toLocaleString()}
-                <span className="text-[18px] text-[rgba(var(--fg-rgb),0.42)]"> / ${reserve.goal.toLocaleString()}</span>
+                <span className="text-[18px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]"> / ${reserve.goal.toLocaleString()}</span>
               </p>
             </div>
             <span className="font-mono text-[13px] text-positive">
@@ -457,7 +457,7 @@ function ReserveBuilderCard() {
                 onKeyUp={() => updateReserve({ monthlyTarget: reserve.monthlyTarget })}
                 className="w-full accent-acid cursor-pointer"
               />
-              <p className="font-mono text-[11px] text-[rgba(var(--fg-rgb),0.42)] mt-1">
+              <p className="font-mono text-[11px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] mt-1">
                 At this pace you'll hit your goal in{' '}
                 {Math.max(1, Math.ceil((reserve.goal - reserve.current) / reserve.monthlyTarget))} months
               </p>
@@ -465,7 +465,7 @@ function ReserveBuilderCard() {
             <div className="flex items-center justify-between bg-panel2 rounded-xl px-4 py-3 self-start">
               <div>
                 <p className="font-body text-[14px] text-ink">Auto-contribute</p>
-                <p className="font-mono text-[11px] text-[rgba(var(--fg-rgb),0.42)]">
+                <p className="font-mono text-[11px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">
                   Move funds automatically on payout days
                 </p>
               </div>

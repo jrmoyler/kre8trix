@@ -9,7 +9,7 @@ import { EMAIL_RE } from '@/lib/types';
 type Mode = 'login' | 'signup';
 
 const inputClass =
-  'w-full bg-surface border border-[rgba(var(--fg-rgb),0.1)] rounded-xl pl-11 pr-4 py-3.5 font-body text-[15px] text-ink placeholder:text-[rgba(var(--fg-rgb),0.25)] focus:border-electric outline-none transition-colors';
+  'w-full bg-surface border border-[rgba(var(--fg-rgb),0.1)] rounded-xl pl-11 pr-4 py-3.5 font-body text-[15px] text-ink placeholder:text-[rgba(var(--fg-rgb),0.25)] focus:border-electric focus-visible:ring-2 focus-visible:ring-electric outline-none transition-colors';
 
 export default function Login() {
   const { login, signup } = useAuth();
@@ -66,7 +66,7 @@ export default function Login() {
       >
         <div className="text-center mb-8">
           <span className="font-display text-[36px] tracking-[0.02em] text-acid">KRE8TRIX</span>
-          <p className="font-body text-[14px] text-[rgba(var(--fg-rgb),0.42)] mt-1">
+          <p className="font-body text-[14px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] mt-1">
             The financial OS for creators
           </p>
         </div>
@@ -90,7 +90,7 @@ export default function Login() {
                 }}
                 disabled={submitting}
                 className={`flex-1 py-2.5 rounded-lg font-body text-[14px] font-medium transition-all ${
-                  mode === m ? 'bg-acid text-void' : 'text-[rgba(var(--fg-rgb),0.42)] hover:text-ink'
+                  mode === m ? 'bg-acid text-void' : 'text-[rgba(var(--fg-rgb),var(--muted-alpha))] hover:text-ink'
                 }`}
               >
                 {m === 'login' ? 'Sign In' : 'Create Account'}
@@ -108,7 +108,7 @@ export default function Login() {
                   exit={{ opacity: 0, height: 0 }}
                   className="relative overflow-hidden"
                 >
-                  <User size={16} className="absolute left-4 top-[18px] text-[rgba(var(--fg-rgb),0.42)]" />
+                  <User size={16} className="absolute left-4 top-[18px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]" />
                   <label htmlFor="login-name" className="sr-only">Name</label>
                   <input
                     id="login-name"
@@ -124,7 +124,7 @@ export default function Login() {
             </AnimatePresence>
 
             <div className="relative">
-              <Mail size={16} className="absolute left-4 top-[18px] text-[rgba(var(--fg-rgb),0.42)]" />
+              <Mail size={16} className="absolute left-4 top-[18px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]" />
               <label htmlFor="login-email" className="sr-only">Email</label>
               <input
                 id="login-email"
@@ -138,7 +138,7 @@ export default function Login() {
             </div>
 
             <div className="relative">
-              <Lock size={16} className="absolute left-4 top-[18px] text-[rgba(var(--fg-rgb),0.42)]" />
+              <Lock size={16} className="absolute left-4 top-[18px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]" />
               <label htmlFor="login-password" className="sr-only">Password</label>
               <input
                 id="login-password"

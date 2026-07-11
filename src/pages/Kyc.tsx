@@ -213,7 +213,7 @@ export default function Kyc() {
             <div key={s} className="flex items-center gap-2 flex-1">
               <div
                 className={`w-8 h-8 rounded-full flex items-center justify-center font-mono text-[12px] font-medium transition-all ${
-                  i <= stepIndex ? 'bg-acid text-void' : 'bg-panel text-[rgba(var(--fg-rgb),0.42)]'
+                  i <= stepIndex ? 'bg-acid text-void' : 'bg-panel text-[rgba(var(--fg-rgb),var(--muted-alpha))]'
                 }`}
               >
                 {i < stepIndex ? <Check size={14} /> : i + 1}
@@ -229,7 +229,7 @@ export default function Kyc() {
           {step === 'entity_type' && (
             <motion.div key="entity_type" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
               <h1 className="font-display text-[40px] tracking-[0.02em] text-ink mb-2">Identity Verification</h1>
-              <p className="font-body text-[16px] text-[rgba(var(--fg-rgb),0.42)] mb-8">
+              <p className="font-body text-[16px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] mb-8">
                 Tell us whether you're verifying as an individual creator or a registered business
               </p>
               <div className="space-y-3">
@@ -246,7 +246,7 @@ export default function Kyc() {
                     <opt.icon size={22} className="text-electric flex-shrink-0" />
                     <div>
                       <p className="font-body text-[16px] text-ink font-medium">{opt.label}</p>
-                      <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] mt-1">{opt.desc}</p>
+                      <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] mt-1">{opt.desc}</p>
                     </div>
                   </button>
                 ))}
@@ -257,30 +257,30 @@ export default function Kyc() {
           {step === 'personal_info' && (
             <motion.div key="personal_info" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
               <h1 className="font-display text-[40px] tracking-[0.02em] text-ink mb-2">Personal Information</h1>
-              <p className="font-body text-[16px] text-[rgba(var(--fg-rgb),0.42)] mb-8">
+              <p className="font-body text-[16px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] mb-8">
                 This must match the ID you'll upload next
               </p>
               <div className="space-y-4">
                 <div>
-                  <label htmlFor="kyc-legal-name" className="block font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em] mb-2">Legal Name</label>
+                  <label htmlFor="kyc-legal-name" className="block font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] tracking-[0.04em] mb-2">Legal Name</label>
                   <input id="kyc-legal-name" type="text" value={personalInfo.legalName} onChange={(e) => setPersonalInfo({ ...personalInfo, legalName: e.target.value })} className={inputClass} />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label htmlFor="kyc-dob" className="block font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em] mb-2">Date of Birth</label>
+                    <label htmlFor="kyc-dob" className="block font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] tracking-[0.04em] mb-2">Date of Birth</label>
                     <input id="kyc-dob" type="date" value={personalInfo.dateOfBirth} onChange={(e) => setPersonalInfo({ ...personalInfo, dateOfBirth: e.target.value })} className={inputClass} />
                   </div>
                   <div>
-                    <label htmlFor="kyc-ssn" className="block font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em] mb-2">SSN/ITIN (last 4)</label>
+                    <label htmlFor="kyc-ssn" className="block font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] tracking-[0.04em] mb-2">SSN/ITIN (last 4)</label>
                     <input id="kyc-ssn" type="text" inputMode="numeric" maxLength={4} value={personalInfo.ssnLast4} onChange={(e) => setPersonalInfo({ ...personalInfo, ssnLast4: e.target.value.replace(/\D/g, '') })} className={inputClass} />
                   </div>
                 </div>
                 <div>
-                  <label htmlFor="kyc-address" className="block font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em] mb-2">Address</label>
+                  <label htmlFor="kyc-address" className="block font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] tracking-[0.04em] mb-2">Address</label>
                   <input id="kyc-address" type="text" value={personalInfo.address} onChange={(e) => setPersonalInfo({ ...personalInfo, address: e.target.value })} className={inputClass} />
                 </div>
                 <div>
-                  <label htmlFor="kyc-country" className="block font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em] mb-2">Country</label>
+                  <label htmlFor="kyc-country" className="block font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] tracking-[0.04em] mb-2">Country</label>
                   <input id="kyc-country" type="text" value={personalInfo.country} onChange={(e) => setPersonalInfo({ ...personalInfo, country: e.target.value })} className={inputClass} />
                 </div>
               </div>
@@ -290,24 +290,24 @@ export default function Kyc() {
           {step === 'business_info' && (
             <motion.div key="business_info" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
               <h1 className="font-display text-[40px] tracking-[0.02em] text-ink mb-2">Business Information</h1>
-              <p className="font-body text-[16px] text-[rgba(var(--fg-rgb),0.42)] mb-8">Tell us about your registered business</p>
+              <p className="font-body text-[16px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] mb-8">Tell us about your registered business</p>
               <div className="space-y-4">
                 <div>
-                  <label htmlFor="kyb-name" className="block font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em] mb-2">Legal Business Name</label>
+                  <label htmlFor="kyb-name" className="block font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] tracking-[0.04em] mb-2">Legal Business Name</label>
                   <input id="kyb-name" type="text" value={businessInfo.legalBusinessName} onChange={(e) => setBusinessInfo({ ...businessInfo, legalBusinessName: e.target.value })} className={inputClass} />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label htmlFor="kyb-ein" className="block font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em] mb-2">EIN</label>
+                    <label htmlFor="kyb-ein" className="block font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] tracking-[0.04em] mb-2">EIN</label>
                     <input id="kyb-ein" type="text" value={businessInfo.ein} onChange={(e) => setBusinessInfo({ ...businessInfo, ein: e.target.value })} className={inputClass} />
                   </div>
                   <div>
-                    <label htmlFor="kyb-state" className="block font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em] mb-2">Formation State</label>
+                    <label htmlFor="kyb-state" className="block font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] tracking-[0.04em] mb-2">Formation State</label>
                     <input id="kyb-state" type="text" value={businessInfo.formationState} onChange={(e) => setBusinessInfo({ ...businessInfo, formationState: e.target.value })} className={inputClass} />
                   </div>
                 </div>
                 <div>
-                  <label htmlFor="kyb-type" className="block font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em] mb-2">Business Type</label>
+                  <label htmlFor="kyb-type" className="block font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] tracking-[0.04em] mb-2">Business Type</label>
                   <input id="kyb-type" type="text" placeholder="LLC, S-Corp, Sole Proprietorship…" value={businessInfo.businessType} onChange={(e) => setBusinessInfo({ ...businessInfo, businessType: e.target.value })} className={inputClass} />
                 </div>
               </div>
@@ -317,7 +317,7 @@ export default function Kyc() {
           {step === 'documents' && (
             <motion.div key="documents" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
               <h1 className="font-display text-[40px] tracking-[0.02em] text-ink mb-2">Upload Documents</h1>
-              <p className="font-body text-[16px] text-[rgba(var(--fg-rgb),0.42)] mb-8">
+              <p className="font-body text-[16px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] mb-8">
                 Upload at least one government-issued ID (metadata only — files aren't stored in this demo)
               </p>
               <div className="space-y-4">
@@ -340,14 +340,14 @@ export default function Kyc() {
                 </div>
                 <div className="space-y-2">
                   {documents.length === 0 ? (
-                    <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] py-4 text-center">No documents uploaded yet</p>
+                    <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] py-4 text-center">No documents uploaded yet</p>
                   ) : (
                     documents.map((doc) => (
                       <div key={doc.id} className="flex items-center gap-3 p-4 rounded-2xl bg-panel border border-[rgba(var(--fg-rgb),0.08)]">
                         <FileText size={18} className="text-electric flex-shrink-0" />
                         <div className="flex-1 min-w-0">
                           <p className="font-body text-[14px] text-ink truncate">{doc.fileName}</p>
-                          <p className="font-mono text-[11px] text-[rgba(var(--fg-rgb),0.42)]">
+                          <p className="font-mono text-[11px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">
                             {DOC_TYPE_OPTIONS.find((o) => o.value === doc.type)?.label} · {formatBytes(doc.sizeBytes)}
                           </p>
                         </div>
@@ -363,17 +363,17 @@ export default function Kyc() {
           {step === 'selfie' && (
             <motion.div key="selfie" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
               <h1 className="font-display text-[40px] tracking-[0.02em] text-ink mb-2">Selfie Match</h1>
-              <p className="font-body text-[16px] text-[rgba(var(--fg-rgb),0.42)] mb-8">
+              <p className="font-body text-[16px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] mb-8">
                 Confirm you match the ID you uploaded
               </p>
               <div className="p-8 rounded-2xl bg-panel border border-[rgba(var(--fg-rgb),0.08)] flex flex-col items-center gap-4">
                 <div className="w-24 h-24 rounded-full bg-panel2 flex items-center justify-center">
-                  <Camera size={32} className="text-[rgba(var(--fg-rgb),0.42)]" />
+                  <Camera size={32} className="text-[rgba(var(--fg-rgb),var(--muted-alpha))]" />
                 </div>
                 {selfie.completed ? (
                   <div className="text-center">
                     <p className="font-body text-[16px] text-positive font-medium mb-1">Match confirmed — {selfie.matchScore}% confidence</p>
-                    <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)]">No camera footage is stored in this demo</p>
+                    <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">No camera footage is stored in this demo</p>
                   </div>
                 ) : (
                   <button
@@ -392,24 +392,24 @@ export default function Kyc() {
           {step === 'review' && (
             <motion.div key="review" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
               <h1 className="font-display text-[40px] tracking-[0.02em] text-ink mb-2">Review &amp; Submit</h1>
-              <p className="font-body text-[16px] text-[rgba(var(--fg-rgb),0.42)] mb-8">Confirm everything looks right before submitting</p>
+              <p className="font-body text-[16px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] mb-8">Confirm everything looks right before submitting</p>
               <div className="space-y-3">
                 <div className="p-4 rounded-2xl bg-panel border border-[rgba(var(--fg-rgb),0.08)]">
-                  <p className="font-mono text-[11px] tracking-[0.04em] text-[rgba(var(--fg-rgb),0.42)] mb-1">LEGAL NAME</p>
+                  <p className="font-mono text-[11px] tracking-[0.04em] text-[rgba(var(--fg-rgb),var(--muted-alpha))] mb-1">LEGAL NAME</p>
                   <p className="font-body text-[15px] text-ink">{personalInfo.legalName || '—'}</p>
                 </div>
                 {entityType === 'business' && (
                   <div className="p-4 rounded-2xl bg-panel border border-[rgba(var(--fg-rgb),0.08)]">
-                    <p className="font-mono text-[11px] tracking-[0.04em] text-[rgba(var(--fg-rgb),0.42)] mb-1">BUSINESS</p>
+                    <p className="font-mono text-[11px] tracking-[0.04em] text-[rgba(var(--fg-rgb),var(--muted-alpha))] mb-1">BUSINESS</p>
                     <p className="font-body text-[15px] text-ink">{businessInfo.legalBusinessName || '—'}</p>
                   </div>
                 )}
                 <div className="p-4 rounded-2xl bg-panel border border-[rgba(var(--fg-rgb),0.08)]">
-                  <p className="font-mono text-[11px] tracking-[0.04em] text-[rgba(var(--fg-rgb),0.42)] mb-1">DOCUMENTS</p>
+                  <p className="font-mono text-[11px] tracking-[0.04em] text-[rgba(var(--fg-rgb),var(--muted-alpha))] mb-1">DOCUMENTS</p>
                   <p className="font-body text-[15px] text-ink">{documents.length} uploaded</p>
                 </div>
                 <div className="p-4 rounded-2xl bg-panel border border-[rgba(var(--fg-rgb),0.08)]">
-                  <p className="font-mono text-[11px] tracking-[0.04em] text-[rgba(var(--fg-rgb),0.42)] mb-1">SELFIE MATCH</p>
+                  <p className="font-mono text-[11px] tracking-[0.04em] text-[rgba(var(--fg-rgb),var(--muted-alpha))] mb-1">SELFIE MATCH</p>
                   <p className="font-body text-[15px] text-ink">{selfie.matchScore}% confidence</p>
                 </div>
               </div>
@@ -426,11 +426,11 @@ export default function Kyc() {
         </AnimatePresence>
 
         <div className="flex items-center justify-between mt-8">
-          <button onClick={stepBack} disabled={stepIndex === 0} className="font-body text-[14px] text-[rgba(var(--fg-rgb),0.42)] hover:text-ink disabled:opacity-30 transition-colors">
+          <button onClick={stepBack} disabled={stepIndex === 0} className="font-body text-[14px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] hover:text-ink disabled:opacity-30 transition-colors">
             Back
           </button>
           <div className="flex items-center gap-5">
-            <button onClick={() => navigate(-1)} className="font-body text-[14px] text-[rgba(var(--fg-rgb),0.42)] hover:text-ink transition-colors">
+            <button onClick={() => navigate(-1)} className="font-body text-[14px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] hover:text-ink transition-colors">
               Save &amp; exit
             </button>
             {step === 'personal_info' && (
@@ -488,7 +488,7 @@ function KycOutcome({ profile }: { profile: KycProfile }) {
           {profile.status === 'in_review' && 'Verification In Progress'}
           {profile.status === 'rejected' && 'Verification Rejected'}
         </h1>
-        <p className="font-body text-[15px] text-[rgba(var(--fg-rgb),0.42)] mb-8">
+        <p className="font-body text-[15px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] mb-8">
           {profile.status === 'verified' && 'Your identity has been verified. All account features are unlocked.'}
           {profile.status === 'in_review' && 'Our team is reviewing your submission — this usually takes a few minutes in this demo.'}
           {profile.status === 'rejected' && (profile.rejectionReason ?? 'Your submission could not be verified.')}

@@ -206,7 +206,7 @@ export default function Advances() {
                   ? `You're at ${Math.round((eligibility.used / eligibility.maxAmount) * 100)}% of your advance limit`
                   : 'Advance unavailable — improve your CCS score'}
               </h4>
-              <p className="font-mono text-[12px] tracking-[0.04em] text-[rgba(var(--fg-rgb),0.42)]">
+              <p className="font-mono text-[12px] tracking-[0.04em] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">
                 ${eligibility.used.toLocaleString()} / ${eligibility.maxAmount.toLocaleString()} used
               </p>
             </div>
@@ -241,7 +241,7 @@ export default function Advances() {
         }}
       >
         <h2 className="font-display text-[48px] tracking-[0.02em] text-ink mb-2">Get an Advance</h2>
-        <p className="font-body text-[18px] text-[rgba(var(--fg-rgb),0.42)] mb-6">
+        <p className="font-body text-[18px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] mb-6">
           Access up to 60% of your projected monthly income instantly
         </p>
 
@@ -288,11 +288,11 @@ export default function Advances() {
                 onChange={(e) => { setCustomAmount(e.target.value); setSelectedAmount(null); }}
                 placeholder="Custom"
                 aria-label="Custom advance amount"
-                className="bg-surface border border-[rgba(var(--fg-rgb),0.1)] rounded-xl pl-8 pr-4 py-3 font-mono text-[16px] text-ink placeholder:text-[rgba(var(--fg-rgb),0.2)] focus:border-electric focus:shadow-[0_0_0_3px_rgba(var(--electric-rgb),0.15)] outline-none transition-all w-40"
+                className="bg-surface border border-[rgba(var(--fg-rgb),0.1)] rounded-xl pl-8 pr-4 py-3 font-mono text-[16px] text-ink placeholder:text-[rgba(var(--fg-rgb),0.2)] focus:border-electric focus:shadow-[0_0_0_3px_rgba(var(--electric-rgb),0.15)] focus-visible:ring-2 focus-visible:ring-electric outline-none transition-all w-40"
               />
             </div>
           </div>
-          <p className="font-mono text-[12px] tracking-[0.04em] text-[rgba(var(--fg-rgb),0.42)]">
+          <p className="font-mono text-[12px] tracking-[0.04em] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">
             Fee: {eligibility.feePercent}% (${fee.toFixed(2)}) • Total repayment: ${totalRepay.toFixed(2)} • Est. {payoffMonths} month{payoffMonths !== 1 ? 's' : ''} at {repaymentPercent}% of income
           </p>
           <motion.button
@@ -329,13 +329,13 @@ export default function Advances() {
                       status={`${advance.status}${advance.status === 'Active' ? ' — Repaying' : ''}`}
                     />
                   </div>
-                  <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em] mt-1">
+                  <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] tracking-[0.04em] mt-1">
                     Issued {advance.issued} • {advance.repaymentRate}
                   </p>
                 </div>
                 <div className="text-right">
                   <p className="font-mono text-[24px] font-medium text-ink">${advance.amount.toLocaleString()}</p>
-                  <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)]">+${advance.fee} fee ({advance.feePercent}%)</p>
+                  <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">+${advance.fee} fee ({advance.feePercent}%)</p>
                 </div>
               </div>
               <div className="h-2 bg-[rgba(var(--fg-rgb),0.06)] rounded-full overflow-hidden mb-2">
@@ -347,8 +347,8 @@ export default function Advances() {
                 />
               </div>
               <div className="flex items-center justify-between">
-                <span className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)]">${advance.repaid.toLocaleString()} repaid</span>
-                <span className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)]">${advance.total.toLocaleString()} total</span>
+                <span className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">${advance.repaid.toLocaleString()} repaid</span>
+                <span className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">${advance.total.toLocaleString()} total</span>
               </div>
             </motion.div>
           ))}
@@ -369,7 +369,7 @@ export default function Advances() {
           </div>
           <div>
             <h3 className="font-display text-[36px] tracking-[0.02em] text-ink">Sponsor-Backed Credit</h3>
-            <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em]">
+            <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] tracking-[0.04em]">
               Upload signed brand deals to increase your advance limit
             </p>
           </div>
@@ -381,7 +381,7 @@ export default function Advances() {
               <div key={deal.brand} className="flex items-center justify-between py-3 px-4 rounded-xl bg-panel2">
                 <div>
                   <p className="font-body text-[14px] text-ink">{deal.brand}</p>
-                  <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)]">${deal.amount.toLocaleString()}</p>
+                  <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">${deal.amount.toLocaleString()}</p>
                 </div>
                 <StatusBadge status={deal.status} />
               </div>
@@ -389,7 +389,7 @@ export default function Advances() {
           </div>
         ) : (
           <div className="text-center py-8 mb-6">
-            <p className="font-body text-[14px] text-[rgba(var(--fg-rgb),0.42)]">No deals uploaded yet</p>
+            <p className="font-body text-[14px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">No deals uploaded yet</p>
           </div>
         )}
 
@@ -407,14 +407,14 @@ export default function Advances() {
                   value={dealBrand}
                   onChange={(e) => setDealBrand(e.target.value)}
                   placeholder="Brand / campaign name"
-                  className="flex-1 bg-surface border border-[rgba(var(--fg-rgb),0.1)] rounded-xl px-4 py-3 font-body text-[14px] text-ink placeholder:text-[rgba(var(--fg-rgb),0.2)] focus:border-electric outline-none transition-colors"
+                  className="flex-1 bg-surface border border-[rgba(var(--fg-rgb),0.1)] rounded-xl px-4 py-3 font-body text-[14px] text-ink placeholder:text-[rgba(var(--fg-rgb),0.2)] focus:border-electric focus-visible:ring-2 focus-visible:ring-electric outline-none transition-colors"
                 />
                 <input
                   type="number"
                   value={dealAmount}
                   onChange={(e) => setDealAmount(e.target.value)}
                   placeholder="Deal amount ($)"
-                  className="sm:w-44 bg-surface border border-[rgba(var(--fg-rgb),0.1)] rounded-xl px-4 py-3 font-mono text-[14px] text-ink placeholder:text-[rgba(var(--fg-rgb),0.2)] focus:border-electric outline-none transition-colors"
+                  className="sm:w-44 bg-surface border border-[rgba(var(--fg-rgb),0.1)] rounded-xl px-4 py-3 font-mono text-[14px] text-ink placeholder:text-[rgba(var(--fg-rgb),0.2)] focus:border-electric focus-visible:ring-2 focus-visible:ring-electric outline-none transition-colors"
                 />
                 <button
                   onClick={handleAddDeal}
@@ -431,7 +431,7 @@ export default function Advances() {
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={() => setShowDealForm((v) => !v)}
-          className="w-full py-3 rounded-xl border border-dashed border-[rgba(var(--fg-rgb),0.2)] text-[rgba(var(--fg-rgb),0.42)] hover:text-ink hover:border-[rgba(var(--fg-rgb),0.4)] transition-all font-body text-[14px]"
+          className="w-full py-3 rounded-xl border border-dashed border-[rgba(var(--fg-rgb),0.2)] text-[rgba(var(--fg-rgb),var(--muted-alpha))] hover:text-ink hover:border-[rgba(var(--fg-rgb),0.4)] transition-all font-body text-[14px]"
         >
           {showDealForm ? 'Cancel' : '+ Upload Signed Contract'}
         </motion.button>
@@ -452,12 +452,12 @@ export default function Advances() {
             </div>
             <div>
               <h3 className="font-display text-[36px] tracking-[0.02em] text-ink">Equipment Credit</h3>
-              <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em]">
+              <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] tracking-[0.04em]">
                 ${CREDIT_LINE_USED.toLocaleString()} / ${CREDIT_LINE_TOTAL.toLocaleString()} used
               </p>
             </div>
           </div>
-          <span className="font-mono text-[12px] tracking-[0.04em] text-[rgba(var(--fg-rgb),0.42)]">
+          <span className="font-mono text-[12px] tracking-[0.04em] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">
             {Math.round((CREDIT_LINE_USED / CREDIT_LINE_TOTAL) * 100)}%
           </span>
         </div>
@@ -477,9 +477,9 @@ export default function Advances() {
             <div key={purchase.item} className="flex items-center justify-between py-3 px-4 rounded-xl bg-panel2">
               <div>
                 <p className="font-body text-[14px] text-ink">{purchase.item}</p>
-                <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)]">{purchase.date} • ${purchase.amount.toLocaleString()}</p>
+                <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">{purchase.date} • ${purchase.amount.toLocaleString()}</p>
               </div>
-              <span className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em]">{purchase.status}</span>
+              <span className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] tracking-[0.04em]">{purchase.status}</span>
             </div>
           ))}
         </div>
@@ -503,7 +503,7 @@ export default function Advances() {
                 className={`px-4 py-2 rounded-lg font-mono text-[12px] tracking-[0.04em] transition-all ${
                   historyFilter === f
                     ? 'bg-acid text-void'
-                    : 'text-[rgba(var(--fg-rgb),0.42)] hover:text-ink hover:bg-[rgba(var(--fg-rgb),0.06)]'
+                    : 'text-[rgba(var(--fg-rgb),var(--muted-alpha))] hover:text-ink hover:bg-[rgba(var(--fg-rgb),0.06)]'
                 }`}
               >
                 {f}
@@ -514,7 +514,7 @@ export default function Advances() {
 
         <div className="space-y-3">
           {filteredHistory.length === 0 ? (
-            <p className="text-center py-8 font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)]">
+            <p className="text-center py-8 font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">
               No {historyFilter !== 'All' ? `${historyFilter.toLowerCase()} ` : ''}advances
             </p>
           ) : (
@@ -525,11 +525,11 @@ export default function Advances() {
                     <span className="font-mono text-[14px] text-ink font-medium">{h.id}</span>
                     <StatusBadge status={h.status} />
                   </div>
-                  <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em]">{h.issued}</p>
+                  <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] tracking-[0.04em]">{h.issued}</p>
                 </div>
                 <div className="text-right">
                   <p className="font-mono text-[14px] text-ink">${h.amount.toLocaleString()}</p>
-                  <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)]">${h.repaid.toLocaleString()} repaid</p>
+                  <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">${h.repaid.toLocaleString()} repaid</p>
                 </div>
               </div>
             ))

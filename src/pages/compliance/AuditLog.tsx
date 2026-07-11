@@ -90,7 +90,7 @@ export default function AuditLog() {
             {Array.from({ length: 5 }).map((_, i) => <SkeletonBlock key={i} className="h-14 w-full" />)}
           </div>
         ) : entries.length === 0 ? (
-          <p className="p-10 text-center font-body text-[14px] text-[rgba(var(--fg-rgb),0.42)]">No entries match these filters</p>
+          <p className="p-10 text-center font-body text-[14px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">No entries match these filters</p>
         ) : (
           <ul>
             {entries.map((entry) => {
@@ -110,17 +110,17 @@ export default function AuditLog() {
                     className="flex items-center gap-4 px-6 py-4 cursor-pointer hover:bg-[rgba(var(--fg-rgb),0.03)] transition-colors"
                   >
                     {expanded ? (
-                      <ChevronDown size={16} className="text-[rgba(var(--fg-rgb),0.42)] flex-shrink-0" />
+                      <ChevronDown size={16} className="text-[rgba(var(--fg-rgb),var(--muted-alpha))] flex-shrink-0" />
                     ) : (
-                      <ChevronRight size={16} className="text-[rgba(var(--fg-rgb),0.42)] flex-shrink-0" />
+                      <ChevronRight size={16} className="text-[rgba(var(--fg-rgb),var(--muted-alpha))] flex-shrink-0" />
                     )}
                     <div className="flex-1 min-w-0">
                       <p className="font-body text-[14px] text-ink">
                         {AUDIT_ACTOR_LABELS[entry.actorType]} · {AUDIT_ACTION_LABELS[entry.action as AuditAction]}
                       </p>
-                      <p className="font-mono text-[11px] text-[rgba(var(--fg-rgb),0.42)] mt-0.5">{entry.description}</p>
+                      <p className="font-mono text-[11px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] mt-0.5">{entry.description}</p>
                     </div>
-                    <span className="font-mono text-[11px] text-[rgba(var(--fg-rgb),0.42)] flex-shrink-0">
+                    <span className="font-mono text-[11px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] flex-shrink-0">
                       {new Date(entry.timestamp).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
                     </span>
                   </div>

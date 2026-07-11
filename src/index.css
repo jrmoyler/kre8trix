@@ -43,6 +43,11 @@
     --positive-rgb: 0,229,160;
     --negative-rgb: 255,77,77;
     --gold-rgb: 255,212,0;
+    /* D4: alpha for the pervasive "muted" text/border overlay
+       (rgba(var(--fg-rgb),var(--muted-alpha))). 0.42 white-on-dark clears
+       WCAG AA (~4.4:1); the light theme needs a higher value since the
+       same alpha over near-white cards falls well short of 4.5:1. */
+    --muted-alpha: 0.42;
 
     --chart-grid: rgba(255,255,255,0.06);
 
@@ -77,6 +82,9 @@
     --positive-rgb: 0,128,90;
     --negative-rgb: 200,32,32;
     --gold-rgb: 138,109,0;
+    /* D4: dark ink at 0.42 over the near-white light-theme panels only
+       hits ~2.7:1 — bumped to clear WCAG AA (>=4.5:1) for small text. */
+    --muted-alpha: 0.6;
 
     --chart-grid: rgba(22,24,43,0.12);
   }

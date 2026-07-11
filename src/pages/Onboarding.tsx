@@ -93,7 +93,7 @@ export default function Onboarding() {
             <div key={s.key} className="flex items-center gap-2 flex-1">
               <div
                 className={`w-8 h-8 rounded-full flex items-center justify-center font-mono text-[12px] font-medium transition-all ${
-                  i <= step ? 'bg-acid text-void' : 'bg-panel text-[rgba(var(--fg-rgb),0.42)]'
+                  i <= step ? 'bg-acid text-void' : 'bg-panel text-[rgba(var(--fg-rgb),var(--muted-alpha))]'
                 }`}
               >
                 {i < step ? <Check size={14} /> : i + 1}
@@ -117,7 +117,7 @@ export default function Onboarding() {
               <h1 className="font-display text-[48px] tracking-[0.02em] text-ink mb-2">
                 Connect Platforms
               </h1>
-              <p className="font-body text-[16px] text-[rgba(var(--fg-rgb),0.42)] mb-8">
+              <p className="font-body text-[16px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] mb-8">
                 Link your income sources to build your Creator Credit Score
               </p>
               <div className="space-y-3">
@@ -146,11 +146,11 @@ export default function Onboarding() {
                           <Check size={14} /> Connected
                         </span>
                       ) : startingOAuth === p.name ? (
-                        <span className="flex items-center gap-1 font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)]">
+                        <span className="flex items-center gap-1 font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">
                           <Loader2 size={14} className="animate-spin" /> Redirecting…
                         </span>
                       ) : (
-                        <span className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)]">Connect</span>
+                        <span className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">Connect</span>
                       )}
                     </motion.button>
                   );
@@ -169,7 +169,7 @@ export default function Onboarding() {
               <h1 className="font-display text-[48px] tracking-[0.02em] text-ink mb-2">
                 Setup Wallet
               </h1>
-              <p className="font-body text-[16px] text-[rgba(var(--fg-rgb),0.42)] mb-8">
+              <p className="font-body text-[16px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] mb-8">
                 Choose how you want to receive funds
               </p>
               <div className="space-y-3">
@@ -187,7 +187,7 @@ export default function Onboarding() {
                     }`}
                   >
                     <p className="font-body text-[16px] text-ink font-medium">{w.label}</p>
-                    <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] mt-1">{w.desc}</p>
+                    <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] mt-1">{w.desc}</p>
                   </button>
                 ))}
               </div>
@@ -204,17 +204,17 @@ export default function Onboarding() {
               <h1 className="font-display text-[48px] tracking-[0.02em] text-ink mb-2">
                 Verify Identity
               </h1>
-              <p className="font-body text-[16px] text-[rgba(var(--fg-rgb),0.42)] mb-8">
+              <p className="font-body text-[16px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] mb-8">
                 Complete KYC/KYB verification to unlock advances and larger transfers
               </p>
               <div className="p-6 rounded-2xl bg-panel border border-[rgba(var(--fg-rgb),0.08)] space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="font-body text-[14px] text-ink">Verification status</span>
                   {kycQuery.data ? <KycStatusBadge status={kycQuery.data.status} /> : (
-                    <span className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)]">Loading…</span>
+                    <span className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">Loading…</span>
                   )}
                 </div>
-                <p className="font-body text-[13px] text-[rgba(var(--fg-rgb),0.42)]">
+                <p className="font-body text-[13px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">
                   {kycQuery.data?.status === 'verified'
                     ? 'Your identity is verified — all features are unlocked.'
                     : kycQuery.data?.status === 'in_review' || kycQuery.data?.status === 'rejected'
@@ -251,7 +251,7 @@ export default function Onboarding() {
               <h1 className="font-display text-[48px] tracking-[0.02em] text-ink mb-2">
                 You're All Set!
               </h1>
-              <p className="font-body text-[16px] text-[rgba(var(--fg-rgb),0.42)] mb-8">
+              <p className="font-body text-[16px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] mb-8">
                 Your Creator Credit Score is being calculated. Check back in a few minutes.
               </p>
               <motion.button
@@ -272,14 +272,14 @@ export default function Onboarding() {
             <button
               onClick={() => setStep(Math.max(0, step - 1))}
               disabled={step === 0}
-              className="font-body text-[14px] text-[rgba(var(--fg-rgb),0.42)] hover:text-ink disabled:opacity-30 transition-colors"
+              className="font-body text-[14px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] hover:text-ink disabled:opacity-30 transition-colors"
             >
               Back
             </button>
             <div className="flex items-center gap-5">
               <button
                 onClick={() => navigate('/dashboard')}
-                className="font-body text-[14px] text-[rgba(var(--fg-rgb),0.42)] hover:text-ink transition-colors"
+                className="font-body text-[14px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] hover:text-ink transition-colors"
               >
                 Skip for now
               </button>

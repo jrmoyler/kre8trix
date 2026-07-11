@@ -14,7 +14,7 @@ const easeOutExpo = [0.16, 1, 0.3, 1] as [number, number, number, number];
 function SummaryCard({ label, value, accent }: { label: string; value: string; accent?: string }) {
   return (
     <div className="rounded-2xl p-5 bg-panel border border-[rgba(var(--fg-rgb),0.08)]">
-      <p className="font-mono text-[11px] tracking-[0.04em] text-[rgba(var(--fg-rgb),0.42)] mb-2">{label}</p>
+      <p className="font-mono text-[11px] tracking-[0.04em] text-[rgba(var(--fg-rgb),var(--muted-alpha))] mb-2">{label}</p>
       <p className="font-display text-[32px] tracking-[0.02em]" style={accent ? { color: accent } : undefined}>
         {value}
       </p>
@@ -167,7 +167,7 @@ export default function AmlMonitoring() {
           ) : alerts.length === 0 ? (
             <div className="p-10 text-center">
               <ShieldCheck size={28} className="text-positive mx-auto mb-3" />
-              <p className="font-body text-[14px] text-[rgba(var(--fg-rgb),0.42)]">No alerts match these filters</p>
+              <p className="font-body text-[14px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">No alerts match these filters</p>
             </div>
           ) : (
             <ul>
@@ -187,15 +187,15 @@ export default function AmlMonitoring() {
                       selectedId === alert.id ? 'bg-[rgba(var(--acid-rgb),0.05)]' : ''
                     }`}
                   >
-                    <AlertTriangle size={18} className="text-[rgba(var(--fg-rgb),0.42)] flex-shrink-0 mt-0.5" />
+                    <AlertTriangle size={18} className="text-[rgba(var(--fg-rgb),var(--muted-alpha))] flex-shrink-0 mt-0.5" />
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-2 mb-1">
                         <Pill label={AML_SEVERITY_META[alert.severity].label} color={AML_SEVERITY_META[alert.severity].color} bg={AML_SEVERITY_META[alert.severity].bg} />
                         <Pill label={AML_STATUS_META[alert.status].label} color={AML_STATUS_META[alert.status].color} bg={AML_STATUS_META[alert.status].bg} />
-                        <span className="font-mono text-[11px] text-[rgba(var(--fg-rgb),0.42)]">{AML_REASON_LABELS[alert.reason]}</span>
+                        <span className="font-mono text-[11px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">{AML_REASON_LABELS[alert.reason]}</span>
                       </div>
                       <p className="font-body text-[14px] text-ink">{alert.summary}</p>
-                      <p className="font-mono text-[11px] text-[rgba(var(--fg-rgb),0.42)] mt-1">
+                      <p className="font-mono text-[11px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] mt-1">
                         {alert.subjectHandle} · ${alert.amountInvolved.toLocaleString()}
                       </p>
                     </div>
@@ -208,15 +208,15 @@ export default function AmlMonitoring() {
 
         <div className="bg-panel border border-[rgba(var(--fg-rgb),0.08)] rounded-2xl p-6">
           {!selected ? (
-            <p className="font-body text-[13px] text-[rgba(var(--fg-rgb),0.42)]">Select an alert to view details</p>
+            <p className="font-body text-[13px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">Select an alert to view details</p>
           ) : (
             <div className="space-y-5">
               <div>
-                <p className="font-mono text-[11px] tracking-[0.04em] text-[rgba(var(--fg-rgb),0.42)] mb-1">ALERT {selected.id}</p>
+                <p className="font-mono text-[11px] tracking-[0.04em] text-[rgba(var(--fg-rgb),var(--muted-alpha))] mb-1">ALERT {selected.id}</p>
                 <p className="font-body text-[14px] text-ink">{selected.summary}</p>
               </div>
               <div>
-                <p className="font-mono text-[11px] tracking-[0.04em] text-[rgba(var(--fg-rgb),0.42)] mb-2">STATUS</p>
+                <p className="font-mono text-[11px] tracking-[0.04em] text-[rgba(var(--fg-rgb),var(--muted-alpha))] mb-2">STATUS</p>
                 <select
                   aria-label="Change alert status"
                   value={selected.status}
@@ -230,19 +230,19 @@ export default function AmlMonitoring() {
                 </select>
               </div>
               <div>
-                <p className="font-mono text-[11px] tracking-[0.04em] text-[rgba(var(--fg-rgb),0.42)] mb-2">RELATED TRANSACTIONS</p>
+                <p className="font-mono text-[11px] tracking-[0.04em] text-[rgba(var(--fg-rgb),var(--muted-alpha))] mb-2">RELATED TRANSACTIONS</p>
                 <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.6)]">{selected.relatedTransactionIds.join(', ')}</p>
               </div>
               <div>
-                <p className="font-mono text-[11px] tracking-[0.04em] text-[rgba(var(--fg-rgb),0.42)] mb-2">NOTES</p>
+                <p className="font-mono text-[11px] tracking-[0.04em] text-[rgba(var(--fg-rgb),var(--muted-alpha))] mb-2">NOTES</p>
                 <div className="space-y-2 mb-3 max-h-40 overflow-y-auto">
                   {selected.notes.length === 0 ? (
-                    <p className="font-body text-[12px] text-[rgba(var(--fg-rgb),0.42)]">No notes yet</p>
+                    <p className="font-body text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">No notes yet</p>
                   ) : (
                     selected.notes.map((note) => (
                       <div key={note.id} className="p-3 rounded-lg bg-panel2">
                         <p className="font-body text-[12px] text-ink">{note.body}</p>
-                        <p className="font-mono text-[10px] text-[rgba(var(--fg-rgb),0.42)] mt-1">{note.author}</p>
+                        <p className="font-mono text-[10px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] mt-1">{note.author}</p>
                       </div>
                     ))
                   )}
@@ -272,8 +272,8 @@ export default function AmlMonitoring() {
                 </div>
               ) : (
                 <div>
-                  <p className="font-mono text-[11px] tracking-[0.04em] text-[rgba(var(--fg-rgb),0.42)] mb-2">FILE SUSPICIOUS ACTIVITY REPORT</p>
-                  <p className="font-mono text-[10px] text-[rgba(var(--fg-rgb),0.42)] mb-2">Mock filing — no real FinCEN submission</p>
+                  <p className="font-mono text-[11px] tracking-[0.04em] text-[rgba(var(--fg-rgb),var(--muted-alpha))] mb-2">FILE SUSPICIOUS ACTIVITY REPORT</p>
+                  <p className="font-mono text-[10px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] mb-2">Mock filing — no real FinCEN submission</p>
                   <textarea
                     aria-label="SAR filing narrative"
                     value={sarNarrative}

@@ -25,7 +25,7 @@ export default function ComplianceNav({ active }: { active: 'aml' | 'audit-log' 
             key={tab.key}
             to={tab.path}
             className={`px-4 py-2 rounded-lg font-body text-[14px] font-medium transition-all ${
-              active === tab.key ? 'bg-acid text-void' : 'text-[rgba(var(--fg-rgb),0.42)] hover:text-ink'
+              active === tab.key ? 'bg-acid text-void' : 'text-[rgba(var(--fg-rgb),var(--muted-alpha))] hover:text-ink'
             }`}
           >
             {tab.label}

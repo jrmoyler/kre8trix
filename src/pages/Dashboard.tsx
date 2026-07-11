@@ -128,7 +128,7 @@ function AlertBanner() {
             </button>
             <button
               onClick={() => setDismissed(true)}
-              className="text-[rgba(var(--fg-rgb),0.42)] hover:text-ink transition-colors duration-150"
+              className="text-[rgba(var(--fg-rgb),var(--muted-alpha))] hover:text-ink transition-colors duration-150"
             >
               <X size={18} />
             </button>
@@ -181,7 +181,7 @@ function BalanceCard({
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-3">
-            <span className="font-mono text-[12px] tracking-[0.04em] text-[rgba(var(--fg-rgb),0.42)] uppercase">
+            <span className="font-mono text-[12px] tracking-[0.04em] text-[rgba(var(--fg-rgb),var(--muted-alpha))] uppercase">
               {label}
             </span>
           </div>
@@ -195,7 +195,7 @@ function BalanceCard({
             >
               {change}
             </span>
-            <span className="font-body text-[12px] text-[rgba(var(--fg-rgb),0.42)]">{changeLabel}</span>
+            <span className="font-body text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">{changeLabel}</span>
           </div>
         </div>
         <div className="w-[120px] h-[50px] flex-shrink-0">
@@ -243,7 +243,7 @@ function CCSScoreCard({ score }: { score: CcsScore }) {
         <h3 className="font-display text-[28px] tracking-[0.02em] text-ink">
           Creator Credit Score
         </h3>
-        <Info size={16} className="text-[rgba(var(--fg-rgb),0.42)]" />
+        <Info size={16} className="text-[rgba(var(--fg-rgb),var(--muted-alpha))]" />
       </div>
 
       <div className="relative mb-4">
@@ -281,7 +281,7 @@ function CCSScoreCard({ score }: { score: CcsScore }) {
           <span className="font-mono text-[48px] font-medium text-ink tracking-[-0.02em] leading-none">
             {count}
           </span>
-          <span className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em] mt-1">
+          <span className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] tracking-[0.04em] mt-1">
             out of {score.maxScore}
           </span>
         </div>
@@ -299,7 +299,7 @@ function CCSScoreCard({ score }: { score: CcsScore }) {
         >
           {score.tier.toUpperCase()}
         </span>
-        <span className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em]">
+        <span className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] tracking-[0.04em]">
           Top {score.percentile}% of creators
         </span>
       </motion.div>
@@ -348,7 +348,7 @@ function QuickActionButton({
       </div>
       <div className="flex-1 min-w-0">
         <p className="font-body text-[16px] font-semibold text-ink truncate">{label}</p>
-        <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em] truncate">
+        <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] tracking-[0.04em] truncate">
           {description}
         </p>
       </div>
@@ -392,7 +392,7 @@ function TransactionRow({
       </div>
       <div className="flex-1 min-w-0">
         <p className="font-body text-[14px] text-ink truncate">{tx.description}</p>
-        <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em] truncate">
+        <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] tracking-[0.04em] truncate">
           {tx.platform}
         </p>
       </div>
@@ -404,7 +404,7 @@ function TransactionRow({
           {isPositive ? '+' : '-'}${Math.abs(tx.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </p>
         <div className="flex items-center justify-end gap-2 mt-0.5">
-          <span className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em]">
+          <span className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] tracking-[0.04em]">
             {tx.date}
           </span>
           <span
@@ -576,7 +576,7 @@ export default function Dashboard() {
                     px-4 py-2 rounded-lg font-mono text-[12px] tracking-[0.04em] transition-all duration-200
                     ${forecastTab === tab
                       ? 'bg-panel text-ink shadow-sm'
-                      : 'text-[rgba(var(--fg-rgb),0.42)] hover:text-ink'
+                      : 'text-[rgba(var(--fg-rgb),var(--muted-alpha))] hover:text-ink'
                     }
                   `}
                 >
@@ -615,12 +615,12 @@ export default function Dashboard() {
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
                 <XAxis
                   dataKey="label"
-                  tick={{ fontSize: 12, fill: 'rgba(var(--fg-rgb),0.42)', fontFamily: '"JetBrains Mono", monospace' }}
+                  tick={{ fontSize: 12, fill: 'rgba(var(--fg-rgb),var(--muted-alpha))', fontFamily: '"JetBrains Mono", monospace' }}
                   axisLine={{ stroke: 'rgba(var(--fg-rgb),0.08)' }}
                   tickLine={false}
                 />
                 <YAxis
-                  tick={{ fontSize: 12, fill: 'rgba(var(--fg-rgb),0.42)', fontFamily: '"JetBrains Mono", monospace' }}
+                  tick={{ fontSize: 12, fill: 'rgba(var(--fg-rgb),var(--muted-alpha))', fontFamily: '"JetBrains Mono", monospace' }}
                   axisLine={{ stroke: 'rgba(var(--fg-rgb),0.08)' }}
                   tickLine={false}
                   tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`}
@@ -672,7 +672,7 @@ export default function Dashboard() {
               }`}
             >
               <span className="w-2.5 h-2.5 rounded-full" style={{ background: pill.color }} />
-              <span className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em]">
+              <span className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] tracking-[0.04em]">
                 {pill.label}:
               </span>
               <span className="font-mono text-[20px] font-medium text-ink tracking-[-0.02em]">
@@ -743,7 +743,7 @@ export default function Dashboard() {
               </div>
               <div className="flex items-center justify-between mt-6 pt-4 border-t border-[rgba(var(--fg-rgb),0.08)]">
                 <div>
-                  <span className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em]">
+                  <span className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] tracking-[0.04em]">
                     Total Monthly
                   </span>
                   <p className="font-mono text-[20px] font-medium tracking-[-0.02em]" style={{ color: 'rgb(var(--color-acid))' }}>

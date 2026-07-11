@@ -86,7 +86,7 @@ function RevenueOverview({
             <button
               key={r.label}
               onClick={() => onRangeChange(r)}
-              className={`px-4 py-2 rounded-lg font-body text-[14px] font-medium transition-all ${range.label === r.label ? 'bg-acid text-void' : 'text-[rgba(var(--fg-rgb),0.42)] hover:text-ink'}`}
+              className={`px-4 py-2 rounded-lg font-body text-[14px] font-medium transition-all ${range.label === r.label ? 'bg-acid text-void' : 'text-[rgba(var(--fg-rgb),var(--muted-alpha))] hover:text-ink'}`}
             >
               {r.label}
             </button>
@@ -103,7 +103,7 @@ function RevenueOverview({
             transition={{ delay: i * 0.08, duration: 0.4, ease: easeOutExpo }}
             className="bg-panel border border-[rgba(var(--fg-rgb),0.08)] rounded-2xl p-5 hover:border-[rgba(var(--fg-rgb),0.14)] hover:-translate-y-0.5 transition-all duration-300"
           >
-            <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em] mb-2">{m.label}</p>
+            <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] tracking-[0.04em] mb-2">{m.label}</p>
             <p className="font-mono text-[20px] font-medium text-ink mb-2">{m.value}</p>
             <div className="flex items-center gap-1">
               {m.positive ? (
@@ -144,7 +144,7 @@ function RevenueByPlatform({ months }: { months: number }) {
             <button
               key={m}
               onClick={() => setChartMode(m)}
-              className={`px-4 py-2 rounded-lg font-body text-[14px] font-medium capitalize transition-all ${chartMode === m ? 'bg-acid text-void' : 'text-[rgba(var(--fg-rgb),0.42)] hover:text-ink'}`}
+              className={`px-4 py-2 rounded-lg font-body text-[14px] font-medium capitalize transition-all ${chartMode === m ? 'bg-acid text-void' : 'text-[rgba(var(--fg-rgb),var(--muted-alpha))] hover:text-ink'}`}
             >
               {m}
             </button>
@@ -156,8 +156,8 @@ function RevenueByPlatform({ months }: { months: number }) {
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data}>
             <CartesianGrid stroke="var(--chart-grid)" vertical={false} />
-            <XAxis dataKey="month" tick={{ fill: 'rgba(var(--fg-rgb),0.42)', fontSize: 12, fontFamily: 'JetBrains Mono' }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fill: 'rgba(var(--fg-rgb),0.42)', fontSize: 12, fontFamily: 'JetBrains Mono' }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `$${v.toLocaleString()}`} />
+            <XAxis dataKey="month" tick={{ fill: 'rgba(var(--fg-rgb),var(--muted-alpha))', fontSize: 12, fontFamily: 'JetBrains Mono' }} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fill: 'rgba(var(--fg-rgb),var(--muted-alpha))', fontSize: 12, fontFamily: 'JetBrains Mono' }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `$${v.toLocaleString()}`} />
             <Tooltip
               contentStyle={{
                 background: 'rgb(var(--color-panel2))',
@@ -171,7 +171,7 @@ function RevenueByPlatform({ months }: { months: number }) {
             />
             <Legend
               wrapperStyle={{ fontFamily: 'JetBrains Mono', fontSize: '12px', paddingTop: '16px' }}
-              formatter={(value: string) => <span style={{ color: 'rgba(var(--fg-rgb),0.42)' }}>{value}</span>}
+              formatter={(value: string) => <span style={{ color: 'rgba(var(--fg-rgb),var(--muted-alpha))' }}>{value}</span>}
             />
             <Bar dataKey="YouTube" stackId={chartMode === 'stacked' ? 'a' : undefined} fill="#FF0000" radius={chartMode === 'grouped' ? [4, 4, 0, 0] : [0, 0, 0, 0]} />
             <Bar dataKey="Stripe" stackId={chartMode === 'stacked' ? 'a' : undefined} fill="#635BFF" radius={chartMode === 'grouped' ? [4, 4, 0, 0] : [0, 0, 0, 0]} />

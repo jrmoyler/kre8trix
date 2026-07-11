@@ -60,7 +60,7 @@ function HeroScoreRing({ score }: { score: CcsScore }) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.4 }}
-          className="font-mono text-[12px] tracking-[0.15em] uppercase text-[rgba(var(--fg-rgb),0.42)] mb-8"
+          className="font-mono text-[12px] tracking-[0.15em] uppercase text-[rgba(var(--fg-rgb),var(--muted-alpha))] mb-8"
         >
           YOUR CREATOR CREDIT SCORE
         </motion.p>
@@ -97,7 +97,7 @@ function HeroScoreRing({ score }: { score: CcsScore }) {
               {animatedScore}
             </span>
             <div className="w-10 h-px bg-[rgba(var(--fg-rgb),0.1)] my-2" />
-            <span className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em]">
+            <span className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] tracking-[0.04em]">
               out of {score.maxScore}
             </span>
           </div>
@@ -120,7 +120,7 @@ function HeroScoreRing({ score }: { score: CcsScore }) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 2.2, duration: 0.3 }}
-          className="mt-3 font-body text-[14px] text-[rgba(var(--fg-rgb),0.42)]"
+          className="mt-3 font-body text-[14px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]"
         >
           Top {score.percentile}% of creators on Kre8trix
         </motion.p>
@@ -152,7 +152,7 @@ function SignalBreakdown({ score }: { score: CcsScore }) {
       className="bg-panel border border-[rgba(var(--fg-rgb),0.08)] rounded-2xl p-6"
     >
       <h3 className="font-display text-[36px] tracking-[0.02em] text-ink mb-1">Signal Breakdown</h3>
-      <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em] mb-6">
+      <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] tracking-[0.04em] mb-6">
         Seven weighted signals drive your CCS
       </p>
       <div className="space-y-5">
@@ -162,7 +162,7 @@ function SignalBreakdown({ score }: { score: CcsScore }) {
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full" style={{ background: signal.color }} />
                 <span className="font-body text-[14px] text-ink">{signal.name}</span>
-                <span className="font-mono text-[11px] text-[rgba(var(--fg-rgb),0.42)]">{signal.weight}%</span>
+                <span className="font-mono text-[11px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">{signal.weight}%</span>
               </div>
               <span className="font-mono text-[14px] text-ink">{signal.score}</span>
             </div>
@@ -217,7 +217,7 @@ function ScoreHistory({ score }: { score: CcsScore }) {
                     : 'rgba(var(--electric-rgb),0.25)',
               }}
             />
-            <span className="font-mono text-[11px] text-[rgba(var(--fg-rgb),0.42)]">{point.month}</span>
+            <span className="font-mono text-[11px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">{point.month}</span>
           </div>
         ))}
       </div>
@@ -299,7 +299,7 @@ function WhatIfSimulator({ score }: { score: CcsScore }) {
           </div>
           <div>
             <h3 className="font-display text-[36px] tracking-[0.02em] text-ink">What-If Simulator</h3>
-            <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em]">
+            <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] tracking-[0.04em]">
               Drag signals to see how your score would respond
             </p>
           </div>
@@ -308,7 +308,7 @@ function WhatIfSimulator({ score }: { score: CcsScore }) {
           {dirty && (
             <button
               onClick={reset}
-              className="flex items-center gap-1.5 font-mono text-[12px] tracking-[0.04em] text-[rgba(var(--fg-rgb),0.42)] hover:text-ink transition-colors"
+              className="flex items-center gap-1.5 font-mono text-[12px] tracking-[0.04em] text-[rgba(var(--fg-rgb),var(--muted-alpha))] hover:text-ink transition-colors"
             >
               <RotateCcw size={13} />
               Reset
@@ -323,7 +323,7 @@ function WhatIfSimulator({ score }: { score: CcsScore }) {
             </div>
             <span
               className="font-mono text-[12px] tracking-[0.04em]"
-              style={{ color: delta > 0 ? 'rgb(var(--color-positive))' : delta < 0 ? 'rgb(var(--color-negative))' : 'rgba(var(--fg-rgb),0.42)' }}
+              style={{ color: delta > 0 ? 'rgb(var(--color-positive))' : delta < 0 ? 'rgb(var(--color-negative))' : 'rgba(var(--fg-rgb),var(--muted-alpha))' }}
             >
               {delta > 0 ? `+${delta}` : delta} pts · {(dirty && result?.projectedTier) || score.tier}
             </span>
@@ -341,7 +341,7 @@ function WhatIfSimulator({ score }: { score: CcsScore }) {
               <span className="font-mono text-[13px]" style={{ color: signal.color }}>
                 {adjustments[signal.name]}
                 {adjustments[signal.name] !== signal.score && (
-                  <span className="text-[rgba(var(--fg-rgb),0.42)]"> (was {signal.score})</span>
+                  <span className="text-[rgba(var(--fg-rgb),var(--muted-alpha))]"> (was {signal.score})</span>
                 )}
               </span>
             </div>
@@ -400,7 +400,7 @@ function TierLadder({ currentTier }: { currentTier: string }) {
                   </span>
                 )}
               </div>
-              <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] mb-3">{tier.range}</p>
+              <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] mb-3">{tier.range}</p>
               <ul className="space-y-1.5">
                 {tier.benefits.map((benefit) => (
                   <li key={benefit} className="font-body text-[13px] text-[rgba(var(--fg-rgb),0.7)]">

@@ -13,7 +13,7 @@ export default function ProtectedRoute({ children }: { children: ReactNode }) {
           <span className="font-display text-[28px] tracking-[0.02em] text-acid animate-pulse">
             KRE8TRIX
           </span>
-          <span className="font-mono text-[12px] tracking-[0.04em] text-[rgba(var(--fg-rgb),0.42)]">
+          <span className="font-mono text-[12px] tracking-[0.04em] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">
             Loading your workspace…
           </span>
         </div>

@@ -122,7 +122,7 @@ export default function OAuthCallback() {
             <h1 className="font-display text-[28px] tracking-[0.02em] text-ink mb-2">
               Completing Connection
             </h1>
-            <p className="font-body text-[14px] text-[rgba(var(--fg-rgb),0.42)]">
+            <p className="font-body text-[14px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">
               Verifying the state token and exchanging the authorization code…
             </p>
           </>
@@ -141,7 +141,7 @@ export default function OAuthCallback() {
             <h1 className="font-display text-[28px] tracking-[0.02em] text-ink mb-2">
               {platformName ?? 'Platform'} Connected
             </h1>
-            <p className="font-body text-[14px] text-[rgba(var(--fg-rgb),0.42)] mb-6">
+            <p className="font-body text-[14px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] mb-6">
               Access granted. Taking you back…
             </p>
             <button
@@ -161,7 +161,7 @@ export default function OAuthCallback() {
             <h1 className="font-display text-[28px] tracking-[0.02em] text-ink mb-2">
               Access Denied
             </h1>
-            <p className="font-body text-[14px] text-[rgba(var(--fg-rgb),0.42)] mb-6">{message}</p>
+            <p className="font-body text-[14px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] mb-6">{message}</p>
             <button
               onClick={() => navigate(returnTo, { replace: true })}
               className="bg-acid text-void font-body text-[14px] font-semibold px-6 py-3 rounded-2xl hover:brightness-110 transition-all"
