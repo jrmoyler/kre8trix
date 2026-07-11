@@ -12,6 +12,7 @@ import {
   Rocket,
   Search,
   Settings,
+  Shield,
   Target,
   TrendingUp,
   Wallet,
@@ -82,6 +83,7 @@ export default function CommandPalette({ onOpenChange }: CommandPaletteProps) {
     { label: 'Request Payment', keywords: 'invoice receive wallet', icon: ArrowDownLeft, action: () => go('/wallet?action=request') },
     { label: 'Convert USD ↔ USDC', keywords: 'swap exchange crypto', icon: RefreshCw, action: () => go('/wallet?action=convert') },
     { label: 'Get an Advance', keywords: 'financing apply capital', icon: Zap, action: () => go('/advances') },
+    { label: 'Verify Identity', keywords: 'kyc kyb compliance documents selfie', icon: Shield, action: () => go('/kyc') },
     { label: 'Restart Onboarding', keywords: 'setup connect platforms', icon: Rocket, action: () => go('/onboarding') },
     {
       label: 'Sign Out',
@@ -101,15 +103,16 @@ export default function CommandPalette({ onOpenChange }: CommandPaletteProps) {
       onSelect={item.action}
       className="flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer font-body text-[14px] text-[rgb(var(--color-ink))] data-[selected=true]:bg-[rgba(var(--acid-rgb),0.08)] data-[selected=true]:text-ink transition-colors"
     >
-      <item.icon size={16} className="text-[rgba(var(--fg-rgb),0.42)]" />
+      <item.icon size={16} className="text-[rgba(var(--fg-rgb),var(--muted-alpha))]" />
       {item.label}
     </Command.Item>
   );
 
   return (
     <div role="dialog" aria-modal="true" aria-label="Command palette" className="fixed inset-0 z-[100] flex items-start justify-center pt-[15vh] px-4">
-      {/* Backdrop */}
+      {/* Backdrop — decorative click-outside dismiss; keyboard users close via Escape (handled above). */}
       <div
+        aria-hidden="true"
         className="absolute inset-0 bg-black/70 backdrop-blur-sm"
         onClick={() => onOpenChange(false)}
       />
@@ -119,21 +122,25 @@ export default function CommandPalette({ onOpenChange }: CommandPaletteProps) {
         className="relative w-full max-w-[560px] bg-panel border border-[rgba(var(--fg-rgb),0.1)] rounded-2xl overflow-hidden shadow-[0_25px_80px_rgba(0,0,0,0.6)]"
       >
         <div className="flex items-center gap-3 px-4 border-b border-[rgba(var(--fg-rgb),0.08)]">
-          <Search size={18} className="text-[rgba(var(--fg-rgb),0.42)] flex-shrink-0" />
+          <Search size={18} className="text-[rgba(var(--fg-rgb),var(--muted-alpha))] flex-shrink-0" />
+          {/* Autofocus is intentional here: this is a modal dialog opened by an
+              explicit user action (Cmd+K), and focusing its input is the
+              WAI-ARIA-recommended pattern for command palette/dialog widgets. */}
           <Command.Input
+            // eslint-disable-next-line jsx-a11y/no-autofocus
             autoFocus
             value={query}
             onValueChange={setQuery}
             placeholder="Search pages and actions…"
-            className="flex-1 h-14 bg-transparent font-body text-[15px] text-ink placeholder:text-[rgba(var(--fg-rgb),0.3)] outline-none"
+            className="flex-1 h-14 bg-transparent font-body text-[15px] text-ink placeholder:text-[rgba(var(--fg-rgb),0.3)] outline-none focus-visible:ring-2 focus-visible:ring-electric focus-visible:ring-inset"
           />
-          <kbd className="font-mono text-[10px] tracking-[0.04em] text-[rgba(var(--fg-rgb),0.42)] bg-panel2 border border-[rgba(var(--fg-rgb),0.08)] rounded-md px-1.5 py-0.5">
+          <kbd className="font-mono text-[10px] tracking-[0.04em] text-[rgba(var(--fg-rgb),var(--muted-alpha))] bg-panel2 border border-[rgba(var(--fg-rgb),0.08)] rounded-md px-1.5 py-0.5">
             ESC
           </kbd>
         </div>
 
         <Command.List className="max-h-[380px] overflow-y-auto p-2">
-          <Command.Empty className="py-10 text-center font-body text-[14px] text-[rgba(var(--fg-rgb),0.42)]">
+          <Command.Empty className="py-10 text-center font-body text-[14px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">
             No results for “{query}”
           </Command.Empty>
 

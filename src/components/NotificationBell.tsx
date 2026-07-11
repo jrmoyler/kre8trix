@@ -72,7 +72,7 @@ export default function NotificationBell() {
         aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
         aria-haspopup="menu"
         aria-expanded={open}
-        className="relative w-10 h-10 rounded-xl flex items-center justify-center text-[rgba(var(--fg-rgb),0.42)] hover:text-ink hover:bg-[rgba(var(--fg-rgb),0.06)] transition-all duration-200"
+        className="relative w-10 h-10 rounded-xl flex items-center justify-center text-[rgba(var(--fg-rgb),var(--muted-alpha))] hover:text-ink hover:bg-[rgba(var(--fg-rgb),0.06)] transition-all duration-200"
       >
         <Bell size={20} />
         {unreadCount > 0 && (
@@ -106,11 +106,11 @@ export default function NotificationBell() {
 
             <div className="max-h-[320px] overflow-y-auto">
               {!notifications ? (
-                <div className="px-5 py-8 text-center font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)]">
+                <div className="px-5 py-8 text-center font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">
                   Loading…
                 </div>
               ) : notifications.length === 0 ? (
-                <div className="px-5 py-8 text-center font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)]">
+                <div className="px-5 py-8 text-center font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">
                   You're all caught up
                 </div>
               ) : (
@@ -136,11 +136,11 @@ export default function NotificationBell() {
                       <div className={`flex-1 min-w-0 ${n.read ? 'opacity-60' : ''}`}>
                         <div className="flex items-center justify-between gap-2">
                           <p className="font-body text-[13px] font-medium text-ink truncate">{n.title}</p>
-                          <span className="font-mono text-[10px] text-[rgba(var(--fg-rgb),0.42)] flex-shrink-0">
+                          <span className="font-mono text-[10px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] flex-shrink-0">
                             {timeAgo(n.createdAt)}
                           </span>
                         </div>
-                        <p className="font-body text-[12px] text-[rgba(var(--fg-rgb),0.42)] mt-0.5">{n.body}</p>
+                        <p className="font-body text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] mt-0.5">{n.body}</p>
                       </div>
                       {!n.read && (
                         <span

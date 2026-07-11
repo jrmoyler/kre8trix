@@ -130,7 +130,7 @@ export default function Notifications() {
           <h2 className="font-display text-[48px] tracking-[0.02em] text-ink leading-none">
             Notification Center
           </h2>
-          <p className="font-body text-[14px] text-[rgba(var(--fg-rgb),0.42)] mt-3">
+          <p className="font-body text-[14px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] mt-3">
             {unreadCount > 0
               ? `${unreadCount} unread notification${unreadCount === 1 ? '' : 's'}`
               : 'You’re all caught up'}
@@ -181,7 +181,7 @@ export default function Notifications() {
       ) : groups.length === 0 ? (
         <div className="bg-panel border border-[rgba(var(--fg-rgb),0.08)] rounded-2xl flex flex-col items-center justify-center gap-3 py-16">
           <BellOff size={28} className="text-[rgba(var(--fg-rgb),0.25)]" />
-          <p className="font-body text-[14px] text-[rgba(var(--fg-rgb),0.42)]">
+          <p className="font-body text-[14px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">
             {filter === 'all' ? 'No notifications yet' : `No ${NOTIFICATION_TYPE_META[filter].label.toLowerCase()} notifications`}
           </p>
         </div>
@@ -189,7 +189,7 @@ export default function Notifications() {
         <div className="space-y-8">
           {groups.map(([label, items]) => (
             <div key={label}>
-              <h3 className="font-mono text-[12px] tracking-[0.12em] uppercase text-[rgba(var(--fg-rgb),0.42)] mb-3 px-1">
+              <h3 className="font-mono text-[12px] tracking-[0.12em] uppercase text-[rgba(var(--fg-rgb),var(--muted-alpha))] mb-3 px-1">
                 {label}
               </h3>
               <div className="bg-panel border border-[rgba(var(--fg-rgb),0.08)] rounded-2xl overflow-hidden">
@@ -241,11 +241,11 @@ export default function Notifications() {
                               <span className="w-1.5 h-1.5 rounded-full" style={{ background: meta.color }} />
                             )}
                           </div>
-                          <p className="font-body text-[13px] text-[rgba(var(--fg-rgb),0.42)] mt-1">{n.body}</p>
+                          <p className="font-body text-[13px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] mt-1">{n.body}</p>
                         </div>
                       </div>
                       <div className="flex flex-col items-end gap-2 flex-shrink-0">
-                        <span className="font-mono text-[11px] text-[rgba(var(--fg-rgb),0.42)]">
+                        <span className="font-mono text-[11px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">
                           {timeAgo(n.createdAt)}
                         </span>
                         <button

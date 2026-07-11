@@ -23,6 +23,8 @@ const pageTitles: Record<string, string> = {
   '/cards': 'Cards',
   '/analytics': 'Analytics',
   '/settings': 'Settings',
+  '/compliance/aml': 'Compliance · AML Monitoring',
+  '/compliance/audit-log': 'Compliance · Audit Log',
 };
 
 function UserMenu() {
@@ -73,7 +75,7 @@ function UserMenu() {
               <p className="font-body text-[14px] text-ink font-medium truncate">
                 {user?.name ?? 'Creator'}
               </p>
-              <p className="font-mono text-[11px] text-[rgba(var(--fg-rgb),0.42)] truncate">
+              <p className="font-mono text-[11px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] truncate">
                 {user?.email}
               </p>
             </div>
@@ -85,7 +87,7 @@ function UserMenu() {
                 }}
                 className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl font-body text-[13px] text-[rgb(var(--color-ink))] hover:bg-[rgba(var(--fg-rgb),0.06)] transition-colors"
               >
-                <Settings size={15} className="text-[rgba(var(--fg-rgb),0.42)]" />
+                <Settings size={15} className="text-[rgba(var(--fg-rgb),var(--muted-alpha))]" />
                 Settings
               </button>
               <button
@@ -112,7 +114,7 @@ function ThemeToggleButton() {
       onClick={() => setTheme(isDark ? 'light' : 'dark')}
       aria-label={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
       title={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
-      className="w-10 h-10 rounded-xl flex items-center justify-center text-[rgba(var(--fg-rgb),0.42)] hover:text-ink hover:bg-[rgba(var(--fg-rgb),0.06)] transition-all duration-200"
+      className="w-10 h-10 rounded-xl flex items-center justify-center text-[rgba(var(--fg-rgb),var(--muted-alpha))] hover:text-ink hover:bg-[rgba(var(--fg-rgb),0.06)] transition-all duration-200"
     >
       {isDark ? <Sun size={20} /> : <Moon size={20} />}
     </button>
@@ -122,7 +124,8 @@ function ThemeToggleButton() {
 export default function Layout({ children }: { children: ReactNode }) {
   const location = useLocation();
   const [paletteOpen, setPaletteOpen] = useState(false);
-  const isOnboarding = location.pathname === '/onboarding';
+  /* D1: the KYC wizard is full-screen like Onboarding — no sidebar/top bar chrome. */
+  const isOnboarding = location.pathname === '/onboarding' || location.pathname === '/kyc';
   const pageTitle = pageTitles[location.pathname] || 'Kre8trix';
 
   const togglePalette = useCallback(() => setPaletteOpen((v) => !v), []);
@@ -140,6 +143,14 @@ export default function Layout({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-[100dvh] bg-void">
+      {/* D4: skip link — hidden until focused, lets keyboard users bypass the sidebar/top bar */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[200] focus:bg-acid focus:text-void focus:px-4 focus:py-2 focus:rounded-xl focus:font-body focus:text-[14px] focus:font-medium"
+      >
+        Skip to main content
+      </a>
+
       {/* Noise overlay */}
       <div className="noise-overlay" />
 
@@ -178,7 +189,7 @@ export default function Layout({ children }: { children: ReactNode }) {
               aria-label="Search (Cmd+K)"
               aria-haspopup="dialog"
               aria-expanded={paletteOpen}
-              className="group flex items-center gap-3 h-10 px-3 rounded-xl text-[rgba(var(--fg-rgb),0.42)] hover:text-ink hover:bg-[rgba(var(--fg-rgb),0.06)] transition-all duration-200"
+              className="group flex items-center gap-3 h-10 px-3 rounded-xl text-[rgba(var(--fg-rgb),var(--muted-alpha))] hover:text-ink hover:bg-[rgba(var(--fg-rgb),0.06)] transition-all duration-200"
             >
               <Search size={20} />
               <kbd className="hidden md:inline-flex font-mono text-[10px] tracking-[0.04em] bg-panel2 border border-[rgba(var(--fg-rgb),0.08)] rounded-md px-1.5 py-0.5">
@@ -192,7 +203,7 @@ export default function Layout({ children }: { children: ReactNode }) {
         </header>
 
         {/* Content */}
-        <main className="max-w-[1400px] mx-auto p-8">
+        <main id="main-content" className="max-w-[1400px] mx-auto p-8">
           {children}
         </main>
 

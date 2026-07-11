@@ -224,7 +224,7 @@ export default function CardManager() {
                     <cat.icon size={16} style={{ color: cat.color }} />
                     <span className="font-body text-[14px] text-ink">{cat.name}</span>
                   </div>
-                  <span className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)]">
+                  <span className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">
                     ${cat.current} / ${cat.limit}
                   </span>
                 </div>

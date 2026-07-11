@@ -22,8 +22,9 @@ import { api, ApiError } from '@/lib/api';
 import { oauthSlugForConnection, startOAuthFlow } from '@/lib/oauth';
 import { useApi } from '@/hooks/use-api';
 import { useTheme, type ThemePreference } from '@/lib/theme-context';
-import type { AppSettings, PlatformConnection, Profile } from '@/lib/types';
+import type { AppSettings, AuditLogEntry, KycProfile, PlatformConnection, Profile } from '@/lib/types';
 import { ErrorNotice, SkeletonBlock } from '@/components/Skeletons';
+import KycStatusBadge from '@/components/KycStatusBadge';
 
 /* ── constants ────────────────────────────────────────────── */
 const easeOutExpo = [0.16, 1, 0.3, 1] as [number, number, number, number];
@@ -38,7 +39,7 @@ const SETTINGS_TABS = [
 ];
 
 const inputClass =
-  'w-full bg-surface border border-[rgba(var(--fg-rgb),0.1)] rounded-xl px-4 py-3 text-ink font-body focus:border-electric outline-none transition-colors';
+  'w-full bg-surface border border-[rgba(var(--fg-rgb),0.1)] rounded-xl px-4 py-3 text-ink font-body focus:border-electric focus-visible:ring-2 focus-visible:ring-electric outline-none transition-colors';
 
 function ContentSkeleton() {
   return (
@@ -72,6 +73,11 @@ export default function Settings() {
   const profileQuery = useApi<Profile>('/profile');
   const settingsQuery = useApi<AppSettings>('/settings');
   const connectionsQuery = useApi<PlatformConnection[]>('/profile/connections');
+  /* D1: identity verification status, fetched once the Security tab is visible. */
+  const kycQuery = useApi<KycProfile>('/kyc/status', activeTab === 'security');
+  /* D3: personal activity feed — the same audit log the Compliance Console
+   * uses, filtered client-side to the entries this account's actions produced. */
+  const auditQuery = useApi<AuditLogEntry[]>('/audit-log', activeTab === 'security');
 
   /* Local edits overlay the API data until saved */
   const [profileEdits, setProfileEdits] = useState<Profile | null>(null);
@@ -182,7 +188,7 @@ export default function Settings() {
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
                 activeTab === tab.key
                   ? 'bg-panel text-acid border-l-2 border-acid'
-                  : 'text-[rgba(var(--fg-rgb),0.42)] hover:text-ink hover:bg-[rgba(var(--fg-rgb),0.04)]'
+                  : 'text-[rgba(var(--fg-rgb),var(--muted-alpha))] hover:text-ink hover:bg-[rgba(var(--fg-rgb),0.04)]'
               }`}
             >
               <tab.icon size={18} />
@@ -215,8 +221,9 @@ export default function Settings() {
                   <h3 className="font-display text-[28px] tracking-[0.02em] text-ink">Profile</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em] mb-2">Display Name</label>
+                      <label htmlFor="settings-name" className="block font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] tracking-[0.04em] mb-2">Display Name</label>
                       <input
+                        id="settings-name"
                         type="text"
                         value={profile.name}
                         onChange={(e) => setProfile({ ...profile, name: e.target.value })}
@@ -224,8 +231,9 @@ export default function Settings() {
                       />
                     </div>
                     <div>
-                      <label className="block font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em] mb-2">Email</label>
+                      <label htmlFor="settings-email" className="block font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] tracking-[0.04em] mb-2">Email</label>
                       <input
+                        id="settings-email"
                         type="email"
                         value={profile.email}
                         onChange={(e) => setProfile({ ...profile, email: e.target.value })}
@@ -233,8 +241,9 @@ export default function Settings() {
                       />
                     </div>
                     <div>
-                      <label className="block font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em] mb-2">Phone</label>
+                      <label htmlFor="settings-phone" className="block font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] tracking-[0.04em] mb-2">Phone</label>
                       <input
+                        id="settings-phone"
                         type="tel"
                         value={profile.phone}
                         onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
@@ -242,8 +251,9 @@ export default function Settings() {
                       />
                     </div>
                     <div>
-                      <label className="block font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em] mb-2">Creator Handle</label>
+                      <label htmlFor="settings-handle" className="block font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] tracking-[0.04em] mb-2">Creator Handle</label>
                       <input
+                        id="settings-handle"
                         type="text"
                         value={profile.handle}
                         onChange={(e) => setProfile({ ...profile, handle: e.target.value })}
@@ -264,7 +274,7 @@ export default function Settings() {
                       <div key={item.key} className="flex items-center justify-between py-3">
                         <div>
                           <p className="font-body text-[14px] text-ink">{item.label}</p>
-                          <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)]">{item.description}</p>
+                          <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">{item.description}</p>
                         </div>
                         <Toggle on={item.enabled} onChange={(v) => setNotification(item.key, v)} />
                       </div>
@@ -278,14 +288,24 @@ export default function Settings() {
                   <h3 className="font-display text-[28px] tracking-[0.02em] text-ink">Security</h3>
                   <div className="space-y-4">
                     <button
+                      onClick={() => navigate('/kyc')}
+                      className="w-full flex items-center justify-between p-4 rounded-xl bg-panel2 border border-[rgba(var(--fg-rgb),0.08)] hover:border-[rgba(var(--fg-rgb),0.14)] transition-colors"
+                    >
+                      <div className="text-left">
+                        <p className="font-body text-[14px] text-ink">Identity Verification</p>
+                        <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">Required for advances and large transfers</p>
+                      </div>
+                      {kycQuery.data ? <KycStatusBadge status={kycQuery.data.status} /> : <ChevronRight size={16} className="text-[rgba(var(--fg-rgb),var(--muted-alpha))]" />}
+                    </button>
+                    <button
                       onClick={() => toast('Password reset isn’t available in this demo yet')}
                       className="w-full flex items-center justify-between p-4 rounded-xl bg-panel2 border border-[rgba(var(--fg-rgb),0.08)] hover:border-[rgba(var(--fg-rgb),0.14)] transition-colors"
                     >
                       <div className="text-left">
                         <p className="font-body text-[14px] text-ink">Change Password</p>
-                        <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)]">Last changed 30 days ago</p>
+                        <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">Last changed 30 days ago</p>
                       </div>
-                      <ChevronRight size={16} className="text-[rgba(var(--fg-rgb),0.42)]" />
+                      <ChevronRight size={16} className="text-[rgba(var(--fg-rgb),var(--muted-alpha))]" />
                     </button>
                     <button
                       onClick={() => toast('Two-factor authentication is managed in your authenticator app')}
@@ -293,10 +313,36 @@ export default function Settings() {
                     >
                       <div className="text-left">
                         <p className="font-body text-[14px] text-ink">Two-Factor Authentication</p>
-                        <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)]">Enabled via authenticator app</p>
+                        <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">Enabled via authenticator app</p>
                       </div>
                       <span className="text-positive font-mono text-[12px]">Enabled</span>
                     </button>
+                  </div>
+
+                  {/* D3: personal activity feed, backed by the same audit log the Compliance Console reads */}
+                  <div>
+                    <h4 className="font-body text-[16px] text-ink font-medium mb-3">Recent Activity</h4>
+                    {auditQuery.error ? (
+                      <ErrorNotice message={auditQuery.error} onRetry={auditQuery.refresh} />
+                    ) : auditQuery.loading || !auditQuery.data ? (
+                      <div className="space-y-2">
+                        {Array.from({ length: 3 }).map((_, i) => <SkeletonBlock key={i} className="h-12 w-full" />)}
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {auditQuery.data
+                          .filter((entry) => entry.actorName === profile?.name || entry.actorType === 'user')
+                          .slice(0, 10)
+                          .map((entry) => (
+                            <div key={entry.id} className="flex items-center justify-between py-2.5 px-4 rounded-xl bg-panel2">
+                              <p className="font-body text-[13px] text-ink">{entry.description}</p>
+                              <p className="font-mono text-[11px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] flex-shrink-0 ml-3">
+                                {new Date(entry.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                              </p>
+                            </div>
+                          ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -308,7 +354,7 @@ export default function Settings() {
                     <div className="flex items-center justify-between p-4 rounded-xl bg-panel2">
                       <div>
                         <p className="font-body text-[14px] text-ink">Auto-Convert USDC to USD</p>
-                        <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)]">On payout day</p>
+                        <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">On payout day</p>
                       </div>
                       <Toggle
                         on={settings.autoConvertUsdc}
@@ -324,9 +370,9 @@ export default function Settings() {
                     >
                       <div className="text-left">
                         <p className="font-body text-[14px] text-ink">Default Payout Wallet</p>
-                        <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)]">{settings.defaultPayoutWallet}</p>
+                        <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">{settings.defaultPayoutWallet}</p>
                       </div>
-                      <ChevronRight size={16} className="text-[rgba(var(--fg-rgb),0.42)]" />
+                      <ChevronRight size={16} className="text-[rgba(var(--fg-rgb),var(--muted-alpha))]" />
                     </button>
                   </div>
                 </div>
@@ -350,7 +396,7 @@ export default function Settings() {
                             <div>
                               <p className="font-body text-[14px] text-ink">{account.name}</p>
                               {account.user && account.connected && (
-                                <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)]">{account.user}</p>
+                                <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">{account.user}</p>
                               )}
                             </div>
                           </div>
@@ -416,7 +462,7 @@ function DisplayTab() {
       <h3 className="font-display text-[28px] tracking-[0.02em] text-ink">Display</h3>
       <div>
         <p className="font-body text-[14px] text-ink mb-1">Theme</p>
-        <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] mb-4">
+        <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] mb-4">
           Applies instantly and is remembered on this device
         </p>
         <div className="inline-flex p-1 rounded-xl bg-panel2 border border-[rgba(var(--fg-rgb),0.08)]">
@@ -428,7 +474,7 @@ function DisplayTab() {
               className={`flex items-center gap-2 px-4 py-2 rounded-lg font-body text-[14px] font-medium transition-all ${
                 theme === option.value
                   ? 'bg-acid text-void'
-                  : 'text-[rgba(var(--fg-rgb),0.42)] hover:text-ink'
+                  : 'text-[rgba(var(--fg-rgb),var(--muted-alpha))] hover:text-ink'
               }`}
             >
               <option.icon size={15} />
@@ -436,7 +482,7 @@ function DisplayTab() {
             </button>
           ))}
         </div>
-        <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] mt-3">
+        <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] mt-3">
           {THEME_OPTIONS.find((o) => o.value === theme)?.description}
         </p>
       </div>

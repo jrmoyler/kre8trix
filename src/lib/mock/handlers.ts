@@ -6,7 +6,21 @@
  */
 
 import { ApiError, registerMock, type MockContext } from '../api';
-import { ensureCreatorState, getState, mutate, NOTIF_COUNTER_START, seedNotifications, SELF_WALLET_ADDRESS } from './state';
+import {
+  ensureAmlState,
+  ensureAuditState,
+  ensureCreatorState,
+  ensureKycState,
+  getState,
+  mutate,
+  NOTIF_COUNTER_START,
+  seedKyc,
+  seedNotifications,
+  SELF_WALLET_ADDRESS,
+  type MockState,
+} from './state';
+import { AML_STATUS_OPTIONS } from '../aml';
+import { AUDIT_GENESIS_HASH, computeEntryHash } from '../audit';
 import { EMAIL_RE, SOLANA_ADDRESS_RE } from '../types';
 /* C4: OAuth provider metadata shared with the consent screen UI. */
 import { OAUTH_CLIENT_ID, OAUTH_PROVIDERS, OAUTH_REDIRECT_PATH } from '../oauth';
@@ -51,6 +65,19 @@ import type {
   WalletBalances,
   WalletMutationResponse,
   WalletTransaction,
+  KybBusinessInfo,
+  KycDocument,
+  KycDocumentType,
+  KycPersonalInfo,
+  KycProfile,
+  AmlAlert,
+  AmlAlertReason,
+  AmlAlertSeverity,
+  AmlAlertStatus,
+  AmlSummary,
+  SarFiling,
+  AuditAction,
+  AuditActorType,
 } from '../types';
 
 /* ─────────────────────────── helpers ─────────────────────────── */
@@ -108,6 +135,37 @@ function todayLabel(): string {
   return new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
+/* ── D3: audit log instrumentation ──
+ * Call from inside an existing mutate() callback right after the state
+ * change it documents, so the audit entry and the mutation it describes
+ * land atomically. Defensively backfills auditLog/auditCounter so call
+ * sites don't each need their own ensureAuditState() guard. */
+function appendAuditLog(
+  state: MockState,
+  action: AuditAction,
+  description: string,
+  opts?: { actorType?: AuditActorType; actorName?: string; relatedPath?: string; metadata?: Record<string, string | number | boolean> },
+) {
+  if (!state.auditLog) state.auditLog = [];
+  if (state.auditCounter === undefined) state.auditCounter = 8;
+
+  const counter = state.auditCounter++;
+  const prevHash = state.auditLog.length > 0 ? state.auditLog[state.auditLog.length - 1].hash : AUDIT_GENESIS_HASH;
+  const withoutHash = {
+    id: `aud_${counter}`,
+    timestamp: new Date().toISOString(),
+    actorType: opts?.actorType ?? ('user' as AuditActorType),
+    actorName: opts?.actorName ?? state.user.handle,
+    action,
+    description,
+    relatedPath: opts?.relatedPath,
+    metadata: opts?.metadata,
+    prevHash,
+  };
+  const hash = computeEntryHash(prevHash, withoutHash);
+  state.auditLog.push({ ...withoutHash, hash });
+}
+
 /* ─────────────────────────── auth ─────────────────────────── */
 
 registerMock('POST', '/auth/login', (ctx) => {
@@ -118,6 +176,7 @@ registerMock('POST', '/auth/login', (ctx) => {
   if (!body?.password || body.password.length < 6) {
     throw new ApiError(401, 'Invalid email or password');
   }
+  mutate((s) => appendAuditLog(s, 'login', 'Signed in'));
   const { user } = getState();
   const response: AuthResponse = { token: issueMockJwt(user), user };
   return response;
@@ -145,6 +204,7 @@ registerMock('POST', '/auth/signup', (ctx) => {
       email: state.user.email,
       handle: state.user.handle,
     };
+    appendAuditLog(state, 'signup', 'Account created');
   });
   const { user } = getState();
   const response: AuthResponse = { token: issueMockJwt(user), user };
@@ -185,9 +245,13 @@ registerMock('GET', '/wallet/transactions', (ctx) => {
   return result;
 });
 
+/** D1: sends at or above this amount require completed identity verification. */
+const KYC_SEND_THRESHOLD = 1000;
+
 registerMock('POST', '/wallet/send', (ctx) => {
   requireAuth(ctx);
   ensureCreatorState();
+  ensureKycState();
   const body = ctx.body as SendPayload;
   if (!body?.recipient?.trim()) throw new ApiError(400, 'Recipient is required');
   if (body.recipient.trim().length > 100) throw new ApiError(400, 'Recipient must be 100 characters or fewer');
@@ -195,6 +259,9 @@ registerMock('POST', '/wallet/send', (ctx) => {
   assertCurrency(body.currency);
 
   const state = getState();
+  if (body.amount >= KYC_SEND_THRESHOLD && state.kyc?.status !== 'verified') {
+    throw new ApiError(403, `Complete identity verification to send $${KYC_SEND_THRESHOLD.toLocaleString()} or more`);
+  }
   const recipientRaw = body.recipient.trim();
 
   /* C1: self-send guard — by own handle or own wallet address */
@@ -264,6 +331,7 @@ registerMock('POST', '/wallet/send', (ctx) => {
         ...s.recentRecipients.filter((r) => r.walletAddress !== resolvedAddress),
       ].slice(0, 6);
     }
+    appendAuditLog(s, 'send_funds', `Sent ${body.currency === 'USD' ? `$${body.amount.toLocaleString()}` : `${body.amount.toLocaleString()} USDC`} to ${displayName}`);
   });
 
   const response: WalletMutationResponse = { transaction: transaction!, balances: balancesSnapshot() };
@@ -327,6 +395,7 @@ registerMock('POST', '/wallet/request', (ctx) => {
       iconColor: 'rgb(var(--color-electric))',
     };
     s.transactions.unshift(transaction);
+    appendAuditLog(s, 'request_funds', `Requested ${body.currency === 'USD' ? `$${body.amount.toLocaleString()}` : `${body.amount.toLocaleString()} USDC`} from ${body.recipient.trim()}`);
   });
 
   const response: WalletMutationResponse = { transaction: transaction!, balances: balancesSnapshot() };
@@ -367,6 +436,7 @@ registerMock('POST', '/wallet/convert', (ctx) => {
       iconColor: 'rgb(var(--color-acid))',
     };
     s.transactions.unshift(transaction);
+    appendAuditLog(s, 'convert_funds', `Converted ${body.amount.toLocaleString()} ${body.from} to ${to}`);
   });
 
   const response: WalletMutationResponse = { transaction: transaction!, balances: balancesSnapshot() };
@@ -626,10 +696,15 @@ registerMock('GET', '/advances', (ctx) => {
 
 registerMock('POST', '/advances/apply', (ctx) => {
   requireAuth(ctx);
+  ensureKycState();
   const body = ctx.body as { amount?: number };
   const amount = assertAmount(body?.amount);
 
   const state = getState();
+  /* D1: soft-gate — advances require completed identity verification. */
+  if (state.kyc?.status !== 'verified') {
+    throw new ApiError(403, 'Complete identity verification to apply for advances');
+  }
   const available = ADVANCE_MAX - state.advanceUsed;
   if (amount > available) {
     throw new ApiError(400, `Amount exceeds your available limit of $${available.toLocaleString()}`);
@@ -663,6 +738,7 @@ registerMock('POST', '/advances/apply', (ctx) => {
       status: 'Completed',
       iconColor: 'rgb(var(--color-ember))',
     });
+    appendAuditLog(s, 'apply_advance', `Applied for a $${amount.toLocaleString()} advance (${advance.id})`);
   });
 
   return advancesOverview();
@@ -684,6 +760,7 @@ registerMock('PUT', '/profile', (ctx) => {
   mutate((s) => {
     s.profile = { ...s.profile, ...body };
     s.user = { ...s.user, name: s.profile.name, email: s.profile.email, handle: s.profile.handle };
+    appendAuditLog(s, 'update_profile', 'Updated profile information');
   });
   return getState().profile;
 });
@@ -706,6 +783,11 @@ registerMock('PUT', '/profile/connections', (ctx) => {
     if (connection.connected && !connection.user) {
       connection.user = s.profile.handle;
     }
+    appendAuditLog(
+      s,
+      connection.connected ? 'connect_platform' : 'disconnect_platform',
+      `${connection.connected ? 'Connected' : 'Disconnected'} ${body.name}`,
+    );
   });
   return getState().connections;
 });
@@ -720,6 +802,7 @@ registerMock('PUT', '/settings', (ctx) => {
   const body = ctx.body as Partial<AppSettings>;
   mutate((s) => {
     s.settings = { ...s.settings, ...body };
+    appendAuditLog(s, 'update_settings', 'Updated account settings');
   });
   return getState().settings;
 });
@@ -1052,6 +1135,7 @@ for (const deal of MARKETPLACE_DEALS) {
         status: 'Pending',
       };
       s.marketplaceApplications = [application, ...(s.marketplaceApplications ?? [])];
+      appendAuditLog(s, 'apply_deal', `Applied to ${deal.brand} brand deal`);
     });
 
     const response: DealApplyResponse = { application: application! };
@@ -1177,6 +1261,7 @@ registerMock('POST', '/tax/turbotax/connect', (ctx) => {
     s.turbotax = connected
       ? { connected: true, account: s.profile.email, lastSync: todayLabel() }
       : { connected: false, account: null, lastSync: null };
+    if (connected) appendAuditLog(s, 'connect_turbotax', 'Connected TurboTax');
   });
   const response: TurboTaxConnection = getState().turbotax;
   return response;
@@ -1320,4 +1405,451 @@ registerMock('POST', '/oauth/token', (ctx) => {
     connections: getState().connections,
   };
   return response;
+});
+
+/* ─────────────────────── D1: KYC/KYB identity verification ───────────────────────
+ *
+ * Multi-step verification flow. Document/selfie "capture" is metadata-only —
+ * no file bytes or camera frames are ever persisted, since there is no real
+ * document-scanning or biometric-matching backend to justify it.
+ */
+
+const KYC_DOC_TYPES: KycDocumentType[] = ['passport', 'drivers_license', 'national_id', 'business_registration'];
+const KYC_MAX_DOC_BYTES = 10 * 1024 * 1024;
+/** Mock "manual review" delay before an in_review submission auto-clears. */
+const KYC_REVIEW_MS = 6_000;
+const SSN_LAST4_RE = /^\d{4}$/;
+
+function kycSnapshot(): KycProfile {
+  ensureKycState();
+  const { kyc } = getState();
+  const profile = kyc!;
+  if (profile.status === 'in_review' && profile.submittedAt) {
+    const elapsed = Date.now() - new Date(profile.submittedAt).getTime();
+    if (elapsed >= KYC_REVIEW_MS) {
+      mutate((s) => {
+        s.kyc!.status = 'verified';
+        s.kyc!.reviewedAt = new Date().toISOString();
+        s.user.kycStatus = 'verified';
+        appendAuditLog(s, 'kyc_status_change', 'Identity verification approved', {
+          actorType: 'system',
+          actorName: 'System',
+        });
+      });
+      return getState().kyc!;
+    }
+  }
+  return profile;
+}
+
+registerMock('GET', '/kyc/status', (ctx) => {
+  requireAuth(ctx);
+  return kycSnapshot();
+});
+
+registerMock('PUT', '/kyc/entity-type', (ctx) => {
+  requireAuth(ctx);
+  ensureKycState();
+  const body = ctx.body as { entityType?: 'individual' | 'business' };
+  if (body?.entityType !== 'individual' && body?.entityType !== 'business') {
+    throw new ApiError(400, 'entityType must be "individual" or "business"');
+  }
+  mutate((s) => {
+    s.kyc!.entityType = body.entityType!;
+    s.kyc!.currentStep = 'personal_info';
+  });
+  return getState().kyc!;
+});
+
+registerMock('PUT', '/kyc/personal-info', (ctx) => {
+  requireAuth(ctx);
+  ensureKycState();
+  const body = ctx.body as Partial<KycPersonalInfo>;
+  if (!body?.legalName?.trim()) throw new ApiError(400, 'Legal name is required');
+  if (!body?.dateOfBirth?.trim()) throw new ApiError(400, 'Date of birth is required');
+  if (!body?.address?.trim()) throw new ApiError(400, 'Address is required');
+  if (!body?.country?.trim()) throw new ApiError(400, 'Country is required');
+  if (!body?.ssnLast4 || !SSN_LAST4_RE.test(body.ssnLast4)) {
+    throw new ApiError(400, 'Enter the last 4 digits of your SSN/ITIN');
+  }
+  mutate((s) => {
+    s.kyc!.personalInfo = {
+      legalName: body.legalName!.trim(),
+      dateOfBirth: body.dateOfBirth!.trim(),
+      address: body.address!.trim(),
+      country: body.country!.trim(),
+      ssnLast4: body.ssnLast4!,
+    };
+    s.kyc!.currentStep = s.kyc!.entityType === 'business' ? 'business_info' : 'documents';
+  });
+  return getState().kyc!;
+});
+
+registerMock('PUT', '/kyc/business-info', (ctx) => {
+  requireAuth(ctx);
+  ensureKycState();
+  const body = ctx.body as Partial<KybBusinessInfo>;
+  if (!body?.legalBusinessName?.trim()) throw new ApiError(400, 'Legal business name is required');
+  if (!body?.ein?.trim()) throw new ApiError(400, 'EIN is required');
+  if (!body?.businessType?.trim()) throw new ApiError(400, 'Business type is required');
+  if (!body?.formationState?.trim()) throw new ApiError(400, 'Formation state is required');
+  mutate((s) => {
+    s.kyc!.businessInfo = {
+      legalBusinessName: body.legalBusinessName!.trim(),
+      ein: body.ein!.trim(),
+      businessType: body.businessType!.trim(),
+      formationState: body.formationState!.trim(),
+    };
+    s.kyc!.currentStep = 'documents';
+  });
+  return getState().kyc!;
+});
+
+registerMock('POST', '/kyc/documents', (ctx) => {
+  requireAuth(ctx);
+  ensureKycState();
+  const body = ctx.body as { type?: KycDocumentType; fileName?: string; sizeBytes?: number };
+  if (!body?.type || !KYC_DOC_TYPES.includes(body.type)) {
+    throw new ApiError(400, `Unknown document type: ${body?.type}`);
+  }
+  if (!body.fileName?.trim()) throw new ApiError(400, 'File name is required');
+  if (typeof body.sizeBytes !== 'number' || !Number.isFinite(body.sizeBytes) || body.sizeBytes <= 0) {
+    throw new ApiError(400, 'Invalid file size');
+  }
+  if (body.sizeBytes > KYC_MAX_DOC_BYTES) {
+    throw new ApiError(400, 'File exceeds the 10MB limit');
+  }
+
+  let document: KycDocument | undefined;
+  mutate((s) => {
+    const counter = s.kycDocCounter ?? 1;
+    s.kycDocCounter = counter + 1;
+    document = {
+      id: `kyd_${counter}`,
+      type: body.type!,
+      fileName: body.fileName!.trim(),
+      sizeBytes: body.sizeBytes!,
+      uploadedAt: new Date().toISOString(),
+      status: 'uploaded',
+    };
+    s.kyc!.documents = [...s.kyc!.documents, document];
+    if (s.kyc!.currentStep === 'documents') s.kyc!.currentStep = 'selfie';
+  });
+  return getState().kyc!;
+});
+
+registerMock('POST', '/kyc/selfie', (ctx) => {
+  requireAuth(ctx);
+  ensureKycState();
+  mutate((s) => {
+    s.kyc!.selfie = {
+      completed: true,
+      matchScore: 82 + Math.floor(Math.random() * 18),
+      completedAt: new Date().toISOString(),
+    };
+    s.kyc!.currentStep = 'review';
+  });
+  return getState().kyc!;
+});
+
+registerMock('POST', '/kyc/submit', (ctx) => {
+  requireAuth(ctx);
+  ensureKycState();
+  const { kyc } = getState();
+  const profile = kyc!;
+  if (!profile.personalInfo) throw new ApiError(400, 'Personal information is required');
+  if (profile.entityType === 'business' && !profile.businessInfo) {
+    throw new ApiError(400, 'Business information is required');
+  }
+  if (profile.documents.length === 0) throw new ApiError(400, 'Upload at least one identity document');
+  if (!profile.selfie.completed) throw new ApiError(400, 'Complete the selfie match step');
+
+  /* Deterministic reject path for demo/E2E: a legal name containing
+     "test-reject" always comes back rejected immediately. */
+  const shouldReject = profile.personalInfo.legalName.toLowerCase().includes('test-reject');
+  const now = new Date().toISOString();
+  mutate((s) => {
+    s.kyc!.submittedAt = now;
+    appendAuditLog(s, 'kyc_submit', 'Submitted identity verification for review');
+    if (shouldReject) {
+      s.kyc!.status = 'rejected';
+      s.kyc!.reviewedAt = now;
+      s.kyc!.rejectionReason = 'Document quality did not meet verification standards.';
+      s.user.kycStatus = 'rejected';
+      appendAuditLog(s, 'kyc_status_change', 'Identity verification rejected', {
+        actorType: 'system',
+        actorName: 'System',
+      });
+    } else {
+      s.kyc!.status = 'in_review';
+      s.kyc!.rejectionReason = null;
+      s.user.kycStatus = 'in_review';
+    }
+  });
+  return getState().kyc!;
+});
+
+registerMock('POST', '/kyc/reset', (ctx) => {
+  requireAuth(ctx);
+  mutate((s) => {
+    s.kyc = seedKyc();
+    s.user.kycStatus = 'unverified';
+  });
+  return getState().kyc!;
+});
+
+/* ─────────────────────── D2: AML transaction monitoring ───────────────────────
+ *
+ * Alerts are derived from the existing wallet transaction ledger (no
+ * separate synthetic dataset) plus a couple of illustrative seed alerts
+ * (see seedAmlAlerts in mock/state.ts) so the console isn't empty before
+ * the demo user sends anything. This is a realistic-looking mock — no
+ * real FinCEN/SAR e-filing integration exists.
+ */
+
+const AML_LARGE_TX_THRESHOLD = 5000;
+const AML_STRUCTURING_MIN = 2700;
+const AML_STRUCTURING_MAX = 3000;
+const AML_VELOCITY_MIN_COUNT = 3;
+const AML_REPEATED_RECIPIENT_MIN_COUNT = 3;
+
+/** Re-scan the transaction ledger for new patterns and append any fresh alerts. */
+function runAmlScan() {
+  ensureAmlState();
+  const state = getState();
+  const alertedTxIds = new Set(state.amlAlerts!.flatMap((a) => a.relatedTransactionIds));
+  const additions: Omit<AmlAlert, 'id'>[] = [];
+
+  const flagTransactions = (
+    ids: string[],
+    reason: AmlAlertReason,
+    severity: AmlAlertSeverity,
+    summary: string,
+    amount: number,
+  ) => {
+    if (ids.some((id) => alertedTxIds.has(id))) return;
+    ids.forEach((id) => alertedTxIds.add(id));
+    additions.push({
+      createdAt: new Date().toISOString(),
+      severity,
+      status: 'open',
+      reason,
+      subjectHandle: state.user.handle,
+      summary,
+      relatedTransactionIds: ids,
+      amountInvolved: amount,
+      notes: [],
+    });
+  };
+
+  // 1. Large single transaction (any type).
+  for (const tx of state.transactions) {
+    const amount = Math.abs(tx.amount);
+    if (amount >= AML_LARGE_TX_THRESHOLD) {
+      flagTransactions(
+        [tx.id],
+        'large_transaction',
+        amount >= AML_LARGE_TX_THRESHOLD * 2 ? 'critical' : 'high',
+        `Large ${tx.type.toLowerCase()} of $${amount.toLocaleString()} — ${tx.description}.`,
+        amount,
+      );
+    }
+  }
+
+  const sends = state.transactions.filter((t) => t.type === 'Send');
+
+  // 2. Velocity — 3+ sends on the same day.
+  const byDate = new Map<string, typeof sends>();
+  for (const tx of sends) byDate.set(tx.date, [...(byDate.get(tx.date) ?? []), tx]);
+  for (const [date, list] of byDate) {
+    if (list.length >= AML_VELOCITY_MIN_COUNT) {
+      const total = list.reduce((sum, t) => sum + Math.abs(t.amount), 0);
+      flagTransactions(
+        list.map((t) => t.id),
+        'velocity',
+        'medium',
+        `${list.length} sends totaling $${total.toLocaleString()} on ${date}.`,
+        total,
+      );
+    }
+  }
+
+  // 3. Structuring — 2+ sends just under the $3,000 reporting threshold.
+  const structuring = sends.filter(
+    (t) => Math.abs(t.amount) >= AML_STRUCTURING_MIN && Math.abs(t.amount) < AML_STRUCTURING_MAX,
+  );
+  if (structuring.length >= 2) {
+    const total = structuring.reduce((sum, t) => sum + Math.abs(t.amount), 0);
+    flagTransactions(
+      structuring.map((t) => t.id),
+      'structuring',
+      'high',
+      `${structuring.length} sends just under the $3,000 reporting threshold.`,
+      total,
+    );
+  }
+
+  // 4. Repeated transfers to the same wallet address.
+  const byRecipient = new Map<string, typeof sends>();
+  for (const tx of sends) {
+    if (!tx.recipientAddress) continue;
+    byRecipient.set(tx.recipientAddress, [...(byRecipient.get(tx.recipientAddress) ?? []), tx]);
+  }
+  for (const [address, list] of byRecipient) {
+    if (list.length >= AML_REPEATED_RECIPIENT_MIN_COUNT) {
+      const total = list.reduce((sum, t) => sum + Math.abs(t.amount), 0);
+      flagTransactions(
+        list.map((t) => t.id),
+        'cross_wallet_pattern',
+        'medium',
+        `${list.length} transfers to the same wallet (${address.slice(0, 4)}…${address.slice(-4)}).`,
+        total,
+      );
+    }
+  }
+
+  if (additions.length === 0) return;
+  mutate((s) => {
+    let counter = s.amlAlertCounter ?? 3;
+    for (const addition of additions) {
+      s.amlAlerts!.push({ id: `aml_${counter++}`, ...addition });
+    }
+    s.amlAlertCounter = counter;
+  });
+}
+
+function amlAlertsSnapshot(): AmlAlert[] {
+  runAmlScan();
+  return [...getState().amlAlerts!].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+registerMock('GET', '/aml/summary', (ctx) => {
+  requireAuth(ctx);
+  const alerts = amlAlertsSnapshot();
+  const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+  const summary: AmlSummary = {
+    openAlerts: alerts.filter((a) => a.status === 'open' || a.status === 'under_review' || a.status === 'escalated').length,
+    criticalAlerts: alerts.filter((a) => a.severity === 'critical').length,
+    sarsFiledYtd: alerts.filter((a) => a.sar).length,
+    monitoredVolume30d: getState()
+      .transactions.filter((t) => new Date(t.date).getTime() >= thirtyDaysAgo || Number.isNaN(new Date(t.date).getTime()))
+      .reduce((sum, t) => sum + Math.abs(t.amount), 0),
+  };
+  return summary;
+});
+
+registerMock('GET', '/aml/alerts', (ctx) => {
+  requireAuth(ctx);
+  let alerts = amlAlertsSnapshot();
+  const { status, severity } = ctx.query;
+  if (status) alerts = alerts.filter((a) => a.status === status);
+  if (severity) alerts = alerts.filter((a) => a.severity === severity);
+  return alerts;
+});
+
+function findAmlAlert(id: string): AmlAlert {
+  ensureAmlState();
+  const alert = getState().amlAlerts!.find((a) => a.id === id);
+  if (!alert) throw new ApiError(404, `Unknown alert: ${id}`);
+  return alert;
+}
+
+registerMock('GET', '/aml/alerts/:id', (ctx) => {
+  requireAuth(ctx);
+  return findAmlAlert(ctx.params.id);
+});
+
+registerMock('PUT', '/aml/alerts/:id/status', (ctx) => {
+  requireAuth(ctx);
+  findAmlAlert(ctx.params.id);
+  const body = ctx.body as { status?: AmlAlertStatus };
+  if (!body?.status || !AML_STATUS_OPTIONS.includes(body.status)) {
+    throw new ApiError(400, `Unknown status: ${body?.status}`);
+  }
+  mutate((s) => {
+    const alert = s.amlAlerts!.find((a) => a.id === ctx.params.id)!;
+    alert.status = body.status!;
+    appendAuditLog(s, 'aml_alert_status_change', `Alert ${alert.id} marked ${body.status}`, {
+      actorType: 'compliance_officer',
+      actorName: 'Compliance Ops',
+      relatedPath: '/compliance/aml',
+    });
+  });
+  return findAmlAlert(ctx.params.id);
+});
+
+registerMock('POST', '/aml/alerts/:id/notes', (ctx) => {
+  requireAuth(ctx);
+  findAmlAlert(ctx.params.id);
+  const body = ctx.body as { body?: string };
+  if (!body?.body?.trim()) throw new ApiError(400, 'Note body is required');
+  if (body.body.trim().length > 2000) throw new ApiError(400, 'Note must be 2,000 characters or fewer');
+  mutate((s) => {
+    const alert = s.amlAlerts!.find((a) => a.id === ctx.params.id)!;
+    alert.notes.push({
+      id: `note_${alert.notes.length + 1}_${Date.now()}`,
+      author: 'Compliance Ops',
+      body: body.body!.trim(),
+      createdAt: new Date().toISOString(),
+    });
+  });
+  return findAmlAlert(ctx.params.id);
+});
+
+registerMock('POST', '/aml/alerts/:id/sar', (ctx) => {
+  requireAuth(ctx);
+  const alert = findAmlAlert(ctx.params.id);
+  if (alert.sar) throw new ApiError(409, 'A SAR has already been filed for this alert');
+  const body = ctx.body as { narrative?: string };
+  if (!body?.narrative?.trim()) throw new ApiError(400, 'A filing narrative is required');
+  if (body.narrative.trim().length > 4000) throw new ApiError(400, 'Narrative must be 4,000 characters or fewer');
+
+  mutate((s) => {
+    const target = s.amlAlerts!.find((a) => a.id === ctx.params.id)!;
+    const counter = s.sarCounter ?? 1;
+    s.sarCounter = counter + 1;
+    const sar: SarFiling = {
+      id: `sar_${counter}`,
+      filedAt: new Date().toISOString(),
+      filingRef: `SAR-${new Date().getFullYear()}-${String(counter).padStart(5, '0')}`,
+      narrative: body.narrative!.trim(),
+      status: 'filed',
+    };
+    target.sar = sar;
+    target.status = 'filed_sar';
+    appendAuditLog(s, 'aml_sar_filed', `SAR ${sar.filingRef} filed for alert ${target.id}`, {
+      actorType: 'compliance_officer',
+      actorName: 'Compliance Ops',
+      relatedPath: '/compliance/aml',
+    });
+  });
+  return findAmlAlert(ctx.params.id);
+});
+
+/* ─────────────────────────── D3: immutable audit log ─────────────────────────── */
+
+registerMock('GET', '/audit-log', (ctx) => {
+  requireAuth(ctx);
+  ensureAuditState();
+  let entries = [...getState().auditLog!].sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+  const { action, actorType, from, to } = ctx.query;
+  if (action) entries = entries.filter((e) => e.action === action);
+  if (actorType) entries = entries.filter((e) => e.actorType === actorType);
+  if (from) entries = entries.filter((e) => e.timestamp >= from);
+  if (to) entries = entries.filter((e) => e.timestamp <= to);
+  return entries;
+});
+
+registerMock('GET', '/audit-log/verify', (ctx) => {
+  requireAuth(ctx);
+  ensureAuditState();
+  const entries = getState().auditLog!;
+  let prevHash = AUDIT_GENESIS_HASH;
+  for (const entry of entries) {
+    if (entry.prevHash !== prevHash) return { valid: false, brokenAtId: entry.id };
+    const { hash, ...withoutHash } = entry;
+    if (computeEntryHash(prevHash, withoutHash) !== hash) return { valid: false, brokenAtId: entry.id };
+    prevHash = hash;
+  }
+  return { valid: true, brokenAtId: null };
 });

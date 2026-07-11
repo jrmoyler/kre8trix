@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronRight, Check, Link, Loader2, Wallet, Shield, Sparkles } from 'lucide-react';
+import { ChevronRight, Check, Link, Loader2, Wallet, Shield, Sparkles, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { api, ApiError } from '@/lib/api';
 /* C4: OAuth connect flow for YouTube / TikTok / Stripe */
 import { oauthSlugForConnection, startOAuthFlow } from '@/lib/oauth';
 import { useApi } from '@/hooks/use-api';
-import type { PlatformConnection } from '@/lib/types';
+import KycStatusBadge from '@/components/KycStatusBadge';
+import type { KycProfile, PlatformConnection } from '@/lib/types';
 
 /* ── steps ────────────────────────────────────────────────── */
 const STEPS = [
@@ -42,6 +43,10 @@ export default function Onboarding() {
     seededRef.current = true;
     setConnected(connectionsQuery.data.filter((c) => c.connected).map((c) => c.name));
   }, [connectionsQuery.data]);
+
+  /* D1: live KYC status for the "Verify Identity" step — only fetched once
+   * that step is reached, so onboarding doesn't fire an extra request up front. */
+  const kycQuery = useApi<KycProfile>('/kyc/status', step === 2);
 
   const connectPlatform = async (name: string) => {
     const isConnected = connected.includes(name);
@@ -88,7 +93,7 @@ export default function Onboarding() {
             <div key={s.key} className="flex items-center gap-2 flex-1">
               <div
                 className={`w-8 h-8 rounded-full flex items-center justify-center font-mono text-[12px] font-medium transition-all ${
-                  i <= step ? 'bg-acid text-void' : 'bg-panel text-[rgba(var(--fg-rgb),0.42)]'
+                  i <= step ? 'bg-acid text-void' : 'bg-panel text-[rgba(var(--fg-rgb),var(--muted-alpha))]'
                 }`}
               >
                 {i < step ? <Check size={14} /> : i + 1}
@@ -112,7 +117,7 @@ export default function Onboarding() {
               <h1 className="font-display text-[48px] tracking-[0.02em] text-ink mb-2">
                 Connect Platforms
               </h1>
-              <p className="font-body text-[16px] text-[rgba(var(--fg-rgb),0.42)] mb-8">
+              <p className="font-body text-[16px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] mb-8">
                 Link your income sources to build your Creator Credit Score
               </p>
               <div className="space-y-3">
@@ -141,11 +146,11 @@ export default function Onboarding() {
                           <Check size={14} /> Connected
                         </span>
                       ) : startingOAuth === p.name ? (
-                        <span className="flex items-center gap-1 font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)]">
+                        <span className="flex items-center gap-1 font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">
                           <Loader2 size={14} className="animate-spin" /> Redirecting…
                         </span>
                       ) : (
-                        <span className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)]">Connect</span>
+                        <span className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">Connect</span>
                       )}
                     </motion.button>
                   );
@@ -164,7 +169,7 @@ export default function Onboarding() {
               <h1 className="font-display text-[48px] tracking-[0.02em] text-ink mb-2">
                 Setup Wallet
               </h1>
-              <p className="font-body text-[16px] text-[rgba(var(--fg-rgb),0.42)] mb-8">
+              <p className="font-body text-[16px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] mb-8">
                 Choose how you want to receive funds
               </p>
               <div className="space-y-3">
@@ -182,7 +187,7 @@ export default function Onboarding() {
                     }`}
                   >
                     <p className="font-body text-[16px] text-ink font-medium">{w.label}</p>
-                    <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] mt-1">{w.desc}</p>
+                    <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] mt-1">{w.desc}</p>
                   </button>
                 ))}
               </div>
@@ -199,32 +204,30 @@ export default function Onboarding() {
               <h1 className="font-display text-[48px] tracking-[0.02em] text-ink mb-2">
                 Verify Identity
               </h1>
-              <p className="font-body text-[16px] text-[rgba(var(--fg-rgb),0.42)] mb-8">
-                Secure your account to unlock all features
+              <p className="font-body text-[16px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] mb-8">
+                Complete KYC/KYB verification to unlock advances and larger transfers
               </p>
-              <div className="space-y-3">
-                {[
-                  { label: 'Email Verified', status: 'completed' },
-                  { label: 'Phone Number', status: 'pending' },
-                  { label: 'Government ID', status: 'pending' },
-                  { label: 'Creator Profile Review', status: 'pending' },
-                ].map((item) => (
-                  <div
-                    key={item.label}
-                    className="flex items-center justify-between p-4 rounded-2xl bg-panel border border-[rgba(var(--fg-rgb),0.08)]"
-                  >
-                    <span className="font-body text-[14px] text-ink">{item.label}</span>
-                    <span
-                      className={`font-mono text-[12px] px-3 py-1 rounded-full ${
-                        item.status === 'completed'
-                          ? 'bg-[rgba(var(--positive-rgb),0.15)] text-positive'
-                          : 'bg-[rgba(var(--gold-rgb),0.15)] text-[rgb(var(--color-gold))]'
-                      }`}
-                    >
-                      {item.status === 'completed' ? 'Completed' : 'Pending'}
-                    </span>
-                  </div>
-                ))}
+              <div className="p-6 rounded-2xl bg-panel border border-[rgba(var(--fg-rgb),0.08)] space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="font-body text-[14px] text-ink">Verification status</span>
+                  {kycQuery.data ? <KycStatusBadge status={kycQuery.data.status} /> : (
+                    <span className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">Loading…</span>
+                  )}
+                </div>
+                <p className="font-body text-[13px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">
+                  {kycQuery.data?.status === 'verified'
+                    ? 'Your identity is verified — all features are unlocked.'
+                    : kycQuery.data?.status === 'in_review' || kycQuery.data?.status === 'rejected'
+                      ? 'Check the verification flow for your latest status.'
+                      : 'Takes about 2 minutes: personal info, a document, and a selfie match.'}
+                </p>
+                <button
+                  onClick={() => navigate('/kyc')}
+                  className="w-full flex items-center justify-center gap-2 bg-panel2 border border-[rgba(var(--fg-rgb),0.08)] text-ink font-body text-[14px] font-medium py-3 rounded-xl hover:border-[rgba(var(--fg-rgb),0.14)] transition-all"
+                >
+                  <ShieldCheck size={16} className="text-electric" />
+                  {kycQuery.data?.status === 'unverified' ? 'Start Verification' : 'Continue Verification'}
+                </button>
               </div>
             </motion.div>
           )}
@@ -248,7 +251,7 @@ export default function Onboarding() {
               <h1 className="font-display text-[48px] tracking-[0.02em] text-ink mb-2">
                 You're All Set!
               </h1>
-              <p className="font-body text-[16px] text-[rgba(var(--fg-rgb),0.42)] mb-8">
+              <p className="font-body text-[16px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] mb-8">
                 Your Creator Credit Score is being calculated. Check back in a few minutes.
               </p>
               <motion.button
@@ -269,14 +272,14 @@ export default function Onboarding() {
             <button
               onClick={() => setStep(Math.max(0, step - 1))}
               disabled={step === 0}
-              className="font-body text-[14px] text-[rgba(var(--fg-rgb),0.42)] hover:text-ink disabled:opacity-30 transition-colors"
+              className="font-body text-[14px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] hover:text-ink disabled:opacity-30 transition-colors"
             >
               Back
             </button>
             <div className="flex items-center gap-5">
               <button
                 onClick={() => navigate('/dashboard')}
-                className="font-body text-[14px] text-[rgba(var(--fg-rgb),0.42)] hover:text-ink transition-colors"
+                className="font-body text-[14px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] hover:text-ink transition-colors"
               >
                 Skip for now
               </button>

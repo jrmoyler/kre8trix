@@ -6,6 +6,8 @@ export interface User {
   email: string;
   handle: string;
   tier: string;
+  /* D1: denormalized KYC status summary — see the full KycProfile shape below. */
+  kycStatus?: KycStatus;
 }
 
 export interface AuthResponse {
@@ -375,4 +377,139 @@ export interface OAuthTokenResponse {
   platform: OAuthPlatform;
   /** Updated connections snapshot so the UI can reflect the new link. */
   connections: PlatformConnection[];
+}
+
+/* ── D1: KYC/KYB identity verification ─────────────────────────── */
+
+export type KycStatus = 'unverified' | 'pending' | 'in_review' | 'verified' | 'rejected' | 'action_required';
+export type KycEntityType = 'individual' | 'business';
+export type KycDocumentType = 'passport' | 'drivers_license' | 'national_id' | 'business_registration';
+export type KycStepKey = 'entity_type' | 'personal_info' | 'business_info' | 'documents' | 'selfie' | 'review';
+
+export interface KycDocument {
+  id: string;
+  type: KycDocumentType;
+  fileName: string;
+  sizeBytes: number;
+  uploadedAt: string;
+  status: 'uploaded' | 'verified' | 'rejected';
+  rejectionReason?: string;
+}
+
+export interface KycSelfieCheck {
+  completed: boolean;
+  matchScore: number | null;
+  completedAt: string | null;
+}
+
+export interface KycPersonalInfo {
+  legalName: string;
+  dateOfBirth: string;
+  address: string;
+  country: string;
+  ssnLast4: string;
+}
+
+export interface KybBusinessInfo {
+  legalBusinessName: string;
+  ein: string;
+  businessType: string;
+  formationState: string;
+}
+
+export interface KycProfile {
+  status: KycStatus;
+  entityType: KycEntityType;
+  personalInfo: KycPersonalInfo | null;
+  businessInfo: KybBusinessInfo | null;
+  documents: KycDocument[];
+  selfie: KycSelfieCheck;
+  submittedAt: string | null;
+  reviewedAt: string | null;
+  rejectionReason: string | null;
+  currentStep: KycStepKey;
+}
+
+/* ── D2: AML transaction monitoring ────────────────────────────── */
+
+export type AmlAlertSeverity = 'low' | 'medium' | 'high' | 'critical';
+export type AmlAlertStatus = 'open' | 'under_review' | 'escalated' | 'cleared' | 'filed_sar';
+export type AmlAlertReason =
+  | 'large_transaction'
+  | 'velocity'
+  | 'structuring'
+  | 'cross_wallet_pattern'
+  | 'high_risk_recipient'
+  | 'round_trip';
+
+export interface AmlAlertNote {
+  id: string;
+  author: string;
+  body: string;
+  createdAt: string;
+}
+
+export interface SarFiling {
+  id: string;
+  filedAt: string;
+  filingRef: string;
+  narrative: string;
+  status: 'draft' | 'filed';
+}
+
+export interface AmlAlert {
+  id: string;
+  createdAt: string;
+  severity: AmlAlertSeverity;
+  status: AmlAlertStatus;
+  reason: AmlAlertReason;
+  subjectHandle: string;
+  summary: string;
+  relatedTransactionIds: string[];
+  amountInvolved: number;
+  notes: AmlAlertNote[];
+  sar?: SarFiling;
+}
+
+export interface AmlSummary {
+  openAlerts: number;
+  criticalAlerts: number;
+  sarsFiledYtd: number;
+  monitoredVolume30d: number;
+}
+
+/* ── D3: immutable audit log ───────────────────────────────────── */
+
+export type AuditActorType = 'user' | 'system' | 'compliance_officer';
+export type AuditAction =
+  | 'login'
+  | 'logout'
+  | 'signup'
+  | 'send_funds'
+  | 'convert_funds'
+  | 'request_funds'
+  | 'update_profile'
+  | 'update_settings'
+  | 'connect_platform'
+  | 'disconnect_platform'
+  | 'apply_advance'
+  | 'apply_deal'
+  | 'kyc_submit'
+  | 'kyc_status_change'
+  | 'aml_alert_status_change'
+  | 'aml_sar_filed'
+  | 'export_tax_data'
+  | 'connect_turbotax';
+
+export interface AuditLogEntry {
+  id: string;
+  timestamp: string;
+  actorType: AuditActorType;
+  actorName: string;
+  action: AuditAction;
+  description: string;
+  relatedPath?: string;
+  metadata?: Record<string, string | number | boolean>;
+  prevHash: string;
+  hash: string;
 }

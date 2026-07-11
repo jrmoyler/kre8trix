@@ -70,7 +70,7 @@ function daysLeft(iso: string): number {
 function matchColor(score: number): string {
   if (score >= 80) return 'rgb(var(--color-acid))';
   if (score >= 65) return 'rgb(var(--color-electric))';
-  return 'rgba(var(--fg-rgb),0.42)';
+  return 'rgba(var(--fg-rgb),var(--muted-alpha))';
 }
 
 function BrandLogo({ name, color, size = 48 }: { name: string; color: string; size?: number }) {
@@ -218,7 +218,7 @@ function DealDetail({
                 {application && <StatusBadge status={application.status} />}
               </div>
               <p className="font-body text-[15px] text-[rgba(var(--fg-rgb),0.62)] mt-1">{deal.tagline}</p>
-              <p className="font-mono text-[12px] tracking-[0.04em] text-[rgba(var(--fg-rgb),0.42)] mt-1">
+              <p className="font-mono text-[12px] tracking-[0.04em] text-[rgba(var(--fg-rgb),var(--muted-alpha))] mt-1">
                 {deal.category} • Apply by {formatDeadline(deal.deadline)}
                 {remaining > 0 && ` (${remaining}d left)`}
               </p>
@@ -226,7 +226,7 @@ function DealDetail({
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-lg text-[rgba(var(--fg-rgb),0.42)] hover:text-ink hover:bg-[rgba(var(--fg-rgb),0.06)] transition-all"
+            className="p-2 rounded-lg text-[rgba(var(--fg-rgb),var(--muted-alpha))] hover:text-ink hover:bg-[rgba(var(--fg-rgb),0.06)] transition-all"
             aria-label="Close deal details"
           >
             <X size={18} />
@@ -237,11 +237,11 @@ function DealDetail({
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
           <div className="lg:col-span-2 space-y-5">
             <div>
-              <h4 className="font-mono text-[12px] tracking-[0.08em] text-[rgba(var(--fg-rgb),0.42)] uppercase mb-2">About the brand</h4>
+              <h4 className="font-mono text-[12px] tracking-[0.08em] text-[rgba(var(--fg-rgb),var(--muted-alpha))] uppercase mb-2">About the brand</h4>
               <p className="font-body text-[14px] text-[rgba(var(--fg-rgb),0.72)] leading-relaxed">{deal.brandAbout}</p>
             </div>
             <div>
-              <h4 className="font-mono text-[12px] tracking-[0.08em] text-[rgba(var(--fg-rgb),0.42)] uppercase mb-2">Deliverables</h4>
+              <h4 className="font-mono text-[12px] tracking-[0.08em] text-[rgba(var(--fg-rgb),var(--muted-alpha))] uppercase mb-2">Deliverables</h4>
               <ul className="space-y-1.5">
                 {deal.deliverables.map((d) => (
                   <li key={d} className="flex items-start gap-2 font-body text-[14px] text-ink">
@@ -252,7 +252,7 @@ function DealDetail({
               </ul>
             </div>
             <div>
-              <h4 className="font-mono text-[12px] tracking-[0.08em] text-[rgba(var(--fg-rgb),0.42)] uppercase mb-2">Requirements</h4>
+              <h4 className="font-mono text-[12px] tracking-[0.08em] text-[rgba(var(--fg-rgb),var(--muted-alpha))] uppercase mb-2">Requirements</h4>
               <ul className="space-y-1.5">
                 {deal.requirements.map((r) => (
                   <li key={r} className="flex items-start gap-2 font-body text-[14px] text-[rgba(var(--fg-rgb),0.72)]">
@@ -266,16 +266,16 @@ function DealDetail({
 
           <div className="space-y-4">
             <div className="bg-panel2 rounded-xl p-5">
-              <p className="font-mono text-[12px] tracking-[0.08em] text-[rgba(var(--fg-rgb),0.42)] uppercase mb-1">Payout range</p>
+              <p className="font-mono text-[12px] tracking-[0.08em] text-[rgba(var(--fg-rgb),var(--muted-alpha))] uppercase mb-1">Payout range</p>
               <p className="font-mono text-[24px] font-medium text-acid">{payoutRange(deal)}</p>
             </div>
             <div className="bg-panel2 rounded-xl p-5">
-              <p className="font-mono text-[12px] tracking-[0.08em] text-[rgba(var(--fg-rgb),0.42)] uppercase mb-2">Payout terms</p>
+              <p className="font-mono text-[12px] tracking-[0.08em] text-[rgba(var(--fg-rgb),var(--muted-alpha))] uppercase mb-2">Payout terms</p>
               <p className="font-body text-[13px] text-[rgba(var(--fg-rgb),0.72)] leading-relaxed">{deal.payoutTerms}</p>
             </div>
             <div className="bg-panel2 rounded-xl p-5 flex items-center justify-between">
               <div>
-                <p className="font-mono text-[12px] tracking-[0.08em] text-[rgba(var(--fg-rgb),0.42)] uppercase mb-1">Match score</p>
+                <p className="font-mono text-[12px] tracking-[0.08em] text-[rgba(var(--fg-rgb),var(--muted-alpha))] uppercase mb-1">Match score</p>
                 <p className="font-mono text-[24px] font-medium" style={{ color: matchColor(deal.matchScore) }}>
                   {deal.matchScore}%
                 </p>
@@ -300,7 +300,7 @@ function DealDetail({
           </div>
         ) : (
           <div className="pt-5 border-t border-[rgba(var(--fg-rgb),0.08)] space-y-3">
-            <label htmlFor="deal-pitch" className="font-mono text-[12px] tracking-[0.08em] text-[rgba(var(--fg-rgb),0.42)] uppercase block">
+            <label htmlFor="deal-pitch" className="font-mono text-[12px] tracking-[0.08em] text-[rgba(var(--fg-rgb),var(--muted-alpha))] uppercase block">
               Your pitch
             </label>
             <textarea
@@ -310,7 +310,7 @@ function DealDetail({
               rows={3}
               maxLength={1000}
               placeholder={`Tell ${deal.brand} why your audience is the right fit (min. 10 characters)...`}
-              className="w-full bg-surface border border-[rgba(var(--fg-rgb),0.1)] rounded-xl px-4 py-3 font-body text-[14px] text-ink placeholder:text-[rgba(var(--fg-rgb),0.2)] focus:border-electric focus:shadow-[0_0_0_3px_rgba(var(--electric-rgb),0.15)] outline-none transition-all resize-none"
+              className="w-full bg-surface border border-[rgba(var(--fg-rgb),0.1)] rounded-xl px-4 py-3 font-body text-[14px] text-ink placeholder:text-[rgba(var(--fg-rgb),0.2)] focus:border-electric focus:shadow-[0_0_0_3px_rgba(var(--electric-rgb),0.15)] focus-visible:ring-2 focus-visible:ring-electric outline-none transition-all resize-none"
             />
             <div className="flex flex-wrap items-center justify-between gap-4">
               <motion.button
@@ -324,7 +324,7 @@ function DealDetail({
                 Apply to {deal.brand}
               </motion.button>
               {showAdvanceCta && (
-                <p className="font-mono text-[12px] tracking-[0.04em] text-[rgba(var(--fg-rgb),0.42)]">
+                <p className="font-mono text-[12px] tracking-[0.04em] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">
                   High-value deal — eligible for a sponsorship advance once accepted
                 </p>
               )}
@@ -388,7 +388,7 @@ export default function Marketplace() {
         transition={{ duration: 0.5, ease: EASE }}
       >
         <h1 className="font-display text-[48px] tracking-[0.02em] text-ink leading-none">Brand Deal Marketplace</h1>
-        <p className="font-body text-[16px] text-[rgba(var(--fg-rgb),0.42)] mt-2">
+        <p className="font-body text-[16px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] mt-2">
           Sponsorships matched to your audience — apply in one pitch, get paid through your wallet
         </p>
       </motion.div>
@@ -406,7 +406,7 @@ export default function Marketplace() {
             className={`px-5 py-2.5 rounded-xl font-body text-[14px] font-medium transition-all ${
               tab === t.key
                 ? 'bg-acid text-void'
-                : 'text-[rgba(var(--fg-rgb),0.42)] hover:text-ink hover:bg-[rgba(var(--fg-rgb),0.06)]'
+                : 'text-[rgba(var(--fg-rgb),var(--muted-alpha))] hover:text-ink hover:bg-[rgba(var(--fg-rgb),0.06)]'
             }`}
           >
             {t.label}
@@ -427,7 +427,7 @@ export default function Marketplace() {
                   onChange={(e) => setSearchInput(e.target.value)}
                   placeholder="Search brands, campaigns, categories..."
                   aria-label="Search brands and campaigns"
-                  className="w-full bg-surface border border-[rgba(var(--fg-rgb),0.1)] rounded-xl pl-11 pr-4 py-3 font-body text-[14px] text-ink placeholder:text-[rgba(var(--fg-rgb),0.2)] focus:border-electric outline-none transition-colors"
+                  className="w-full bg-surface border border-[rgba(var(--fg-rgb),0.1)] rounded-xl pl-11 pr-4 py-3 font-body text-[14px] text-ink placeholder:text-[rgba(var(--fg-rgb),0.2)] focus:border-electric focus-visible:ring-2 focus-visible:ring-electric outline-none transition-colors"
                 />
               </div>
               <div className="flex items-center gap-2">
@@ -440,7 +440,7 @@ export default function Marketplace() {
                     className={`px-4 py-2 rounded-lg font-mono text-[12px] tracking-[0.04em] transition-all ${
                       sort === opt.value
                         ? 'bg-[rgba(var(--electric-rgb),0.15)] text-electric'
-                        : 'text-[rgba(var(--fg-rgb),0.42)] hover:text-ink hover:bg-[rgba(var(--fg-rgb),0.06)]'
+                        : 'text-[rgba(var(--fg-rgb),var(--muted-alpha))] hover:text-ink hover:bg-[rgba(var(--fg-rgb),0.06)]'
                     }`}
                   >
                     {opt.label}
@@ -457,7 +457,7 @@ export default function Marketplace() {
                   className={`px-4 py-1.5 rounded-full font-mono text-[12px] tracking-[0.04em] transition-all border ${
                     category === c
                       ? 'bg-acid text-void border-acid'
-                      : 'text-[rgba(var(--fg-rgb),0.42)] border-[rgba(var(--fg-rgb),0.12)] hover:text-ink hover:border-[rgba(var(--fg-rgb),0.3)]'
+                      : 'text-[rgba(var(--fg-rgb),var(--muted-alpha))] border-[rgba(var(--fg-rgb),0.12)] hover:text-ink hover:border-[rgba(var(--fg-rgb),0.3)]'
                   }`}
                 >
                   {c}
@@ -488,7 +488,7 @@ export default function Marketplace() {
             <DealGridSkeleton />
           ) : deals.length === 0 ? (
             <div className="bg-panel border border-[rgba(var(--fg-rgb),0.08)] rounded-2xl py-14 text-center">
-              <p className="font-body text-[14px] text-[rgba(var(--fg-rgb),0.42)]">
+              <p className="font-body text-[14px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">
                 No deals match your filters — try another category or search
               </p>
             </div>
@@ -513,12 +513,12 @@ export default function Marketplace() {
                         <BrandLogo name={deal.brand} color={deal.brandColor} />
                         <div className="min-w-0">
                           <p className="font-body text-[16px] font-semibold text-ink truncate">{deal.brand}</p>
-                          <p className="font-mono text-[11px] tracking-[0.04em] text-[rgba(var(--fg-rgb),0.42)]">{deal.category}</p>
+                          <p className="font-mono text-[11px] tracking-[0.04em] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">{deal.category}</p>
                         </div>
                       </div>
                       <span
                         className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full font-mono text-[11px] tracking-[0.04em] flex-shrink-0"
-                        style={{ color: matchColor(deal.matchScore), backgroundColor: matchColor(deal.matchScore) === 'rgba(var(--fg-rgb),0.42)' ? 'rgba(var(--fg-rgb),0.06)' : `color-mix(in srgb, ${matchColor(deal.matchScore)} 15%, transparent)` }}
+                        style={{ color: matchColor(deal.matchScore), backgroundColor: matchColor(deal.matchScore) === 'rgba(var(--fg-rgb),var(--muted-alpha))' ? 'rgba(var(--fg-rgb),0.06)' : `color-mix(in srgb, ${matchColor(deal.matchScore)} 15%, transparent)` }}
                       >
                         <Sparkles size={11} />
                         {deal.matchScore}%
@@ -527,7 +527,7 @@ export default function Marketplace() {
 
                     <p className="font-body text-[13px] text-[rgba(var(--fg-rgb),0.62)] leading-snug mb-3 line-clamp-2">{deal.tagline}</p>
 
-                    <p className="font-mono text-[11px] tracking-[0.04em] text-[rgba(var(--fg-rgb),0.42)] mb-4 truncate">
+                    <p className="font-mono text-[11px] tracking-[0.04em] text-[rgba(var(--fg-rgb),var(--muted-alpha))] mb-4 truncate">
                       {deal.deliverables.length} deliverable{deal.deliverables.length !== 1 ? 's' : ''} • {deal.deliverables[0]}
                     </p>
 
@@ -538,7 +538,7 @@ export default function Marketplace() {
                       ) : (
                         <span
                           className={`inline-flex items-center gap-1.5 font-mono text-[11px] tracking-[0.04em] ${
-                            remaining <= 14 ? 'text-ember' : 'text-[rgba(var(--fg-rgb),0.42)]'
+                            remaining <= 14 ? 'text-ember' : 'text-[rgba(var(--fg-rgb),var(--muted-alpha))]'
                           }`}
                         >
                           <CalendarClock size={12} />
@@ -573,7 +573,7 @@ export default function Marketplace() {
             </div>
           ) : applications.length === 0 ? (
             <div className="text-center py-12">
-              <p className="font-body text-[14px] text-[rgba(var(--fg-rgb),0.42)] mb-4">
+              <p className="font-body text-[14px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] mb-4">
                 No applications yet — browse deals and send your first pitch
               </p>
               <button
@@ -599,7 +599,7 @@ export default function Marketplace() {
                       <p className="font-body text-[15px] font-semibold text-ink">{app.brand}</p>
                       <StatusBadge status={app.status} />
                     </div>
-                    <p className="font-mono text-[12px] tracking-[0.04em] text-[rgba(var(--fg-rgb),0.42)] mt-0.5">
+                    <p className="font-mono text-[12px] tracking-[0.04em] text-[rgba(var(--fg-rgb),var(--muted-alpha))] mt-0.5">
                       {app.category} • {payoutRange(app)} • Submitted {app.submitted}
                     </p>
                     <p className="font-body text-[13px] text-[rgba(var(--fg-rgb),0.55)] mt-1.5 line-clamp-2 italic">

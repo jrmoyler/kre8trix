@@ -6,10 +6,13 @@
 
 import type {
   Advance,
+  AmlAlert,
   AppNotification,
   AppSettings,
+  AuditLogEntry,
   Creator,
   DealApplication,
+  KycProfile,
   PlatformConnection,
   Profile,
   RecentRecipient,
@@ -19,6 +22,7 @@ import type {
   User,
   WalletTransaction,
 } from '../types';
+import { AUDIT_GENESIS_HASH, computeEntryHash } from '../audit';
 
 /* C4: server-side half of the OAuth authorization-code flow. */
 export interface OAuthMockState {
@@ -57,6 +61,19 @@ export interface MockState {
   /* C5: notification id counter + last time the mock generator emitted one. */
   notifCounter: number;
   notifLastGeneratedAt: number;
+  /* D1: KYC/KYB identity verification — optional so state persisted before
+     this feature shipped still parses; handlers backfill via ensureKycState(). */
+  kyc?: KycProfile;
+  kycDocCounter?: number;
+  /* D2: AML monitoring — optional so state persisted before this feature
+     shipped still parses; handlers backfill via ensureAmlState(). */
+  amlAlerts?: AmlAlert[];
+  amlAlertCounter?: number;
+  sarCounter?: number;
+  /* D3: immutable audit log — optional so state persisted before this
+     feature shipped still parses; handlers backfill via ensureAuditState(). */
+  auditLog?: AuditLogEntry[];
+  auditCounter?: number;
 }
 
 const STORAGE_KEY = 'kre8trix.mock.state';
@@ -69,6 +86,23 @@ function hoursAgo(hours: number): string {
 }
 
 export const NOTIF_COUNTER_START = 7;
+
+/* ── D1: KYC/KYB seed ── */
+
+export function seedKyc(): KycProfile {
+  return {
+    status: 'unverified',
+    entityType: 'individual',
+    personalInfo: null,
+    businessInfo: null,
+    documents: [],
+    selfie: { completed: false, matchScore: null, completedAt: null },
+    submittedAt: null,
+    reviewedAt: null,
+    rejectionReason: null,
+    currentStep: 'entity_type',
+  };
+}
 
 export function seedNotifications(): AppNotification[] {
   return [
@@ -194,6 +228,16 @@ function defaultState(): MockState {
     oauth: { pending: {}, codes: {} },
     notifCounter: NOTIF_COUNTER_START,
     notifLastGeneratedAt: Date.now(),
+    /* D1: KYC/KYB */
+    kyc: seedKyc(),
+    kycDocCounter: 1,
+    /* D2: AML monitoring */
+    amlAlerts: seedAmlAlerts(),
+    amlAlertCounter: 3,
+    sarCounter: 1,
+    /* D3: immutable audit log */
+    auditLog: seedAuditLog(),
+    auditCounter: 8,
   };
 }
 
@@ -236,6 +280,128 @@ export function ensureCreatorState() {
     if (!s.creators) s.creators = seedCreators();
     if (!s.recentRecipients) s.recentRecipients = seedRecentRecipients();
   });
+}
+
+/**
+ * Backfill D1 fields for sessions whose persisted mock state predates
+ * the KYC/KYB feature.
+ */
+export function ensureKycState() {
+  const state = getState();
+  if (state.kyc && state.kycDocCounter !== undefined) return;
+  mutate((s) => {
+    if (!s.kyc) s.kyc = seedKyc();
+    if (s.kycDocCounter === undefined) s.kycDocCounter = 1;
+  });
+}
+
+/**
+ * Backfill D2 fields for sessions whose persisted mock state predates
+ * the AML monitoring feature.
+ */
+/* ── D3: audit log seed ──
+   Builds a small hash-chained history so the console has something
+   real to display and verify on first load. */
+export function seedAuditLog(): AuditLogEntry[] {
+  const seedData: Array<{
+    actorType: AuditLogEntry['actorType'];
+    actorName: string;
+    action: AuditLogEntry['action'];
+    description: string;
+    hoursAgoValue: number;
+    relatedPath?: string;
+  }> = [
+    { actorType: 'user', actorName: 'Alex Chen', action: 'signup', description: 'Account created', hoursAgoValue: 2400 },
+    { actorType: 'user', actorName: 'Alex Chen', action: 'connect_platform', description: 'Connected YouTube', hoursAgoValue: 2350, relatedPath: '/settings?tab=connections' },
+    { actorType: 'user', actorName: 'Alex Chen', action: 'login', description: 'Signed in', hoursAgoValue: 200 },
+    { actorType: 'user', actorName: 'Alex Chen', action: 'send_funds', description: 'Sent $500 USDC to @zaravibes', hoursAgoValue: 190, relatedPath: '/wallet' },
+    { actorType: 'user', actorName: 'Alex Chen', action: 'apply_advance', description: 'Applied for a $2,500 advance', hoursAgoValue: 150, relatedPath: '/advances' },
+    { actorType: 'compliance_officer', actorName: 'Compliance Ops', action: 'aml_alert_status_change', description: 'Reviewed alert aml_02 — cleared', hoursAgoValue: 110, relatedPath: '/compliance/aml' },
+    { actorType: 'user', actorName: 'Alex Chen', action: 'login', description: 'Signed in', hoursAgoValue: 24 },
+  ];
+
+  const entries: AuditLogEntry[] = [];
+  let prevHash = AUDIT_GENESIS_HASH;
+  for (let i = 0; i < seedData.length; i++) {
+    const d = seedData[i];
+    const withoutHash = {
+      id: `aud_${i + 1}`,
+      timestamp: hoursAgo(d.hoursAgoValue),
+      actorType: d.actorType,
+      actorName: d.actorName,
+      action: d.action,
+      description: d.description,
+      relatedPath: d.relatedPath,
+      prevHash,
+    };
+    const hash = computeEntryHash(prevHash, withoutHash);
+    entries.push({ ...withoutHash, hash });
+    prevHash = hash;
+  }
+  return entries;
+}
+
+export function ensureAmlState() {
+  const state = getState();
+  if (state.amlAlerts && state.amlAlertCounter !== undefined && state.sarCounter !== undefined) return;
+  mutate((s) => {
+    if (!s.amlAlerts) s.amlAlerts = seedAmlAlerts();
+    if (s.amlAlertCounter === undefined) s.amlAlertCounter = 3;
+    if (s.sarCounter === undefined) s.sarCounter = 1;
+  });
+}
+
+/**
+ * Backfill D3 fields for sessions whose persisted mock state predates
+ * the audit log feature.
+ */
+export function ensureAuditState() {
+  const state = getState();
+  if (state.auditLog && state.auditCounter !== undefined) return;
+  mutate((s) => {
+    if (!s.auditLog) s.auditLog = seedAuditLog();
+    if (s.auditCounter === undefined) s.auditCounter = 8;
+  });
+}
+
+/* ── D2: AML monitoring seed ──
+   Two illustrative alerts referencing real seed transactions, so the
+   dashboard reads naturally on first load alongside whatever the
+   handlers' automatic transaction scan turns up. */
+export function seedAmlAlerts(): AmlAlert[] {
+  return [
+    {
+      id: 'aml_01',
+      createdAt: hoursAgo(30),
+      severity: 'medium',
+      status: 'open',
+      reason: 'velocity',
+      subjectHandle: '@alexcreates',
+      summary: '3 income deposits totaling $10,630 landed within a 72-hour window.',
+      relatedTransactionIds: ['tx_02', 'tx_07', 'tx_10'],
+      amountInvolved: 10630,
+      notes: [],
+    },
+    {
+      id: 'aml_02',
+      createdAt: hoursAgo(120),
+      severity: 'low',
+      status: 'cleared',
+      reason: 'round_trip',
+      subjectHandle: '@alexcreates',
+      summary: 'Rapid USD → USDC → USD round-trip conversion flagged for review.',
+      relatedTransactionIds: ['tx_01', 'tx_09'],
+      amountInvolved: 850,
+      notes: [
+        {
+          id: 'note_01',
+          author: 'Compliance Ops',
+          body: 'Reviewed — consistent with normal payout scheduling. No further action.',
+          createdAt: hoursAgo(110),
+        },
+      ],
+    },
+  ];
 }
 
 let cached: MockState | null = null;

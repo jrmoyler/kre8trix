@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 import { motion, AnimatePresence, useMotionValue, useTransform, animate } from 'framer-motion';
 import {
   ArrowUpRight,
@@ -15,9 +15,11 @@ import { toast } from 'sonner';
 import { api, ApiError } from '@/lib/api';
 import { useApi } from '@/hooks/use-api';
 import { useAuth } from '@/lib/auth-context';
+import { isKycVerified } from '@/lib/kyc';
 import { SOLANA_ADDRESS_RE } from '@/lib/types';
 import type {
   Creator,
+  KycProfile,
   RecentRecipient,
   WalletBalances,
   WalletMutationResponse,
@@ -35,6 +37,9 @@ import {
 /*  Static data                                                        */
 /* ------------------------------------------------------------------ */
 const WALLET_ADDRESS = 'Hx3fK9mNpQr2sT5vW8xYzAbCdEfGhIjKlMnOpQrStUv9kL2';
+
+/* D1: sends at or above this amount require completed identity verification. */
+const KYC_SEND_THRESHOLD = 1000;
 
 /* ------------------------------------------------------------------ */
 /*  C1 — creator-to-creator payment helpers                            */
@@ -123,6 +128,7 @@ const VALID_TABS: WalletTab[] = ['send', 'request', 'receive', 'convert', 'histo
 /*  Main Wallet component                                              */
 /* ------------------------------------------------------------------ */
 export default function Wallet() {
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
   /* A5 — ?action=send|request|convert (and receive/history) selects the tab.
@@ -142,6 +148,9 @@ export default function Wallet() {
   const balancesQuery = useApi<WalletBalances>('/wallet/balances');
   const transactionsQuery = useApi<WalletTransaction[]>('/wallet/transactions');
   const recipientsQuery = useApi<RecentRecipient[]>('/wallet/recipients');
+  /* D1: large sends are gated behind identity verification. */
+  const kycQuery = useApi<KycProfile>('/kyc/status');
+  const kycVerified = isKycVerified(kycQuery.data?.status);
   const balances = balancesQuery.data;
 
   /* Form state */
@@ -180,6 +189,8 @@ export default function Wallet() {
   const availableBalance = sendCurrency === 'USD' ? balances?.usd ?? 0 : balances?.usdc ?? 0;
   const amountNum = parseFloat(sendAmount) || 0;
   const hasEnough = amountNum > 0 && amountNum <= availableBalance;
+  /* D1: soft-gate large sends behind identity verification. */
+  const kycBlocked = amountNum >= KYC_SEND_THRESHOLD && !kycVerified;
 
   /* ── C1: recipient resolution & validation ─────────────────────── */
   const trimmedRecipient = sendRecipient.trim();
@@ -302,6 +313,10 @@ export default function Wallet() {
   };
 
   const handleSend = async () => {
+    if (kycBlocked) {
+      toast.error(`Complete identity verification to send $${KYC_SEND_THRESHOLD.toLocaleString()} or more`);
+      return;
+    }
     setSubmitting(true);
     /* C1: send the handle when a creator is picked — the mock backend
        resolves it to their wallet address and records the recipient. */
@@ -390,7 +405,7 @@ export default function Wallet() {
           >
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-center gap-3">
-                <span className="font-mono text-[12px] tracking-[0.04em] text-[rgba(var(--fg-rgb),0.42)]">USD Wallet</span>
+                <span className="font-mono text-[12px] tracking-[0.04em] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">USD Wallet</span>
                 <span className="px-2 py-0.5 rounded-full bg-[rgba(var(--positive-rgb),0.15)] text-positive font-mono text-[11px]">Available</span>
               </div>
               <button
@@ -404,7 +419,7 @@ export default function Wallet() {
               $<AnimatedNumber value={balances.usd} />
             </div>
             <div className="flex items-end justify-between">
-              <span className="font-mono text-[12px] tracking-[0.04em] text-[rgba(var(--fg-rgb),0.42)]">Account ending 4821</span>
+              <span className="font-mono text-[12px] tracking-[0.04em] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">Account ending 4821</span>
               <MiniSparkline data={balances.usdSparkline} color="rgb(var(--color-electric))" />
             </div>
           </motion.div>
@@ -421,7 +436,7 @@ export default function Wallet() {
           >
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-center gap-3">
-                <span className="font-mono text-[12px] tracking-[0.04em] text-[rgba(var(--fg-rgb),0.42)]">USDC Wallet</span>
+                <span className="font-mono text-[12px] tracking-[0.04em] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">USDC Wallet</span>
                 <span className="px-2 py-0.5 rounded-full bg-[rgba(var(--positive-rgb),0.15)] text-positive font-mono text-[11px]">Available</span>
               </div>
               <button
@@ -435,7 +450,7 @@ export default function Wallet() {
               <AnimatedNumber value={balances.usdc} suffix=" USDC" />
             </div>
             <div className="flex items-end justify-between">
-              <span className="font-mono text-[12px] tracking-[0.04em] text-[rgba(var(--fg-rgb),0.42)]">Solana Network</span>
+              <span className="font-mono text-[12px] tracking-[0.04em] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">Solana Network</span>
               <MiniSparkline data={balances.usdcSparkline} color="rgb(var(--color-violet))" />
             </div>
           </motion.div>
@@ -458,7 +473,7 @@ export default function Wallet() {
               className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-body text-[14px] font-medium transition-all ${
                 activeTab === tab.key
                   ? 'bg-acid text-void'
-                  : 'text-[rgba(var(--fg-rgb),0.42)] hover:text-ink'
+                  : 'text-[rgba(var(--fg-rgb),var(--muted-alpha))] hover:text-ink'
               }`}
             >
               <tab.icon size={16} />
@@ -481,16 +496,16 @@ export default function Wallet() {
                   onChange={(e) => setSendAmount(e.target.value)}
                   placeholder={`Amount (${sendCurrency})`}
                   aria-label="Amount to send"
-                  className="w-full bg-surface border border-[rgba(var(--fg-rgb),0.1)] rounded-xl px-4 py-4 font-mono text-[24px] text-ink placeholder:text-[rgba(var(--fg-rgb),0.2)] focus:border-electric outline-none transition-colors"
+                  className="w-full bg-surface border border-[rgba(var(--fg-rgb),0.1)] rounded-xl px-4 py-4 font-mono text-[24px] text-ink placeholder:text-[rgba(var(--fg-rgb),0.2)] focus:border-electric focus-visible:ring-2 focus-visible:ring-electric outline-none transition-colors"
                 />
-                <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)]">
+                <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">
                   Available: {sendCurrency === 'USD' ? `$${availableBalance.toLocaleString()}` : `${availableBalance.toLocaleString()} USDC`}
                 </p>
 
                 {/* C1 — Recent recipients */}
                 {(recipientsQuery.loading || recipientsQuery.error || (recipientsQuery.data?.length ?? 0) > 0) && (
                   <div className="space-y-2">
-                    <p className="font-mono text-[12px] tracking-[0.04em] text-[rgba(var(--fg-rgb),0.42)]">
+                    <p className="font-mono text-[12px] tracking-[0.04em] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">
                       Recent recipients
                     </p>
                     {recipientsQuery.error ? (
@@ -542,19 +557,19 @@ export default function Wallet() {
                     aria-invalid={recipientError !== null}
                     className={`w-full bg-surface border rounded-xl px-4 py-3 font-body text-[16px] text-ink placeholder:text-[rgba(var(--fg-rgb),0.2)] outline-none transition-colors ${
                       recipientError
-                        ? 'border-negative focus:border-negative'
-                        : 'border-[rgba(var(--fg-rgb),0.1)] focus:border-electric'
+                        ? 'border-negative focus:border-negative focus-visible:ring-2 focus-visible:ring-negative'
+                        : 'border-[rgba(var(--fg-rgb),0.1)] focus:border-electric focus-visible:ring-2 focus-visible:ring-electric'
                     }`}
                   />
                   {showCreatorDropdown && (
                     <div className="absolute left-0 right-0 top-full mt-2 z-20 bg-panel2 border border-[rgba(var(--fg-rgb),0.12)] rounded-xl shadow-xl overflow-hidden">
                       {searchPending ? (
-                        <div className="flex items-center gap-2 px-4 py-3 font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)]">
+                        <div className="flex items-center gap-2 px-4 py-3 font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">
                           <Loader2 size={14} className="animate-spin" />
                           Searching creators…
                         </div>
                       ) : creatorResults.length === 0 ? (
-                        <p className="px-4 py-3 font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)]">
+                        <p className="px-4 py-3 font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">
                           No creators match “{trimmedRecipient}”
                         </p>
                       ) : (
@@ -575,7 +590,7 @@ export default function Wallet() {
                                 {c.handle}
                               </span>
                             </span>
-                            <span className="font-mono text-[11px] text-[rgba(var(--fg-rgb),0.42)]">
+                            <span className="font-mono text-[11px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">
                               {shortenAddress(c.walletAddress)}
                             </span>
                           </button>
@@ -594,10 +609,19 @@ export default function Wallet() {
                   </p>
                 ) : null}
 
+                {kycBlocked && (
+                  <p className="font-mono text-[12px] text-[rgb(var(--color-ember))]" role="alert">
+                    Sends of ${KYC_SEND_THRESHOLD.toLocaleString()} or more require identity verification —{' '}
+                    <button type="button" onClick={() => navigate('/kyc')} className="underline hover:text-acid">
+                      verify now
+                    </button>
+                  </p>
+                )}
+
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  disabled={!hasEnough || !recipientValid || submitting}
+                  disabled={!hasEnough || !recipientValid || kycBlocked || submitting}
                   onClick={handleSend}
                   className="w-full flex items-center justify-center gap-2 bg-acid text-void font-body text-[16px] font-semibold py-4 rounded-2xl disabled:opacity-40 disabled:cursor-not-allowed"
                 >
@@ -621,7 +645,7 @@ export default function Wallet() {
                   onChange={(e) => setRequestAmount(e.target.value)}
                   placeholder={`Amount (${requestCurrency})`}
                   aria-label="Amount to request"
-                  className="w-full bg-surface border border-[rgba(var(--fg-rgb),0.1)] rounded-xl px-4 py-4 font-mono text-[24px] text-ink placeholder:text-[rgba(var(--fg-rgb),0.2)] focus:border-electric outline-none transition-colors"
+                  className="w-full bg-surface border border-[rgba(var(--fg-rgb),0.1)] rounded-xl px-4 py-4 font-mono text-[24px] text-ink placeholder:text-[rgba(var(--fg-rgb),0.2)] focus:border-electric focus-visible:ring-2 focus-visible:ring-electric outline-none transition-colors"
                 />
                 <input
                   type="text"
@@ -629,9 +653,9 @@ export default function Wallet() {
                   onChange={(e) => setRequestFrom(e.target.value)}
                   placeholder="Request from (email, username, or address)"
                   aria-label="Request from"
-                  className="w-full bg-surface border border-[rgba(var(--fg-rgb),0.1)] rounded-xl px-4 py-3 font-body text-[16px] text-ink placeholder:text-[rgba(var(--fg-rgb),0.2)] focus:border-electric outline-none transition-colors"
+                  className="w-full bg-surface border border-[rgba(var(--fg-rgb),0.1)] rounded-xl px-4 py-3 font-body text-[16px] text-ink placeholder:text-[rgba(var(--fg-rgb),0.2)] focus:border-electric focus-visible:ring-2 focus-visible:ring-electric outline-none transition-colors"
                 />
-                <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)]">
+                <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">
                   They'll get a payment link — funds land in your {requestCurrency} wallet once paid.
                 </p>
                 <motion.button
@@ -657,10 +681,10 @@ export default function Wallet() {
                   ))}
                 </div>
               </div>
-              <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] mb-2">Your Wallet Address</p>
+              <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] mb-2">Your Wallet Address</p>
               <div className="flex items-center justify-center gap-2">
                 <code className="font-mono text-[14px] text-ink bg-panel px-4 py-2 rounded-xl">{WALLET_ADDRESS.slice(0, 16)}...{WALLET_ADDRESS.slice(-4)}</code>
-                <button onClick={() => handleCopy(WALLET_ADDRESS)} aria-label="Copy wallet address" className="p-2 rounded-xl bg-panel text-[rgba(var(--fg-rgb),0.42)] hover:text-ink transition-colors">
+                <button onClick={() => handleCopy(WALLET_ADDRESS)} aria-label="Copy wallet address" className="p-2 rounded-xl bg-panel text-[rgba(var(--fg-rgb),var(--muted-alpha))] hover:text-ink transition-colors">
                   {copied ? <Check size={16} className="text-positive" /> : <Copy size={16} />}
                 </button>
               </div>
@@ -680,9 +704,9 @@ export default function Wallet() {
                   onChange={(e) => setConvertAmount(e.target.value)}
                   placeholder={`Amount in ${convertFrom}`}
                   aria-label="Amount to convert"
-                  className="w-full bg-surface border border-[rgba(var(--fg-rgb),0.1)] rounded-xl px-4 py-4 font-mono text-[24px] text-ink placeholder:text-[rgba(var(--fg-rgb),0.2)] focus:border-electric outline-none transition-colors"
+                  className="w-full bg-surface border border-[rgba(var(--fg-rgb),0.1)] rounded-xl px-4 py-4 font-mono text-[24px] text-ink placeholder:text-[rgba(var(--fg-rgb),0.2)] focus:border-electric focus-visible:ring-2 focus-visible:ring-electric outline-none transition-colors"
                 />
-                <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)]">
+                <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">
                   Available: {convertFrom === 'USD' ? `$${convertAvailable.toLocaleString()}` : `${convertAvailable.toLocaleString()} USDC`}
                 </p>
                 {convertNum > 0 && (
@@ -708,7 +732,7 @@ export default function Wallet() {
             <motion.div key="history" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
               <div className="flex gap-2 mb-4">
                 {(['All', 'USD', 'USDC'] as const).map((f) => (
-                  <button key={f} onClick={() => setHistoryFilter(f)} className={`px-4 py-2 rounded-lg font-mono text-[12px] ${historyFilter === f ? 'bg-acid text-void' : 'bg-panel2 text-[rgba(var(--fg-rgb),0.42)]'}`}>
+                  <button key={f} onClick={() => setHistoryFilter(f)} className={`px-4 py-2 rounded-lg font-mono text-[12px] ${historyFilter === f ? 'bg-acid text-void' : 'bg-panel2 text-[rgba(var(--fg-rgb),var(--muted-alpha))]'}`}>
                     {f}
                   </button>
                 ))}
@@ -720,7 +744,7 @@ export default function Wallet() {
               ) : (
                 <div className="space-y-2 max-h-[400px] overflow-y-auto">
                   {filteredTransactions.length === 0 ? (
-                    <p className="text-center py-8 font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)]">
+                    <p className="text-center py-8 font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">
                       No {historyFilter !== 'All' ? historyFilter : ''} transactions yet
                     </p>
                   ) : (
@@ -728,7 +752,7 @@ export default function Wallet() {
                       <div key={tx.id} className="flex items-center justify-between py-3 px-4 rounded-xl bg-panel2">
                         <div>
                           <p className="font-body text-[14px] text-ink">{tx.description}</p>
-                          <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)]">{tx.date} • {tx.type}</p>
+                          <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">{tx.date} • {tx.type}</p>
                         </div>
                         <div className="text-right">
                           <p className={`font-mono text-[14px] ${tx.amount >= 0 ? 'text-positive' : 'text-negative'}`}>
