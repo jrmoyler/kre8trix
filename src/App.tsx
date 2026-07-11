@@ -14,6 +14,7 @@ import Onboarding from './pages/Onboarding'
 import Settings from './pages/Settings'
 import Kyc from './pages/Kyc' // D1: KYC/KYB identity verification
 import AmlMonitoring from './pages/compliance/AmlMonitoring' // D2: Compliance Console
+import AuditLog from './pages/compliance/AuditLog' // D3: Compliance Console
 import TaxCenter from './pages/TaxCenter' // C3: Tax Center
 /* C4: platform connect OAuth */
 import OAuthAuthorize from './pages/OAuthAuthorize'
@@ -46,6 +47,7 @@ export default function App() {
                 <Route path="/kyc" element={<Kyc />} />
                 {/* D2/D3: Compliance Console — internal ops view, reachable via the footer link only */}
                 <Route path="/compliance/aml" element={<AmlMonitoring />} />
+                <Route path="/compliance/audit-log" element={<AuditLog />} />
                 {/* C4: mock OAuth provider consent screen + redirect_uri */}
                 <Route path="/oauth/authorize" element={<OAuthAuthorize />} />
                 <Route path="/oauth/callback" element={<OAuthCallback />} />

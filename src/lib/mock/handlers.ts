@@ -8,6 +8,7 @@
 import { ApiError, registerMock, type MockContext } from '../api';
 import {
   ensureAmlState,
+  ensureAuditState,
   ensureCreatorState,
   ensureKycState,
   getState,
@@ -16,8 +17,10 @@ import {
   seedKyc,
   seedNotifications,
   SELF_WALLET_ADDRESS,
+  type MockState,
 } from './state';
 import { AML_STATUS_OPTIONS } from '../aml';
+import { AUDIT_GENESIS_HASH, computeEntryHash } from '../audit';
 import { EMAIL_RE, SOLANA_ADDRESS_RE } from '../types';
 /* C4: OAuth provider metadata shared with the consent screen UI. */
 import { OAUTH_CLIENT_ID, OAUTH_PROVIDERS, OAUTH_REDIRECT_PATH } from '../oauth';
@@ -73,6 +76,8 @@ import type {
   AmlAlertStatus,
   AmlSummary,
   SarFiling,
+  AuditAction,
+  AuditActorType,
 } from '../types';
 
 /* ─────────────────────────── helpers ─────────────────────────── */
@@ -130,6 +135,37 @@ function todayLabel(): string {
   return new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
+/* ── D3: audit log instrumentation ──
+ * Call from inside an existing mutate() callback right after the state
+ * change it documents, so the audit entry and the mutation it describes
+ * land atomically. Defensively backfills auditLog/auditCounter so call
+ * sites don't each need their own ensureAuditState() guard. */
+function appendAuditLog(
+  state: MockState,
+  action: AuditAction,
+  description: string,
+  opts?: { actorType?: AuditActorType; actorName?: string; relatedPath?: string; metadata?: Record<string, string | number | boolean> },
+) {
+  if (!state.auditLog) state.auditLog = [];
+  if (state.auditCounter === undefined) state.auditCounter = 8;
+
+  const counter = state.auditCounter++;
+  const prevHash = state.auditLog.length > 0 ? state.auditLog[state.auditLog.length - 1].hash : AUDIT_GENESIS_HASH;
+  const withoutHash = {
+    id: `aud_${counter}`,
+    timestamp: new Date().toISOString(),
+    actorType: opts?.actorType ?? ('user' as AuditActorType),
+    actorName: opts?.actorName ?? state.user.handle,
+    action,
+    description,
+    relatedPath: opts?.relatedPath,
+    metadata: opts?.metadata,
+    prevHash,
+  };
+  const hash = computeEntryHash(prevHash, withoutHash);
+  state.auditLog.push({ ...withoutHash, hash });
+}
+
 /* ─────────────────────────── auth ─────────────────────────── */
 
 registerMock('POST', '/auth/login', (ctx) => {
@@ -140,6 +176,7 @@ registerMock('POST', '/auth/login', (ctx) => {
   if (!body?.password || body.password.length < 6) {
     throw new ApiError(401, 'Invalid email or password');
   }
+  mutate((s) => appendAuditLog(s, 'login', 'Signed in'));
   const { user } = getState();
   const response: AuthResponse = { token: issueMockJwt(user), user };
   return response;
@@ -167,6 +204,7 @@ registerMock('POST', '/auth/signup', (ctx) => {
       email: state.user.email,
       handle: state.user.handle,
     };
+    appendAuditLog(state, 'signup', 'Account created');
   });
   const { user } = getState();
   const response: AuthResponse = { token: issueMockJwt(user), user };
@@ -293,6 +331,7 @@ registerMock('POST', '/wallet/send', (ctx) => {
         ...s.recentRecipients.filter((r) => r.walletAddress !== resolvedAddress),
       ].slice(0, 6);
     }
+    appendAuditLog(s, 'send_funds', `Sent ${body.currency === 'USD' ? `$${body.amount.toLocaleString()}` : `${body.amount.toLocaleString()} USDC`} to ${displayName}`);
   });
 
   const response: WalletMutationResponse = { transaction: transaction!, balances: balancesSnapshot() };
@@ -356,6 +395,7 @@ registerMock('POST', '/wallet/request', (ctx) => {
       iconColor: 'rgb(var(--color-electric))',
     };
     s.transactions.unshift(transaction);
+    appendAuditLog(s, 'request_funds', `Requested ${body.currency === 'USD' ? `$${body.amount.toLocaleString()}` : `${body.amount.toLocaleString()} USDC`} from ${body.recipient.trim()}`);
   });
 
   const response: WalletMutationResponse = { transaction: transaction!, balances: balancesSnapshot() };
@@ -396,6 +436,7 @@ registerMock('POST', '/wallet/convert', (ctx) => {
       iconColor: 'rgb(var(--color-acid))',
     };
     s.transactions.unshift(transaction);
+    appendAuditLog(s, 'convert_funds', `Converted ${body.amount.toLocaleString()} ${body.from} to ${to}`);
   });
 
   const response: WalletMutationResponse = { transaction: transaction!, balances: balancesSnapshot() };
@@ -697,6 +738,7 @@ registerMock('POST', '/advances/apply', (ctx) => {
       status: 'Completed',
       iconColor: 'rgb(var(--color-ember))',
     });
+    appendAuditLog(s, 'apply_advance', `Applied for a $${amount.toLocaleString()} advance (${advance.id})`);
   });
 
   return advancesOverview();
@@ -718,6 +760,7 @@ registerMock('PUT', '/profile', (ctx) => {
   mutate((s) => {
     s.profile = { ...s.profile, ...body };
     s.user = { ...s.user, name: s.profile.name, email: s.profile.email, handle: s.profile.handle };
+    appendAuditLog(s, 'update_profile', 'Updated profile information');
   });
   return getState().profile;
 });
@@ -740,6 +783,11 @@ registerMock('PUT', '/profile/connections', (ctx) => {
     if (connection.connected && !connection.user) {
       connection.user = s.profile.handle;
     }
+    appendAuditLog(
+      s,
+      connection.connected ? 'connect_platform' : 'disconnect_platform',
+      `${connection.connected ? 'Connected' : 'Disconnected'} ${body.name}`,
+    );
   });
   return getState().connections;
 });
@@ -754,6 +802,7 @@ registerMock('PUT', '/settings', (ctx) => {
   const body = ctx.body as Partial<AppSettings>;
   mutate((s) => {
     s.settings = { ...s.settings, ...body };
+    appendAuditLog(s, 'update_settings', 'Updated account settings');
   });
   return getState().settings;
 });
@@ -1086,6 +1135,7 @@ for (const deal of MARKETPLACE_DEALS) {
         status: 'Pending',
       };
       s.marketplaceApplications = [application, ...(s.marketplaceApplications ?? [])];
+      appendAuditLog(s, 'apply_deal', `Applied to ${deal.brand} brand deal`);
     });
 
     const response: DealApplyResponse = { application: application! };
@@ -1211,6 +1261,7 @@ registerMock('POST', '/tax/turbotax/connect', (ctx) => {
     s.turbotax = connected
       ? { connected: true, account: s.profile.email, lastSync: todayLabel() }
       : { connected: false, account: null, lastSync: null };
+    if (connected) appendAuditLog(s, 'connect_turbotax', 'Connected TurboTax');
   });
   const response: TurboTaxConnection = getState().turbotax;
   return response;
@@ -1380,6 +1431,10 @@ function kycSnapshot(): KycProfile {
         s.kyc!.status = 'verified';
         s.kyc!.reviewedAt = new Date().toISOString();
         s.user.kycStatus = 'verified';
+        appendAuditLog(s, 'kyc_status_change', 'Identity verification approved', {
+          actorType: 'system',
+          actorName: 'System',
+        });
       });
       return getState().kyc!;
     }
@@ -1515,11 +1570,16 @@ registerMock('POST', '/kyc/submit', (ctx) => {
   const now = new Date().toISOString();
   mutate((s) => {
     s.kyc!.submittedAt = now;
+    appendAuditLog(s, 'kyc_submit', 'Submitted identity verification for review');
     if (shouldReject) {
       s.kyc!.status = 'rejected';
       s.kyc!.reviewedAt = now;
       s.kyc!.rejectionReason = 'Document quality did not meet verification standards.';
       s.user.kycStatus = 'rejected';
+      appendAuditLog(s, 'kyc_status_change', 'Identity verification rejected', {
+        actorType: 'system',
+        actorName: 'System',
+      });
     } else {
       s.kyc!.status = 'in_review';
       s.kyc!.rejectionReason = null;
@@ -1709,6 +1769,11 @@ registerMock('PUT', '/aml/alerts/:id/status', (ctx) => {
   mutate((s) => {
     const alert = s.amlAlerts!.find((a) => a.id === ctx.params.id)!;
     alert.status = body.status!;
+    appendAuditLog(s, 'aml_alert_status_change', `Alert ${alert.id} marked ${body.status}`, {
+      actorType: 'compliance_officer',
+      actorName: 'Compliance Ops',
+      relatedPath: '/compliance/aml',
+    });
   });
   return findAmlAlert(ctx.params.id);
 });
@@ -1752,6 +1817,39 @@ registerMock('POST', '/aml/alerts/:id/sar', (ctx) => {
     };
     target.sar = sar;
     target.status = 'filed_sar';
+    appendAuditLog(s, 'aml_sar_filed', `SAR ${sar.filingRef} filed for alert ${target.id}`, {
+      actorType: 'compliance_officer',
+      actorName: 'Compliance Ops',
+      relatedPath: '/compliance/aml',
+    });
   });
   return findAmlAlert(ctx.params.id);
+});
+
+/* ─────────────────────────── D3: immutable audit log ─────────────────────────── */
+
+registerMock('GET', '/audit-log', (ctx) => {
+  requireAuth(ctx);
+  ensureAuditState();
+  let entries = [...getState().auditLog!].sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+  const { action, actorType, from, to } = ctx.query;
+  if (action) entries = entries.filter((e) => e.action === action);
+  if (actorType) entries = entries.filter((e) => e.actorType === actorType);
+  if (from) entries = entries.filter((e) => e.timestamp >= from);
+  if (to) entries = entries.filter((e) => e.timestamp <= to);
+  return entries;
+});
+
+registerMock('GET', '/audit-log/verify', (ctx) => {
+  requireAuth(ctx);
+  ensureAuditState();
+  const entries = getState().auditLog!;
+  let prevHash = AUDIT_GENESIS_HASH;
+  for (const entry of entries) {
+    if (entry.prevHash !== prevHash) return { valid: false, brokenAtId: entry.id };
+    const { hash, ...withoutHash } = entry;
+    if (computeEntryHash(prevHash, withoutHash) !== hash) return { valid: false, brokenAtId: entry.id };
+    prevHash = hash;
+  }
+  return { valid: true, brokenAtId: null };
 });

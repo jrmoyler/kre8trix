@@ -9,6 +9,7 @@ import type {
   AmlAlert,
   AppNotification,
   AppSettings,
+  AuditLogEntry,
   Creator,
   DealApplication,
   KycProfile,
@@ -21,6 +22,7 @@ import type {
   User,
   WalletTransaction,
 } from '../types';
+import { AUDIT_GENESIS_HASH, computeEntryHash } from '../audit';
 
 /* C4: server-side half of the OAuth authorization-code flow. */
 export interface OAuthMockState {
@@ -68,6 +70,10 @@ export interface MockState {
   amlAlerts?: AmlAlert[];
   amlAlertCounter?: number;
   sarCounter?: number;
+  /* D3: immutable audit log — optional so state persisted before this
+     feature shipped still parses; handlers backfill via ensureAuditState(). */
+  auditLog?: AuditLogEntry[];
+  auditCounter?: number;
 }
 
 const STORAGE_KEY = 'kre8trix.mock.state';
@@ -229,6 +235,9 @@ function defaultState(): MockState {
     amlAlerts: seedAmlAlerts(),
     amlAlertCounter: 3,
     sarCounter: 1,
+    /* D3: immutable audit log */
+    auditLog: seedAuditLog(),
+    auditCounter: 8,
   };
 }
 
@@ -290,6 +299,48 @@ export function ensureKycState() {
  * Backfill D2 fields for sessions whose persisted mock state predates
  * the AML monitoring feature.
  */
+/* ── D3: audit log seed ──
+   Builds a small hash-chained history so the console has something
+   real to display and verify on first load. */
+export function seedAuditLog(): AuditLogEntry[] {
+  const seedData: Array<{
+    actorType: AuditLogEntry['actorType'];
+    actorName: string;
+    action: AuditLogEntry['action'];
+    description: string;
+    hoursAgoValue: number;
+    relatedPath?: string;
+  }> = [
+    { actorType: 'user', actorName: 'Alex Chen', action: 'signup', description: 'Account created', hoursAgoValue: 2400 },
+    { actorType: 'user', actorName: 'Alex Chen', action: 'connect_platform', description: 'Connected YouTube', hoursAgoValue: 2350, relatedPath: '/settings?tab=connections' },
+    { actorType: 'user', actorName: 'Alex Chen', action: 'login', description: 'Signed in', hoursAgoValue: 200 },
+    { actorType: 'user', actorName: 'Alex Chen', action: 'send_funds', description: 'Sent $500 USDC to @zaravibes', hoursAgoValue: 190, relatedPath: '/wallet' },
+    { actorType: 'user', actorName: 'Alex Chen', action: 'apply_advance', description: 'Applied for a $2,500 advance', hoursAgoValue: 150, relatedPath: '/advances' },
+    { actorType: 'compliance_officer', actorName: 'Compliance Ops', action: 'aml_alert_status_change', description: 'Reviewed alert aml_02 — cleared', hoursAgoValue: 110, relatedPath: '/compliance/aml' },
+    { actorType: 'user', actorName: 'Alex Chen', action: 'login', description: 'Signed in', hoursAgoValue: 24 },
+  ];
+
+  const entries: AuditLogEntry[] = [];
+  let prevHash = AUDIT_GENESIS_HASH;
+  for (let i = 0; i < seedData.length; i++) {
+    const d = seedData[i];
+    const withoutHash = {
+      id: `aud_${i + 1}`,
+      timestamp: hoursAgo(d.hoursAgoValue),
+      actorType: d.actorType,
+      actorName: d.actorName,
+      action: d.action,
+      description: d.description,
+      relatedPath: d.relatedPath,
+      prevHash,
+    };
+    const hash = computeEntryHash(prevHash, withoutHash);
+    entries.push({ ...withoutHash, hash });
+    prevHash = hash;
+  }
+  return entries;
+}
+
 export function ensureAmlState() {
   const state = getState();
   if (state.amlAlerts && state.amlAlertCounter !== undefined && state.sarCounter !== undefined) return;
@@ -297,6 +348,19 @@ export function ensureAmlState() {
     if (!s.amlAlerts) s.amlAlerts = seedAmlAlerts();
     if (s.amlAlertCounter === undefined) s.amlAlertCounter = 3;
     if (s.sarCounter === undefined) s.sarCounter = 1;
+  });
+}
+
+/**
+ * Backfill D3 fields for sessions whose persisted mock state predates
+ * the audit log feature.
+ */
+export function ensureAuditState() {
+  const state = getState();
+  if (state.auditLog && state.auditCounter !== undefined) return;
+  mutate((s) => {
+    if (!s.auditLog) s.auditLog = seedAuditLog();
+    if (s.auditCounter === undefined) s.auditCounter = 8;
   });
 }
 

@@ -22,7 +22,7 @@ import { api, ApiError } from '@/lib/api';
 import { oauthSlugForConnection, startOAuthFlow } from '@/lib/oauth';
 import { useApi } from '@/hooks/use-api';
 import { useTheme, type ThemePreference } from '@/lib/theme-context';
-import type { AppSettings, KycProfile, PlatformConnection, Profile } from '@/lib/types';
+import type { AppSettings, AuditLogEntry, KycProfile, PlatformConnection, Profile } from '@/lib/types';
 import { ErrorNotice, SkeletonBlock } from '@/components/Skeletons';
 import KycStatusBadge from '@/components/KycStatusBadge';
 
@@ -75,6 +75,9 @@ export default function Settings() {
   const connectionsQuery = useApi<PlatformConnection[]>('/profile/connections');
   /* D1: identity verification status, fetched once the Security tab is visible. */
   const kycQuery = useApi<KycProfile>('/kyc/status', activeTab === 'security');
+  /* D3: personal activity feed — the same audit log the Compliance Console
+   * uses, filtered client-side to the entries this account's actions produced. */
+  const auditQuery = useApi<AuditLogEntry[]>('/audit-log', activeTab === 'security');
 
   /* Local edits overlay the API data until saved */
   const [profileEdits, setProfileEdits] = useState<Profile | null>(null);
@@ -310,6 +313,32 @@ export default function Settings() {
                       </div>
                       <span className="text-positive font-mono text-[12px]">Enabled</span>
                     </button>
+                  </div>
+
+                  {/* D3: personal activity feed, backed by the same audit log the Compliance Console reads */}
+                  <div>
+                    <h4 className="font-body text-[16px] text-ink font-medium mb-3">Recent Activity</h4>
+                    {auditQuery.error ? (
+                      <ErrorNotice message={auditQuery.error} onRetry={auditQuery.refresh} />
+                    ) : auditQuery.loading || !auditQuery.data ? (
+                      <div className="space-y-2">
+                        {Array.from({ length: 3 }).map((_, i) => <SkeletonBlock key={i} className="h-12 w-full" />)}
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {auditQuery.data
+                          .filter((entry) => entry.actorName === profile?.name || entry.actorType === 'user')
+                          .slice(0, 10)
+                          .map((entry) => (
+                            <div key={entry.id} className="flex items-center justify-between py-2.5 px-4 rounded-xl bg-panel2">
+                              <p className="font-body text-[13px] text-ink">{entry.description}</p>
+                              <p className="font-mono text-[11px] text-[rgba(var(--fg-rgb),0.42)] flex-shrink-0 ml-3">
+                                {new Date(entry.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                              </p>
+                            </div>
+                          ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
