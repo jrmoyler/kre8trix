@@ -180,7 +180,8 @@ export default function Kyc() {
       const updated = await api.post<KycProfile>('/kyc/selfie', {});
       setSelfie(updated.selfie);
       kycQuery.setData(updated);
-      goToNext('review');
+      // Stay on this step so the match result is actually visible —
+      // the user continues manually, same as the documents step.
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Selfie match failed');
     } finally {
@@ -447,6 +448,11 @@ export default function Kyc() {
             )}
             {step === 'documents' && (
               <button onClick={() => goToNext('selfie')} disabled={documents.length === 0} className="flex items-center gap-2 bg-acid text-void font-body text-[16px] font-semibold px-6 py-3 rounded-2xl disabled:opacity-40 disabled:cursor-not-allowed">
+                Continue <ChevronRight size={18} />
+              </button>
+            )}
+            {step === 'selfie' && (
+              <button onClick={() => goToNext('review')} disabled={!selfie.completed} className="flex items-center gap-2 bg-acid text-void font-body text-[16px] font-semibold px-6 py-3 rounded-2xl disabled:opacity-40 disabled:cursor-not-allowed">
                 Continue <ChevronRight size={18} />
               </button>
             )}

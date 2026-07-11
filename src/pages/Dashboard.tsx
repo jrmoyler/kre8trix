@@ -128,6 +128,7 @@ function AlertBanner() {
             </button>
             <button
               onClick={() => setDismissed(true)}
+              aria-label="Dismiss"
               className="text-[rgba(var(--fg-rgb),var(--muted-alpha))] hover:text-ink transition-colors duration-150"
             >
               <X size={18} />
@@ -667,15 +668,24 @@ export default function Dashboard() {
             <button
               key={pill.window}
               onClick={() => setForecastTab(pill.window)}
-              className={`flex items-center gap-2 transition-opacity ${
-                forecastTab === pill.window ? '' : 'opacity-50 hover:opacity-80'
-              }`}
+              className="flex items-center gap-2"
             >
-              <span className="w-2.5 h-2.5 rounded-full" style={{ background: pill.color }} />
+              {/* D4: dimming lives on the decorative dot only — the label and
+                  amount keep their own always-readable colors below, rather
+                  than being multiplied by a blanket container opacity (which
+                  otherwise halved already-tuned muted-text contrast to <4.5:1). */}
+              <span
+                className={`w-2.5 h-2.5 rounded-full transition-opacity ${forecastTab === pill.window ? '' : 'opacity-50'}`}
+                style={{ background: pill.color }}
+              />
               <span className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] tracking-[0.04em]">
                 {pill.label}:
               </span>
-              <span className="font-mono text-[20px] font-medium text-ink tracking-[-0.02em]">
+              <span
+                className={`font-mono text-[20px] font-medium tracking-[-0.02em] transition-colors ${
+                  forecastTab === pill.window ? 'text-ink' : 'text-[rgba(var(--fg-rgb),var(--muted-alpha))] hover:text-ink'
+                }`}
+              >
                 ${pill.amount.toLocaleString()}
               </span>
             </button>
