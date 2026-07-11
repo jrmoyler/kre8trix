@@ -59,7 +59,7 @@ const itemVariants = {
 
 /* ─────────────────────────── count-up hook ─────────────────────────── */
 
-function useCountUp(target: number, duration = 1200, delay = 0) {
+function useCountUp(target: number, duration = 1200, delay = 0, round = true) {
   const [value, setValue] = useState(0);
   const startTime = useRef<number | null>(null);
   const rafId = useRef<number | null>(null);
@@ -72,7 +72,7 @@ function useCountUp(target: number, duration = 1200, delay = 0) {
         const elapsed = timestamp - startTime.current;
         const progress = Math.min(elapsed / duration, 1);
         const eased = 1 - Math.pow(1 - progress, 3);
-        setValue(Math.round(eased * target));
+        setValue(round ? Math.round(eased * target) : eased * target);
         if (progress < 1) {
           rafId.current = requestAnimationFrame(animate);
         }
@@ -84,7 +84,7 @@ function useCountUp(target: number, duration = 1200, delay = 0) {
       clearTimeout(timeout);
       if (rafId.current) cancelAnimationFrame(rafId.current);
     };
-  }, [target, duration, delay]);
+  }, [target, duration, delay, round]);
 
   return value;
 }
@@ -167,7 +167,7 @@ function BalanceCard({
   sparklineData: number[];
   sparklineColor: string;
 }) {
-  const count = useCountUp(balance, 1200, delay);
+  const count = useCountUp(balance, 1200, delay, false);
 
   return (
     <motion.div
@@ -186,7 +186,7 @@ function BalanceCard({
             </span>
           </div>
           <div className="font-mono text-[36px] font-medium text-ink tracking-[-0.02em] leading-none mb-2">
-            {prefix}{count.toLocaleString()}{suffix}
+            {prefix}{count.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{suffix}
           </div>
           <div className="flex items-center gap-2">
             <span
@@ -364,7 +364,7 @@ function TransactionRow({
   tx: WalletTransaction;
   index: number;
 }) {
-  const isPositive = tx.amount > 0;
+  const isPositive = tx.amount >= 0;
   const statusColors: Record<string, string> = {
     Completed: 'rgb(var(--color-positive))',
     Pending: 'rgb(var(--color-gold))',
@@ -401,7 +401,7 @@ function TransactionRow({
           className="font-mono text-[14px] font-medium tracking-[-0.02em]"
           style={{ color: isPositive ? 'rgb(var(--color-positive))' : 'rgb(var(--color-negative))' }}
         >
-          {isPositive ? '+' : '-'}${Math.abs(tx.amount).toLocaleString()}.00
+          {isPositive ? '+' : '-'}${Math.abs(tx.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </p>
         <div className="flex items-center justify-end gap-2 mt-0.5">
           <span className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)] tracking-[0.04em]">
@@ -750,8 +750,11 @@ export default function Dashboard() {
                     ${revenue.total.toLocaleString()}
                   </p>
                 </div>
-                <span className="font-mono text-[12px] tracking-[0.04em]" style={{ color: 'rgb(var(--color-positive))' }}>
-                  +{revenue.changePercent}% vs last month
+                <span
+                  className="font-mono text-[12px] tracking-[0.04em]"
+                  style={{ color: revenue.changePercent >= 0 ? 'rgb(var(--color-positive))' : 'rgb(var(--color-negative))' }}
+                >
+                  {revenue.changePercent >= 0 ? '+' : ''}{revenue.changePercent}% vs last month
                 </span>
               </div>
             </>

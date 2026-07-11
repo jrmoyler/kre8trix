@@ -58,11 +58,19 @@ function RevenueOverview({
   const prevTotal = Object.values(PREV_MONTH).reduce((a, b) => a + b, 0);
   const change = Math.round(((Object.values(CURRENT_MONTH).reduce((a, b) => a + b, 0) - prevTotal) / prevTotal) * 100);
 
+  const pctChange = (key: keyof typeof CURRENT_MONTH) =>
+    Math.round(((CURRENT_MONTH[key] - PREV_MONTH[key]) / PREV_MONTH[key]) * 100);
+  const youtubeChange = pctChange('YouTube');
+  const stripeChange = pctChange('Stripe');
+  const otherPrev = PREV_MONTH.Shopify + PREV_MONTH.TikTok + PREV_MONTH.Patreon;
+  const otherCurrent = CURRENT_MONTH.Shopify + CURRENT_MONTH.TikTok + CURRENT_MONTH.Patreon;
+  const otherChange = Math.round(((otherCurrent - otherPrev) / otherPrev) * 100);
+
   const metrics = [
     { label: 'Total Revenue', value: `$${total.toLocaleString()}`, change: `+${change}% vs last month`, positive: true },
-    { label: 'YouTube', value: `$${sumKey('YouTube').toLocaleString()}`, change: '-6%', positive: false },
-    { label: 'Stripe', value: `$${sumKey('Stripe').toLocaleString()}`, change: '+16%', positive: true },
-    { label: 'Other', value: `$${(sumKey('Shopify') + sumKey('TikTok') + sumKey('Patreon')).toLocaleString()}`, change: '+31%', positive: true },
+    { label: 'YouTube', value: `$${sumKey('YouTube').toLocaleString()}`, change: `${youtubeChange > 0 ? '+' : ''}${youtubeChange}%`, positive: youtubeChange >= 0 },
+    { label: 'Stripe', value: `$${sumKey('Stripe').toLocaleString()}`, change: `${stripeChange > 0 ? '+' : ''}${stripeChange}%`, positive: stripeChange >= 0 },
+    { label: 'Other', value: `$${(sumKey('Shopify') + sumKey('TikTok') + sumKey('Patreon')).toLocaleString()}`, change: `${otherChange > 0 ? '+' : ''}${otherChange}%`, positive: otherChange >= 0 },
   ];
 
   return (
@@ -165,11 +173,11 @@ function RevenueByPlatform({ months }: { months: number }) {
               wrapperStyle={{ fontFamily: 'JetBrains Mono', fontSize: '12px', paddingTop: '16px' }}
               formatter={(value: string) => <span style={{ color: 'rgba(var(--fg-rgb),0.42)' }}>{value}</span>}
             />
-            <Bar dataKey="YouTube" stackId={chartMode === 'stacked' ? 'a' : undefined} fill="#FF0000" radius={[0, 0, 0, 0]} />
-            <Bar dataKey="Stripe" stackId={chartMode === 'stacked' ? 'a' : undefined} fill="#635BFF" radius={[0, 0, 0, 0]} />
-            <Bar dataKey="Shopify" stackId={chartMode === 'stacked' ? 'a' : undefined} fill="#96BF48" radius={[0, 0, 0, 0]} />
-            <Bar dataKey="TikTok" stackId={chartMode === 'stacked' ? 'a' : undefined} fill="#FF0050" radius={[0, 0, 0, 0]} />
-            <Bar dataKey="Patreon" stackId={chartMode === 'stacked' ? 'a' : undefined} fill="#FF424D" radius={chartMode === 'stacked' ? [4, 4, 0, 0] : [4, 4, 0, 0]} />
+            <Bar dataKey="YouTube" stackId={chartMode === 'stacked' ? 'a' : undefined} fill="#FF0000" radius={chartMode === 'grouped' ? [4, 4, 0, 0] : [0, 0, 0, 0]} />
+            <Bar dataKey="Stripe" stackId={chartMode === 'stacked' ? 'a' : undefined} fill="#635BFF" radius={chartMode === 'grouped' ? [4, 4, 0, 0] : [0, 0, 0, 0]} />
+            <Bar dataKey="Shopify" stackId={chartMode === 'stacked' ? 'a' : undefined} fill="#96BF48" radius={chartMode === 'grouped' ? [4, 4, 0, 0] : [0, 0, 0, 0]} />
+            <Bar dataKey="TikTok" stackId={chartMode === 'stacked' ? 'a' : undefined} fill="#FF0050" radius={chartMode === 'grouped' ? [4, 4, 0, 0] : [0, 0, 0, 0]} />
+            <Bar dataKey="Patreon" stackId={chartMode === 'stacked' ? 'a' : undefined} fill="#FF424D" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>

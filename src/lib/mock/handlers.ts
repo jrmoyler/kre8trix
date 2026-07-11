@@ -77,6 +77,14 @@ function assertAmount(value: unknown): number {
   return value;
 }
 
+/** Validate a currency at the API boundary — only USD/USDC balances exist. */
+function assertCurrency(value: unknown): 'USD' | 'USDC' {
+  if (value !== 'USD' && value !== 'USDC') {
+    throw new ApiError(400, 'Currency must be USD or USDC');
+  }
+  return value;
+}
+
 function base64Url(value: string): string {
   return btoa(value).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
@@ -184,6 +192,7 @@ registerMock('POST', '/wallet/send', (ctx) => {
   if (!body?.recipient?.trim()) throw new ApiError(400, 'Recipient is required');
   if (body.recipient.trim().length > 100) throw new ApiError(400, 'Recipient must be 100 characters or fewer');
   assertAmount(body.amount);
+  assertCurrency(body.currency);
 
   const state = getState();
   const recipientRaw = body.recipient.trim();
@@ -293,6 +302,16 @@ registerMock('POST', '/wallet/request', (ctx) => {
   if (!body?.recipient?.trim()) throw new ApiError(400, 'Enter who to request from');
   if (body.recipient.trim().length > 100) throw new ApiError(400, 'Recipient must be 100 characters or fewer');
   assertAmount(body.amount);
+  assertCurrency(body.currency);
+
+  const state = getState();
+  const recipientRaw = body.recipient.trim();
+  if (
+    recipientRaw.toLowerCase() === state.user.handle.toLowerCase() ||
+    recipientRaw === SELF_WALLET_ADDRESS
+  ) {
+    throw new ApiError(400, "You can't request funds from yourself");
+  }
 
   let transaction: WalletTransaction | undefined;
   mutate((s) => {
@@ -318,6 +337,7 @@ registerMock('POST', '/wallet/convert', (ctx) => {
   requireAuth(ctx);
   const body = ctx.body as ConvertPayload;
   assertAmount(body?.amount);
+  assertCurrency(body?.from);
 
   const state = getState();
   const available = body.from === 'USD' ? state.balances.usd : state.balances.usdc;
@@ -559,7 +579,7 @@ registerMock('POST', '/ccs/simulate', (ctx) => {
     if (!CCS_SIGNALS.some((s) => s.name === name)) {
       throw new ApiError(400, `Unknown signal: ${name}`);
     }
-    if (value < 300 || value > 850) {
+    if (!Number.isFinite(value) || value < 300 || value > 850) {
       throw new ApiError(400, 'Signal scores must be between 300 and 850');
     }
   }
@@ -595,7 +615,7 @@ function advancesOverview(): AdvancesOverview {
       tier: 'Rising',
     },
     active: state.activeAdvances,
-    history: [...state.activeAdvances, ...state.advanceHistory],
+    history: state.advanceHistory,
   };
 }
 

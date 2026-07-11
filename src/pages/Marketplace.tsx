@@ -4,7 +4,7 @@
  * or high-value deals surface a "Get sponsorship advance" CTA → /advances.
  */
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -171,10 +171,15 @@ function DealDetail({
   const navigate = useNavigate();
   const [pitch, setPitch] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const accepted = application?.status === 'Accepted';
   const showAdvanceCta = accepted || deal.payoutMax >= HIGH_VALUE_THRESHOLD;
   const remaining = daysLeft(deal.deadline);
+
+  useEffect(() => {
+    containerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [deal.id]);
 
   const handleApply = async () => {
     setSubmitting(true);
@@ -199,6 +204,7 @@ function DealDetail({
       className="overflow-hidden"
     >
       <div
+        ref={containerRef}
         className="bg-panel rounded-2xl p-6 md:p-8"
         style={{ border: `1px solid ${deal.brandColor}40` }}
       >
@@ -396,6 +402,7 @@ export default function Marketplace() {
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
+            aria-pressed={tab === t.key}
             className={`px-5 py-2.5 rounded-xl font-body text-[14px] font-medium transition-all ${
               tab === t.key
                 ? 'bg-acid text-void'
@@ -419,6 +426,7 @@ export default function Marketplace() {
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
                   placeholder="Search brands, campaigns, categories..."
+                  aria-label="Search brands and campaigns"
                   className="w-full bg-surface border border-[rgba(var(--fg-rgb),0.1)] rounded-xl pl-11 pr-4 py-3 font-body text-[14px] text-ink placeholder:text-[rgba(var(--fg-rgb),0.2)] focus:border-electric outline-none transition-colors"
                 />
               </div>
@@ -428,6 +436,7 @@ export default function Marketplace() {
                   <button
                     key={opt.value}
                     onClick={() => setSort(opt.value)}
+                    aria-pressed={sort === opt.value}
                     className={`px-4 py-2 rounded-lg font-mono text-[12px] tracking-[0.04em] transition-all ${
                       sort === opt.value
                         ? 'bg-[rgba(var(--electric-rgb),0.15)] text-electric'
@@ -444,6 +453,7 @@ export default function Marketplace() {
                 <button
                   key={c}
                   onClick={() => setCategory(c)}
+                  aria-pressed={category === c}
                   className={`px-4 py-1.5 rounded-full font-mono text-[12px] tracking-[0.04em] transition-all border ${
                     category === c
                       ? 'bg-acid text-void border-acid'

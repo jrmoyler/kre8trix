@@ -88,6 +88,7 @@ export default function Login() {
                   setMode(m);
                   setError(null);
                 }}
+                disabled={submitting}
                 className={`flex-1 py-2.5 rounded-lg font-body text-[14px] font-medium transition-all ${
                   mode === m ? 'bg-acid text-void' : 'text-[rgba(var(--fg-rgb),0.42)] hover:text-ink'
                 }`}
@@ -108,7 +109,9 @@ export default function Login() {
                   className="relative overflow-hidden"
                 >
                   <User size={16} className="absolute left-4 top-[18px] text-[rgba(var(--fg-rgb),0.42)]" />
+                  <label htmlFor="login-name" className="sr-only">Name</label>
                   <input
+                    id="login-name"
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
@@ -122,7 +125,9 @@ export default function Login() {
 
             <div className="relative">
               <Mail size={16} className="absolute left-4 top-[18px] text-[rgba(var(--fg-rgb),0.42)]" />
+              <label htmlFor="login-email" className="sr-only">Email</label>
               <input
+                id="login-email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -134,7 +139,9 @@ export default function Login() {
 
             <div className="relative">
               <Lock size={16} className="absolute left-4 top-[18px] text-[rgba(var(--fg-rgb),0.42)]" />
+              <label htmlFor="login-password" className="sr-only">Password</label>
               <input
+                id="login-password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}

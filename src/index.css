@@ -46,34 +46,7 @@
 
     --chart-grid: rgba(255,255,255,0.06);
 
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 240 10% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 240 10% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 240 5.9% 10%;
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 240 3.7% 15.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 240 4.9% 83.9%;
     --radius: 0.625rem;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
   /* ── C7: light theme ─────────────────────────────────────────
@@ -106,39 +79,6 @@
     --gold-rgb: 138,109,0;
 
     --chart-grid: rgba(22,24,43,0.12);
-
-    /* shadcn/ui semantic vars — light variants */
-    --background: 228 33% 97%;
-    --foreground: 233 32% 13%;
-    --card: 0 0% 100%;
-    --card-foreground: 233 32% 13%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 233 32% 13%;
-    --primary: 233 32% 13%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 228 24% 93%;
-    --secondary-foreground: 233 32% 13%;
-    --muted: 228 24% 93%;
-    --muted-foreground: 233 10% 40%;
-    --accent: 228 24% 93%;
-    --accent-foreground: 233 32% 13%;
-    --destructive: 0 72% 45%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 230 16% 86%;
-    --input: 230 16% 86%;
-    --ring: 233 32% 13%;
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 233 32% 13%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 228 24% 93%;
-    --sidebar-accent-foreground: 233 32% 13%;
-    --sidebar-border: 230 16% 86%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
-  }
-
-  * {
-    @apply border-border;
   }
 
   body {

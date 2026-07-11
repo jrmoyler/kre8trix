@@ -15,6 +15,7 @@ import {
   CreditCard,
   Wifi,
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 /* ------------------------------------------------------------------ */
 /*  Mock data                                                          */
@@ -44,7 +45,7 @@ const SPEND_CATEGORIES: SpendCategory[] = [
 /* ------------------------------------------------------------------ */
 /*  3D Tilt Card                                                       */
 /* ------------------------------------------------------------------ */
-function TiltCard({ src, alt, frozen, showDetails }: { src: string; alt: string; frozen: boolean; showDetails: boolean }) {
+function TiltCard({ frozen, showDetails }: { frozen: boolean; showDetails: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   const x = useMotionValue(0.5);
   const y = useMotionValue(0.5);
@@ -91,7 +92,15 @@ function TiltCard({ src, alt, frozen, showDetails }: { src: string; alt: string;
             boxShadow: '0 25px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(var(--fg-rgb),0.05)',
           }}
         >
-          <img src={src} alt={alt} className="w-[320px] h-[200px] object-cover rounded-2xl" />
+          <div
+            role="img"
+            aria-label="Kre8trix metal card"
+            className="w-[320px] h-[200px] rounded-2xl"
+            style={{
+              background:
+                'linear-gradient(135deg, #2a2a3d 0%, #1a1a28 45%, #0d0d16 100%)',
+            }}
+          />
           <AnimatePresence>
             {frozen && (
               <motion.div
@@ -146,12 +155,17 @@ export default function CardManager() {
   const [frozen, setFrozen] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [categories] = useState(SPEND_CATEGORIES);
 
   const handleCopyNumber = () => {
-    navigator.clipboard.writeText(CARD_NUMBER);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    navigator.clipboard
+      .writeText(CARD_NUMBER)
+      .then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      })
+      .catch(() => {
+        toast.error('Could not copy card number');
+      });
   };
 
   return (
@@ -163,7 +177,7 @@ export default function CardManager() {
         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] }}
         className="bg-panel border border-[rgba(var(--fg-rgb),0.08)] rounded-2xl p-6"
       >
-        <TiltCard src="/card-metal.png" alt="Kre8trix Card" frozen={frozen} showDetails={showDetails} />
+        <TiltCard frozen={frozen} showDetails={showDetails} />
 
         <div className="flex items-center justify-center gap-4 mt-4">
           <button
@@ -201,7 +215,7 @@ export default function CardManager() {
       >
         <h3 className="font-display text-[36px] tracking-[0.02em] text-ink mb-6">Spend Categories</h3>
         <div className="space-y-4">
-          {categories.map((cat, i) => {
+          {SPEND_CATEGORIES.map((cat, i) => {
             const percent = (cat.current / cat.limit) * 100;
             return (
               <div key={cat.name}>

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowRight, Bell, CheckCheck } from 'lucide-react';
+import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import { useApi } from '@/hooks/use-api';
 import { NOTIFICATION_TYPE_META, timeAgo } from '@/lib/notifications';
@@ -26,18 +27,29 @@ export default function NotificationBell() {
 
   useEffect(() => {
     if (!open) return;
-    const handler = (e: MouseEvent) => {
+    const handleClick = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setOpen(false);
       }
     };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('mousedown', handleClick);
+    document.addEventListener('keydown', handleKey);
+    return () => {
+      document.removeEventListener('mousedown', handleClick);
+      document.removeEventListener('keydown', handleKey);
+    };
   }, [open]);
 
   const markAllRead = async () => {
-    const updated = await api.post<AppNotification[]>('/notifications/read-all');
-    setData(updated);
+    try {
+      const updated = await api.post<AppNotification[]>('/notifications/read-all');
+      setData(updated);
+    } catch {
+      toast.error('Could not mark notifications as read');
+    }
   };
 
   const openNotification = (notification: AppNotification) => {
@@ -58,6 +70,8 @@ export default function NotificationBell() {
       <button
         onClick={() => setOpen((v) => !v)}
         aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
+        aria-haspopup="menu"
+        aria-expanded={open}
         className="relative w-10 h-10 rounded-xl flex items-center justify-center text-[rgba(var(--fg-rgb),0.42)] hover:text-ink hover:bg-[rgba(var(--fg-rgb),0.06)] transition-all duration-200"
       >
         <Bell size={20} />
