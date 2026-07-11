@@ -6,7 +6,16 @@
  */
 
 import { ApiError, registerMock, type MockContext } from '../api';
-import { ensureCreatorState, getState, mutate, NOTIF_COUNTER_START, seedNotifications, SELF_WALLET_ADDRESS } from './state';
+import {
+  ensureCreatorState,
+  ensureKycState,
+  getState,
+  mutate,
+  NOTIF_COUNTER_START,
+  seedKyc,
+  seedNotifications,
+  SELF_WALLET_ADDRESS,
+} from './state';
 import { EMAIL_RE, SOLANA_ADDRESS_RE } from '../types';
 /* C4: OAuth provider metadata shared with the consent screen UI. */
 import { OAUTH_CLIENT_ID, OAUTH_PROVIDERS, OAUTH_REDIRECT_PATH } from '../oauth';
@@ -51,6 +60,11 @@ import type {
   WalletBalances,
   WalletMutationResponse,
   WalletTransaction,
+  KybBusinessInfo,
+  KycDocument,
+  KycDocumentType,
+  KycPersonalInfo,
+  KycProfile,
 } from '../types';
 
 /* ─────────────────────────── helpers ─────────────────────────── */
@@ -185,9 +199,13 @@ registerMock('GET', '/wallet/transactions', (ctx) => {
   return result;
 });
 
+/** D1: sends at or above this amount require completed identity verification. */
+const KYC_SEND_THRESHOLD = 1000;
+
 registerMock('POST', '/wallet/send', (ctx) => {
   requireAuth(ctx);
   ensureCreatorState();
+  ensureKycState();
   const body = ctx.body as SendPayload;
   if (!body?.recipient?.trim()) throw new ApiError(400, 'Recipient is required');
   if (body.recipient.trim().length > 100) throw new ApiError(400, 'Recipient must be 100 characters or fewer');
@@ -195,6 +213,9 @@ registerMock('POST', '/wallet/send', (ctx) => {
   assertCurrency(body.currency);
 
   const state = getState();
+  if (body.amount >= KYC_SEND_THRESHOLD && state.kyc?.status !== 'verified') {
+    throw new ApiError(403, `Complete identity verification to send $${KYC_SEND_THRESHOLD.toLocaleString()} or more`);
+  }
   const recipientRaw = body.recipient.trim();
 
   /* C1: self-send guard — by own handle or own wallet address */
@@ -626,10 +647,15 @@ registerMock('GET', '/advances', (ctx) => {
 
 registerMock('POST', '/advances/apply', (ctx) => {
   requireAuth(ctx);
+  ensureKycState();
   const body = ctx.body as { amount?: number };
   const amount = assertAmount(body?.amount);
 
   const state = getState();
+  /* D1: soft-gate — advances require completed identity verification. */
+  if (state.kyc?.status !== 'verified') {
+    throw new ApiError(403, 'Complete identity verification to apply for advances');
+  }
   const available = ADVANCE_MAX - state.advanceUsed;
   if (amount > available) {
     throw new ApiError(400, `Amount exceeds your available limit of $${available.toLocaleString()}`);
@@ -1320,4 +1346,186 @@ registerMock('POST', '/oauth/token', (ctx) => {
     connections: getState().connections,
   };
   return response;
+});
+
+/* ─────────────────────── D1: KYC/KYB identity verification ───────────────────────
+ *
+ * Multi-step verification flow. Document/selfie "capture" is metadata-only —
+ * no file bytes or camera frames are ever persisted, since there is no real
+ * document-scanning or biometric-matching backend to justify it.
+ */
+
+const KYC_DOC_TYPES: KycDocumentType[] = ['passport', 'drivers_license', 'national_id', 'business_registration'];
+const KYC_MAX_DOC_BYTES = 10 * 1024 * 1024;
+/** Mock "manual review" delay before an in_review submission auto-clears. */
+const KYC_REVIEW_MS = 6_000;
+const SSN_LAST4_RE = /^\d{4}$/;
+
+function kycSnapshot(): KycProfile {
+  ensureKycState();
+  const { kyc } = getState();
+  const profile = kyc!;
+  if (profile.status === 'in_review' && profile.submittedAt) {
+    const elapsed = Date.now() - new Date(profile.submittedAt).getTime();
+    if (elapsed >= KYC_REVIEW_MS) {
+      mutate((s) => {
+        s.kyc!.status = 'verified';
+        s.kyc!.reviewedAt = new Date().toISOString();
+        s.user.kycStatus = 'verified';
+      });
+      return getState().kyc!;
+    }
+  }
+  return profile;
+}
+
+registerMock('GET', '/kyc/status', (ctx) => {
+  requireAuth(ctx);
+  return kycSnapshot();
+});
+
+registerMock('PUT', '/kyc/entity-type', (ctx) => {
+  requireAuth(ctx);
+  ensureKycState();
+  const body = ctx.body as { entityType?: 'individual' | 'business' };
+  if (body?.entityType !== 'individual' && body?.entityType !== 'business') {
+    throw new ApiError(400, 'entityType must be "individual" or "business"');
+  }
+  mutate((s) => {
+    s.kyc!.entityType = body.entityType!;
+    s.kyc!.currentStep = 'personal_info';
+  });
+  return getState().kyc!;
+});
+
+registerMock('PUT', '/kyc/personal-info', (ctx) => {
+  requireAuth(ctx);
+  ensureKycState();
+  const body = ctx.body as Partial<KycPersonalInfo>;
+  if (!body?.legalName?.trim()) throw new ApiError(400, 'Legal name is required');
+  if (!body?.dateOfBirth?.trim()) throw new ApiError(400, 'Date of birth is required');
+  if (!body?.address?.trim()) throw new ApiError(400, 'Address is required');
+  if (!body?.country?.trim()) throw new ApiError(400, 'Country is required');
+  if (!body?.ssnLast4 || !SSN_LAST4_RE.test(body.ssnLast4)) {
+    throw new ApiError(400, 'Enter the last 4 digits of your SSN/ITIN');
+  }
+  mutate((s) => {
+    s.kyc!.personalInfo = {
+      legalName: body.legalName!.trim(),
+      dateOfBirth: body.dateOfBirth!.trim(),
+      address: body.address!.trim(),
+      country: body.country!.trim(),
+      ssnLast4: body.ssnLast4!,
+    };
+    s.kyc!.currentStep = s.kyc!.entityType === 'business' ? 'business_info' : 'documents';
+  });
+  return getState().kyc!;
+});
+
+registerMock('PUT', '/kyc/business-info', (ctx) => {
+  requireAuth(ctx);
+  ensureKycState();
+  const body = ctx.body as Partial<KybBusinessInfo>;
+  if (!body?.legalBusinessName?.trim()) throw new ApiError(400, 'Legal business name is required');
+  if (!body?.ein?.trim()) throw new ApiError(400, 'EIN is required');
+  if (!body?.businessType?.trim()) throw new ApiError(400, 'Business type is required');
+  if (!body?.formationState?.trim()) throw new ApiError(400, 'Formation state is required');
+  mutate((s) => {
+    s.kyc!.businessInfo = {
+      legalBusinessName: body.legalBusinessName!.trim(),
+      ein: body.ein!.trim(),
+      businessType: body.businessType!.trim(),
+      formationState: body.formationState!.trim(),
+    };
+    s.kyc!.currentStep = 'documents';
+  });
+  return getState().kyc!;
+});
+
+registerMock('POST', '/kyc/documents', (ctx) => {
+  requireAuth(ctx);
+  ensureKycState();
+  const body = ctx.body as { type?: KycDocumentType; fileName?: string; sizeBytes?: number };
+  if (!body?.type || !KYC_DOC_TYPES.includes(body.type)) {
+    throw new ApiError(400, `Unknown document type: ${body?.type}`);
+  }
+  if (!body.fileName?.trim()) throw new ApiError(400, 'File name is required');
+  if (typeof body.sizeBytes !== 'number' || !Number.isFinite(body.sizeBytes) || body.sizeBytes <= 0) {
+    throw new ApiError(400, 'Invalid file size');
+  }
+  if (body.sizeBytes > KYC_MAX_DOC_BYTES) {
+    throw new ApiError(400, 'File exceeds the 10MB limit');
+  }
+
+  let document: KycDocument | undefined;
+  mutate((s) => {
+    const counter = s.kycDocCounter ?? 1;
+    s.kycDocCounter = counter + 1;
+    document = {
+      id: `kyd_${counter}`,
+      type: body.type!,
+      fileName: body.fileName!.trim(),
+      sizeBytes: body.sizeBytes!,
+      uploadedAt: new Date().toISOString(),
+      status: 'uploaded',
+    };
+    s.kyc!.documents = [...s.kyc!.documents, document];
+    if (s.kyc!.currentStep === 'documents') s.kyc!.currentStep = 'selfie';
+  });
+  return getState().kyc!;
+});
+
+registerMock('POST', '/kyc/selfie', (ctx) => {
+  requireAuth(ctx);
+  ensureKycState();
+  mutate((s) => {
+    s.kyc!.selfie = {
+      completed: true,
+      matchScore: 82 + Math.floor(Math.random() * 18),
+      completedAt: new Date().toISOString(),
+    };
+    s.kyc!.currentStep = 'review';
+  });
+  return getState().kyc!;
+});
+
+registerMock('POST', '/kyc/submit', (ctx) => {
+  requireAuth(ctx);
+  ensureKycState();
+  const { kyc } = getState();
+  const profile = kyc!;
+  if (!profile.personalInfo) throw new ApiError(400, 'Personal information is required');
+  if (profile.entityType === 'business' && !profile.businessInfo) {
+    throw new ApiError(400, 'Business information is required');
+  }
+  if (profile.documents.length === 0) throw new ApiError(400, 'Upload at least one identity document');
+  if (!profile.selfie.completed) throw new ApiError(400, 'Complete the selfie match step');
+
+  /* Deterministic reject path for demo/E2E: a legal name containing
+     "test-reject" always comes back rejected immediately. */
+  const shouldReject = profile.personalInfo.legalName.toLowerCase().includes('test-reject');
+  const now = new Date().toISOString();
+  mutate((s) => {
+    s.kyc!.submittedAt = now;
+    if (shouldReject) {
+      s.kyc!.status = 'rejected';
+      s.kyc!.reviewedAt = now;
+      s.kyc!.rejectionReason = 'Document quality did not meet verification standards.';
+      s.user.kycStatus = 'rejected';
+    } else {
+      s.kyc!.status = 'in_review';
+      s.kyc!.rejectionReason = null;
+      s.user.kycStatus = 'in_review';
+    }
+  });
+  return getState().kyc!;
+});
+
+registerMock('POST', '/kyc/reset', (ctx) => {
+  requireAuth(ctx);
+  mutate((s) => {
+    s.kyc = seedKyc();
+    s.user.kycStatus = 'unverified';
+  });
+  return getState().kyc!;
 });

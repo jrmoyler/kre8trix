@@ -12,6 +12,7 @@ import CardManager from './pages/CardManager'
 import Analytics from './pages/Analytics'
 import Onboarding from './pages/Onboarding'
 import Settings from './pages/Settings'
+import Kyc from './pages/Kyc' // D1: KYC/KYB identity verification
 import TaxCenter from './pages/TaxCenter' // C3: Tax Center
 /* C4: platform connect OAuth */
 import OAuthAuthorize from './pages/OAuthAuthorize'
@@ -40,6 +41,8 @@ export default function App() {
                 <Route path="/analytics" element={<Analytics />} />
                 <Route path="/onboarding" element={<Onboarding />} />
                 <Route path="/settings" element={<Settings />} />
+                {/* D1: identity verification wizard — reachable from Onboarding/Settings, not primary nav */}
+                <Route path="/kyc" element={<Kyc />} />
                 {/* C4: mock OAuth provider consent screen + redirect_uri */}
                 <Route path="/oauth/authorize" element={<OAuthAuthorize />} />
                 <Route path="/oauth/callback" element={<OAuthCallback />} />

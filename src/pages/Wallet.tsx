@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 import { motion, AnimatePresence, useMotionValue, useTransform, animate } from 'framer-motion';
 import {
   ArrowUpRight,
@@ -15,9 +15,11 @@ import { toast } from 'sonner';
 import { api, ApiError } from '@/lib/api';
 import { useApi } from '@/hooks/use-api';
 import { useAuth } from '@/lib/auth-context';
+import { isKycVerified } from '@/lib/kyc';
 import { SOLANA_ADDRESS_RE } from '@/lib/types';
 import type {
   Creator,
+  KycProfile,
   RecentRecipient,
   WalletBalances,
   WalletMutationResponse,
@@ -35,6 +37,9 @@ import {
 /*  Static data                                                        */
 /* ------------------------------------------------------------------ */
 const WALLET_ADDRESS = 'Hx3fK9mNpQr2sT5vW8xYzAbCdEfGhIjKlMnOpQrStUv9kL2';
+
+/* D1: sends at or above this amount require completed identity verification. */
+const KYC_SEND_THRESHOLD = 1000;
 
 /* ------------------------------------------------------------------ */
 /*  C1 — creator-to-creator payment helpers                            */
@@ -123,6 +128,7 @@ const VALID_TABS: WalletTab[] = ['send', 'request', 'receive', 'convert', 'histo
 /*  Main Wallet component                                              */
 /* ------------------------------------------------------------------ */
 export default function Wallet() {
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
   /* A5 — ?action=send|request|convert (and receive/history) selects the tab.
@@ -142,6 +148,9 @@ export default function Wallet() {
   const balancesQuery = useApi<WalletBalances>('/wallet/balances');
   const transactionsQuery = useApi<WalletTransaction[]>('/wallet/transactions');
   const recipientsQuery = useApi<RecentRecipient[]>('/wallet/recipients');
+  /* D1: large sends are gated behind identity verification. */
+  const kycQuery = useApi<KycProfile>('/kyc/status');
+  const kycVerified = isKycVerified(kycQuery.data?.status);
   const balances = balancesQuery.data;
 
   /* Form state */
@@ -180,6 +189,8 @@ export default function Wallet() {
   const availableBalance = sendCurrency === 'USD' ? balances?.usd ?? 0 : balances?.usdc ?? 0;
   const amountNum = parseFloat(sendAmount) || 0;
   const hasEnough = amountNum > 0 && amountNum <= availableBalance;
+  /* D1: soft-gate large sends behind identity verification. */
+  const kycBlocked = amountNum >= KYC_SEND_THRESHOLD && !kycVerified;
 
   /* ── C1: recipient resolution & validation ─────────────────────── */
   const trimmedRecipient = sendRecipient.trim();
@@ -302,6 +313,10 @@ export default function Wallet() {
   };
 
   const handleSend = async () => {
+    if (kycBlocked) {
+      toast.error(`Complete identity verification to send $${KYC_SEND_THRESHOLD.toLocaleString()} or more`);
+      return;
+    }
     setSubmitting(true);
     /* C1: send the handle when a creator is picked — the mock backend
        resolves it to their wallet address and records the recipient. */
@@ -594,10 +609,19 @@ export default function Wallet() {
                   </p>
                 ) : null}
 
+                {kycBlocked && (
+                  <p className="font-mono text-[12px] text-[rgb(var(--color-ember))]" role="alert">
+                    Sends of ${KYC_SEND_THRESHOLD.toLocaleString()} or more require identity verification —{' '}
+                    <button type="button" onClick={() => navigate('/kyc')} className="underline hover:text-acid">
+                      verify now
+                    </button>
+                  </p>
+                )}
+
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  disabled={!hasEnough || !recipientValid || submitting}
+                  disabled={!hasEnough || !recipientValid || kycBlocked || submitting}
                   onClick={handleSend}
                   className="w-full flex items-center justify-center gap-2 bg-acid text-void font-body text-[16px] font-semibold py-4 rounded-2xl disabled:opacity-40 disabled:cursor-not-allowed"
                 >

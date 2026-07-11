@@ -1,17 +1,20 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   CheckCircle2,
   AlertTriangle,
   Loader2,
   Lock,
+  ShieldAlert,
   Upload,
   ShoppingBag,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { api, ApiError } from '@/lib/api';
 import { useApi } from '@/hooks/use-api';
-import type { Advance, AdvancesOverview } from '@/lib/types';
+import { isKycVerified } from '@/lib/kyc';
+import type { Advance, AdvancesOverview, KycProfile } from '@/lib/types';
 import { ErrorNotice, SkeletonBlock } from '@/components/Skeletons';
 
 /* ------------------------------------------------------------------ */
@@ -94,7 +97,11 @@ function AdvancesSkeleton() {
 /*  Main Advances component                                            */
 /* ------------------------------------------------------------------ */
 export default function Advances() {
+  const navigate = useNavigate();
   const { data: overview, loading, error, refresh, setData } = useApi<AdvancesOverview>('/advances');
+  /* D1: advances are gated behind identity verification. */
+  const kycQuery = useApi<KycProfile>('/kyc/status');
+  const kycVerified = isKycVerified(kycQuery.data?.status);
 
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [customAmount, setCustomAmount] = useState('');
@@ -135,6 +142,10 @@ export default function Advances() {
     : history.filter((h) => h.status === historyFilter);
 
   const handleApply = async () => {
+    if (!kycVerified) {
+      toast.error('Complete identity verification to apply for advances');
+      return;
+    }
     setApplying(true);
     try {
       const updated = await api.post<AdvancesOverview>('/advances/apply', { amount: advanceAmount });
@@ -234,6 +245,22 @@ export default function Advances() {
           Access up to 60% of your projected monthly income instantly
         </p>
 
+        {/* D1: KYC soft-gate banner */}
+        {!kycQuery.loading && !kycVerified && (
+          <div className="flex items-center gap-3 mb-6 p-4 rounded-xl bg-[rgba(var(--ember-rgb),0.1)] border border-[rgba(var(--ember-rgb),0.2)]">
+            <ShieldAlert size={20} className="text-ember flex-shrink-0" />
+            <p className="font-body text-[13px] text-ink flex-1">
+              Complete identity verification to apply for advances.
+            </p>
+            <button
+              onClick={() => navigate('/kyc')}
+              className="font-mono text-[12px] tracking-[0.04em] text-electric hover:text-acid transition-colors flex-shrink-0"
+            >
+              Verify Now
+            </button>
+          </div>
+        )}
+
         {/* Amount selector */}
         <div className="space-y-5">
           <div className="flex flex-wrap gap-3">
@@ -271,7 +298,7 @@ export default function Advances() {
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            disabled={!isEligible || applying || advanceAmount <= 0 || advanceAmount > eligibility.available}
+            disabled={!isEligible || !kycVerified || applying || advanceAmount <= 0 || advanceAmount > eligibility.available}
             onClick={handleApply}
             className="flex items-center gap-2 bg-ember text-white font-body text-[16px] font-semibold px-8 py-4 rounded-2xl transition-all hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed"
           >

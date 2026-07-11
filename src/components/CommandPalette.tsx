@@ -12,6 +12,7 @@ import {
   Rocket,
   Search,
   Settings,
+  Shield,
   Target,
   TrendingUp,
   Wallet,
@@ -82,6 +83,7 @@ export default function CommandPalette({ onOpenChange }: CommandPaletteProps) {
     { label: 'Request Payment', keywords: 'invoice receive wallet', icon: ArrowDownLeft, action: () => go('/wallet?action=request') },
     { label: 'Convert USD ↔ USDC', keywords: 'swap exchange crypto', icon: RefreshCw, action: () => go('/wallet?action=convert') },
     { label: 'Get an Advance', keywords: 'financing apply capital', icon: Zap, action: () => go('/advances') },
+    { label: 'Verify Identity', keywords: 'kyc kyb compliance documents selfie', icon: Shield, action: () => go('/kyc') },
     { label: 'Restart Onboarding', keywords: 'setup connect platforms', icon: Rocket, action: () => go('/onboarding') },
     {
       label: 'Sign Out',

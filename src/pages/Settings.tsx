@@ -22,8 +22,9 @@ import { api, ApiError } from '@/lib/api';
 import { oauthSlugForConnection, startOAuthFlow } from '@/lib/oauth';
 import { useApi } from '@/hooks/use-api';
 import { useTheme, type ThemePreference } from '@/lib/theme-context';
-import type { AppSettings, PlatformConnection, Profile } from '@/lib/types';
+import type { AppSettings, KycProfile, PlatformConnection, Profile } from '@/lib/types';
 import { ErrorNotice, SkeletonBlock } from '@/components/Skeletons';
+import KycStatusBadge from '@/components/KycStatusBadge';
 
 /* ── constants ────────────────────────────────────────────── */
 const easeOutExpo = [0.16, 1, 0.3, 1] as [number, number, number, number];
@@ -72,6 +73,8 @@ export default function Settings() {
   const profileQuery = useApi<Profile>('/profile');
   const settingsQuery = useApi<AppSettings>('/settings');
   const connectionsQuery = useApi<PlatformConnection[]>('/profile/connections');
+  /* D1: identity verification status, fetched once the Security tab is visible. */
+  const kycQuery = useApi<KycProfile>('/kyc/status', activeTab === 'security');
 
   /* Local edits overlay the API data until saved */
   const [profileEdits, setProfileEdits] = useState<Profile | null>(null);
@@ -277,6 +280,16 @@ export default function Settings() {
                 <div className="space-y-6">
                   <h3 className="font-display text-[28px] tracking-[0.02em] text-ink">Security</h3>
                   <div className="space-y-4">
+                    <button
+                      onClick={() => navigate('/kyc')}
+                      className="w-full flex items-center justify-between p-4 rounded-xl bg-panel2 border border-[rgba(var(--fg-rgb),0.08)] hover:border-[rgba(var(--fg-rgb),0.14)] transition-colors"
+                    >
+                      <div className="text-left">
+                        <p className="font-body text-[14px] text-ink">Identity Verification</p>
+                        <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),0.42)]">Required for advances and large transfers</p>
+                      </div>
+                      {kycQuery.data ? <KycStatusBadge status={kycQuery.data.status} /> : <ChevronRight size={16} className="text-[rgba(var(--fg-rgb),0.42)]" />}
+                    </button>
                     <button
                       onClick={() => toast('Password reset isn’t available in this demo yet')}
                       className="w-full flex items-center justify-between p-4 rounded-xl bg-panel2 border border-[rgba(var(--fg-rgb),0.08)] hover:border-[rgba(var(--fg-rgb),0.14)] transition-colors"

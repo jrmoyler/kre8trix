@@ -10,6 +10,7 @@ import type {
   AppSettings,
   Creator,
   DealApplication,
+  KycProfile,
   PlatformConnection,
   Profile,
   RecentRecipient,
@@ -57,6 +58,10 @@ export interface MockState {
   /* C5: notification id counter + last time the mock generator emitted one. */
   notifCounter: number;
   notifLastGeneratedAt: number;
+  /* D1: KYC/KYB identity verification — optional so state persisted before
+     this feature shipped still parses; handlers backfill via ensureKycState(). */
+  kyc?: KycProfile;
+  kycDocCounter?: number;
 }
 
 const STORAGE_KEY = 'kre8trix.mock.state';
@@ -69,6 +74,23 @@ function hoursAgo(hours: number): string {
 }
 
 export const NOTIF_COUNTER_START = 7;
+
+/* ── D1: KYC/KYB seed ── */
+
+export function seedKyc(): KycProfile {
+  return {
+    status: 'unverified',
+    entityType: 'individual',
+    personalInfo: null,
+    businessInfo: null,
+    documents: [],
+    selfie: { completed: false, matchScore: null, completedAt: null },
+    submittedAt: null,
+    reviewedAt: null,
+    rejectionReason: null,
+    currentStep: 'entity_type',
+  };
+}
 
 export function seedNotifications(): AppNotification[] {
   return [
@@ -194,6 +216,9 @@ function defaultState(): MockState {
     oauth: { pending: {}, codes: {} },
     notifCounter: NOTIF_COUNTER_START,
     notifLastGeneratedAt: Date.now(),
+    /* D1: KYC/KYB */
+    kyc: seedKyc(),
+    kycDocCounter: 1,
   };
 }
 
@@ -235,6 +260,19 @@ export function ensureCreatorState() {
   mutate((s) => {
     if (!s.creators) s.creators = seedCreators();
     if (!s.recentRecipients) s.recentRecipients = seedRecentRecipients();
+  });
+}
+
+/**
+ * Backfill D1 fields for sessions whose persisted mock state predates
+ * the KYC/KYB feature.
+ */
+export function ensureKycState() {
+  const state = getState();
+  if (state.kyc && state.kycDocCounter !== undefined) return;
+  mutate((s) => {
+    if (!s.kyc) s.kyc = seedKyc();
+    if (s.kycDocCounter === undefined) s.kycDocCounter = 1;
   });
 }
 

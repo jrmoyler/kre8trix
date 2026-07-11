@@ -122,7 +122,8 @@ function ThemeToggleButton() {
 export default function Layout({ children }: { children: ReactNode }) {
   const location = useLocation();
   const [paletteOpen, setPaletteOpen] = useState(false);
-  const isOnboarding = location.pathname === '/onboarding';
+  /* D1: the KYC wizard is full-screen like Onboarding — no sidebar/top bar chrome. */
+  const isOnboarding = location.pathname === '/onboarding' || location.pathname === '/kyc';
   const pageTitle = pageTitles[location.pathname] || 'Kre8trix';
 
   const togglePalette = useCallback(() => setPaletteOpen((v) => !v), []);
