@@ -467,12 +467,10 @@ export default function TaxCenter() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="font-display text-[48px] tracking-[0.02em] text-ink">Tax Center</h1>
-        <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] tracking-[0.04em]">
-          Quarterly estimates, 1099-K coverage, and filing integrations
-        </p>
-      </div>
+      {/* The page title lives in the top bar — just the descriptive lead-in here. */}
+      <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] tracking-[0.04em]">
+        Quarterly estimates, 1099-K coverage, and filing integrations
+      </p>
       <QuarterlyCalculator summary={summary} loading={loading} error={error} refresh={refresh} setData={setData} />
       <Ten99kTracker />
       <TurboTaxCard summary={summary} setData={setData} />

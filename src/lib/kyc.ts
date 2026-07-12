@@ -9,7 +9,6 @@ import {
   AlertTriangle,
   CheckCircle2,
   Clock,
-  FileWarning,
   ShieldQuestion,
   XCircle,
   type LucideIcon,
@@ -42,18 +41,6 @@ export const KYC_STEP_ORDER: KycStepKey[] = [
   'selfie',
   'review',
 ];
-
-export const KYC_STEP_LABELS: Record<KycStepKey, string> = {
-  entity_type: 'Account Type',
-  personal_info: 'Personal Info',
-  business_info: 'Business Info',
-  documents: 'Documents',
-  selfie: 'Selfie Match',
-  review: 'Review & Submit',
-};
-
-/** Icon used for a rejected upload — kept separate from the status meta above. */
-export const DOCUMENT_REJECTED_ICON: LucideIcon = FileWarning;
 
 /** True once the user has cleared identity verification for gated actions. */
 export function isKycVerified(status: KycStatus | undefined): boolean {

@@ -13,7 +13,7 @@ import type { KycProfile, PlatformConnection } from '@/lib/types';
 /* ── steps ────────────────────────────────────────────────── */
 const STEPS = [
   { key: 'connect', label: 'Connect Platforms', icon: Link },
-  { key: 'wallet', label: 'Setup Wallet', icon: Wallet },
+  { key: 'wallet', label: 'Payout Method', icon: Wallet },
   { key: 'verify', label: 'Verify Identity', icon: Shield },
   { key: 'complete', label: 'Ready', icon: Sparkles },
 ];
@@ -167,15 +167,15 @@ export default function Onboarding() {
               exit={{ opacity: 0, x: -20 }}
             >
               <h1 className="font-display text-[48px] tracking-[0.02em] text-ink mb-2">
-                Setup Wallet
+                How You Get Paid
               </h1>
               <p className="font-body text-[16px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] mb-8">
-                Choose how you want to receive funds
+                Choose where your earnings should land
               </p>
               <div className="space-y-3">
                 {[
-                  { key: 'new', label: 'Create New Wallet', desc: 'USDC on Solana — instant, low fees' },
-                  { key: 'existing', label: 'Use Existing Wallet', desc: 'Connect your current crypto wallet' },
+                  { key: 'new', label: 'Kre8trix Balance', desc: 'Instant payouts, 24/7 — no fees' },
+                  { key: 'existing', label: 'Bank Account', desc: 'Payouts to your existing bank account' },
                 ].map((w) => (
                   <button
                     key={w.key}
@@ -205,7 +205,7 @@ export default function Onboarding() {
                 Verify Identity
               </h1>
               <p className="font-body text-[16px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] mb-8">
-                Complete KYC/KYB verification to unlock advances and larger transfers
+                Verify your identity to unlock advances and larger transfers
               </p>
               <div className="p-6 rounded-2xl bg-panel border border-[rgba(var(--fg-rgb),0.08)] space-y-4">
                 <div className="flex items-center justify-between">

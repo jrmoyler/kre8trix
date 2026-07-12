@@ -41,6 +41,13 @@ const WALLET_ADDRESS = 'Hx3fK9mNpQr2sT5vW8xYzAbCdEfGhIjKlMnOpQrStUv9kL2';
 /* D1: sends at or above this amount require completed identity verification. */
 const KYC_SEND_THRESHOLD = 1000;
 
+/* The two balances are presented in plain money terms — the settlement
+ * rails behind the instant balance stay an implementation detail. */
+const BALANCE_LABELS: Record<'USD' | 'USDC', string> = {
+  USD: 'Cash',
+  USDC: 'Instant',
+};
+
 /* ------------------------------------------------------------------ */
 /*  C1 — creator-to-creator payment helpers                            */
 /* ------------------------------------------------------------------ */
@@ -118,7 +125,7 @@ const TABS = [
   { key: 'send', label: 'Send', icon: ArrowUpRight },
   { key: 'request', label: 'Request', icon: HandCoins },
   { key: 'receive', label: 'Receive', icon: ArrowDownLeft },
-  { key: 'convert', label: 'Convert', icon: RefreshCw },
+  { key: 'convert', label: 'Move', icon: RefreshCw },
   { key: 'history', label: 'History', icon: Clock },
 ] as const;
 
@@ -177,9 +184,11 @@ export default function Wallet() {
   const handleCopy = (text: string) => {
     navigator.clipboard
       .writeText(text)
-      .then(() => setCopied(true))
+      .then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      })
       .catch(() => toast.error('Could not copy to clipboard'));
-    setTimeout(() => setCopied(false), 2000);
   };
 
   const filteredTransactions = (transactionsQuery.data ?? []).filter((t) =>
@@ -246,7 +255,7 @@ export default function Wallet() {
     };
   }, [sendRecipient, selectedCreator]);
 
-  /* Inline recipient error (self-send / malformed USDC address). */
+  /* Inline recipient error (self-send / malformed deposit ID). */
   const addressLooksWrong =
     !isHandleInput &&
     trimmedRecipient.length > 0 &&
@@ -256,7 +265,7 @@ export default function Wallet() {
   const recipientError = isSelfSend
     ? "You can't send to yourself"
     : addressLooksWrong && !activeCreator
-      ? 'Invalid Solana address — expected 32–44 base58 characters (or type @ to find a creator)'
+      ? "That deposit ID doesn't look right — paste the full ID, or type @ to find a creator"
       : null;
 
   const recipientValid =
@@ -302,8 +311,6 @@ export default function Wallet() {
 
   const convertNum = parseFloat(convertAmount) || 0;
   const convertAvailable = convertFrom === 'USD' ? balances?.usd ?? 0 : balances?.usdc ?? 0;
-  const rate = 1.0;
-  const convertedAmount = convertFrom === 'USD' ? convertNum / rate : convertNum * rate;
   const convertTo = convertFrom === 'USD' ? 'USDC' : 'USD';
 
   /* Mutations — refresh balances + history from the API response */
@@ -329,9 +336,7 @@ export default function Wallet() {
       });
       applyMutation(result);
       recipientsQuery.refresh();
-      toast.success(
-        `Sent ${sendCurrency === 'USD' ? `$${amountNum.toLocaleString()}` : `${amountNum.toLocaleString()} USDC`} to ${recipient}`,
-      );
+      toast.success(`Sent $${amountNum.toLocaleString()} to ${recipient}`);
       setSendAmount('');
       setSendRecipient('');
       setSelectedCreator(null);
@@ -370,10 +375,12 @@ export default function Wallet() {
         amount: convertNum,
       });
       applyMutation(result);
-      toast.success(`Converted ${convertNum.toLocaleString()} ${convertFrom} to ${convertTo}`);
+      toast.success(
+        `Moved $${convertNum.toLocaleString()} to your ${BALANCE_LABELS[convertTo]} Balance`,
+      );
       setConvertAmount('');
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : 'Conversion failed — try again');
+      toast.error(err instanceof ApiError ? err.message : 'Transfer failed — try again');
     } finally {
       setSubmitting(false);
     }
@@ -405,7 +412,7 @@ export default function Wallet() {
           >
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-center gap-3">
-                <span className="font-mono text-[12px] tracking-[0.04em] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">USD Wallet</span>
+                <span className="font-mono text-[12px] tracking-[0.04em] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">Cash Balance</span>
                 <span className="px-2 py-0.5 rounded-full bg-[rgba(var(--positive-rgb),0.15)] text-positive font-mono text-[11px]">Available</span>
               </div>
               <button
@@ -436,7 +443,7 @@ export default function Wallet() {
           >
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-center gap-3">
-                <span className="font-mono text-[12px] tracking-[0.04em] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">USDC Wallet</span>
+                <span className="font-mono text-[12px] tracking-[0.04em] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">Instant Balance</span>
                 <span className="px-2 py-0.5 rounded-full bg-[rgba(var(--positive-rgb),0.15)] text-positive font-mono text-[11px]">Available</span>
               </div>
               <button
@@ -447,10 +454,10 @@ export default function Wallet() {
               </button>
             </div>
             <div className="font-mono text-[56px] font-medium tracking-[-0.02em] text-ink leading-none mb-2">
-              <AnimatedNumber value={balances.usdc} suffix=" USDC" />
+              $<AnimatedNumber value={balances.usdc} />
             </div>
             <div className="flex items-end justify-between">
-              <span className="font-mono text-[12px] tracking-[0.04em] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">Solana Network</span>
+              <span className="font-mono text-[12px] tracking-[0.04em] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">Instant transfers · 24/7</span>
               <MiniSparkline data={balances.usdcSparkline} color="rgb(var(--color-violet))" />
             </div>
           </motion.div>
@@ -487,19 +494,19 @@ export default function Wallet() {
             <motion.div key="send" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
               <div className="space-y-4">
                 <div className="flex gap-3">
-                  <button onClick={() => setSendCurrency('USD')} className={`px-4 py-2 rounded-xl font-mono text-[14px] ${sendCurrency === 'USD' ? 'bg-acid text-void' : 'bg-panel2 text-ink'}`}>USD</button>
-                  <button onClick={() => setSendCurrency('USDC')} className={`px-4 py-2 rounded-xl font-mono text-[14px] ${sendCurrency === 'USDC' ? 'bg-acid text-void' : 'bg-panel2 text-ink'}`}>USDC</button>
+                  <button onClick={() => setSendCurrency('USD')} className={`px-4 py-2 rounded-xl font-mono text-[14px] ${sendCurrency === 'USD' ? 'bg-acid text-void' : 'bg-panel2 text-ink'}`}>Cash</button>
+                  <button onClick={() => setSendCurrency('USDC')} className={`px-4 py-2 rounded-xl font-mono text-[14px] ${sendCurrency === 'USDC' ? 'bg-acid text-void' : 'bg-panel2 text-ink'}`}>Instant</button>
                 </div>
                 <input
                   type="number"
                   value={sendAmount}
                   onChange={(e) => setSendAmount(e.target.value)}
-                  placeholder={`Amount (${sendCurrency})`}
+                  placeholder="Amount ($)"
                   aria-label="Amount to send"
                   className="w-full bg-surface border border-[rgba(var(--fg-rgb),0.1)] rounded-xl px-4 py-4 font-mono text-[24px] text-ink placeholder:text-[rgba(var(--fg-rgb),0.2)] focus:border-electric focus-visible:ring-2 focus-visible:ring-electric outline-none transition-colors"
                 />
                 <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">
-                  Available: {sendCurrency === 'USD' ? `$${availableBalance.toLocaleString()}` : `${availableBalance.toLocaleString()} USDC`}
+                  Available: ${availableBalance.toLocaleString()} ({BALANCE_LABELS[sendCurrency]} Balance)
                 </p>
 
                 {/* C1 — Recent recipients */}
@@ -536,7 +543,7 @@ export default function Wallet() {
                   </div>
                 )}
 
-                {/* C1 — Recipient combobox: @handle lookup or wallet address */}
+                {/* C1 — Recipient combobox: @handle lookup or deposit ID */}
                 <div className="relative">
                   <input
                     type="text"
@@ -552,7 +559,7 @@ export default function Wallet() {
                     }}
                     onFocus={() => setRecipientFocused(true)}
                     onBlur={() => setRecipientFocused(false)}
-                    placeholder="@handle or Solana wallet address"
+                    placeholder="@handle or deposit ID"
                     aria-label="Recipient"
                     aria-invalid={recipientError !== null}
                     className={`w-full bg-surface border rounded-xl px-4 py-3 font-body text-[16px] text-ink placeholder:text-[rgba(var(--fg-rgb),0.2)] outline-none transition-colors ${
@@ -626,7 +633,7 @@ export default function Wallet() {
                   className="w-full flex items-center justify-center gap-2 bg-acid text-void font-body text-[16px] font-semibold py-4 rounded-2xl disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   {submitting && <Loader2 size={18} className="animate-spin" />}
-                  Send {sendCurrency}
+                  Send Money
                 </motion.button>
               </div>
             </motion.div>
@@ -636,14 +643,14 @@ export default function Wallet() {
             <motion.div key="request" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
               <div className="space-y-4">
                 <div className="flex gap-3">
-                  <button onClick={() => setRequestCurrency('USD')} className={`px-4 py-2 rounded-xl font-mono text-[14px] ${requestCurrency === 'USD' ? 'bg-acid text-void' : 'bg-panel2 text-ink'}`}>USD</button>
-                  <button onClick={() => setRequestCurrency('USDC')} className={`px-4 py-2 rounded-xl font-mono text-[14px] ${requestCurrency === 'USDC' ? 'bg-acid text-void' : 'bg-panel2 text-ink'}`}>USDC</button>
+                  <button onClick={() => setRequestCurrency('USD')} className={`px-4 py-2 rounded-xl font-mono text-[14px] ${requestCurrency === 'USD' ? 'bg-acid text-void' : 'bg-panel2 text-ink'}`}>Cash</button>
+                  <button onClick={() => setRequestCurrency('USDC')} className={`px-4 py-2 rounded-xl font-mono text-[14px] ${requestCurrency === 'USDC' ? 'bg-acid text-void' : 'bg-panel2 text-ink'}`}>Instant</button>
                 </div>
                 <input
                   type="number"
                   value={requestAmount}
                   onChange={(e) => setRequestAmount(e.target.value)}
-                  placeholder={`Amount (${requestCurrency})`}
+                  placeholder="Amount ($)"
                   aria-label="Amount to request"
                   className="w-full bg-surface border border-[rgba(var(--fg-rgb),0.1)] rounded-xl px-4 py-4 font-mono text-[24px] text-ink placeholder:text-[rgba(var(--fg-rgb),0.2)] focus:border-electric focus-visible:ring-2 focus-visible:ring-electric outline-none transition-colors"
                 />
@@ -651,12 +658,12 @@ export default function Wallet() {
                   type="text"
                   value={requestFrom}
                   onChange={(e) => setRequestFrom(e.target.value)}
-                  placeholder="Request from (email, username, or address)"
+                  placeholder="Request from (email or @handle)"
                   aria-label="Request from"
                   className="w-full bg-surface border border-[rgba(var(--fg-rgb),0.1)] rounded-xl px-4 py-3 font-body text-[16px] text-ink placeholder:text-[rgba(var(--fg-rgb),0.2)] focus:border-electric focus-visible:ring-2 focus-visible:ring-electric outline-none transition-colors"
                 />
                 <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">
-                  They'll get a payment link — funds land in your {requestCurrency} wallet once paid.
+                  They'll get a payment link — funds land in your {BALANCE_LABELS[requestCurrency]} Balance once paid.
                 </p>
                 <motion.button
                   whileHover={{ scale: 1.02 }}
@@ -666,7 +673,7 @@ export default function Wallet() {
                   className="w-full flex items-center justify-center gap-2 bg-acid text-void font-body text-[16px] font-semibold py-4 rounded-2xl disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   {submitting && <Loader2 size={18} className="animate-spin" />}
-                  Request {requestCurrency}
+                  Request Payment
                 </motion.button>
               </div>
             </motion.div>
@@ -675,16 +682,16 @@ export default function Wallet() {
           {activeTab === 'receive' && (
             <motion.div key="receive" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="text-center py-8">
               <div className="inline-block bg-white p-4 rounded-2xl mb-4">
-                <div className="w-[180px] h-[180px] bg-[#06060E] rounded-xl grid grid-cols-7 grid-rows-7 gap-[2px]">
+                <div className="w-[180px] h-[180px] bg-white rounded-xl grid grid-cols-7 grid-rows-7 gap-[2px]">
                   {Array.from({ length: 49 }).map((_, i) => (
                     <div key={i} className={`rounded-[1px] ${[0,1,2,3,4,6,7,13,14,16,18,20,21,22,25,27,28,32,34,35,38,39,40,41,42,44,46,48].includes(i) ? 'bg-[#06060E]' : 'bg-transparent'}`} />
                   ))}
                 </div>
               </div>
-              <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] mb-2">Your Wallet Address</p>
+              <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))] mb-2">Your Deposit ID</p>
               <div className="flex items-center justify-center gap-2">
                 <code className="font-mono text-[14px] text-ink bg-panel px-4 py-2 rounded-xl">{WALLET_ADDRESS.slice(0, 16)}...{WALLET_ADDRESS.slice(-4)}</code>
-                <button onClick={() => handleCopy(WALLET_ADDRESS)} aria-label="Copy wallet address" className="p-2 rounded-xl bg-panel text-[rgba(var(--fg-rgb),var(--muted-alpha))] hover:text-ink transition-colors">
+                <button onClick={() => handleCopy(WALLET_ADDRESS)} aria-label="Copy deposit ID" className="p-2 rounded-xl bg-panel text-[rgba(var(--fg-rgb),var(--muted-alpha))] hover:text-ink transition-colors">
                   {copied ? <Check size={16} className="text-positive" /> : <Copy size={16} />}
                 </button>
               </div>
@@ -695,23 +702,23 @@ export default function Wallet() {
             <motion.div key="convert" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
               <div className="space-y-4">
                 <div className="flex items-center gap-4">
-                  <button onClick={() => setConvertFrom('USD')} className={`flex-1 py-3 rounded-xl font-mono text-[14px] ${convertFrom === 'USD' ? 'bg-acid text-void' : 'bg-panel2 text-ink'}`}>USD → USDC</button>
-                  <button onClick={() => setConvertFrom('USDC')} className={`flex-1 py-3 rounded-xl font-mono text-[14px] ${convertFrom === 'USDC' ? 'bg-acid text-void' : 'bg-panel2 text-ink'}`}>USDC → USD</button>
+                  <button onClick={() => setConvertFrom('USD')} className={`flex-1 py-3 rounded-xl font-mono text-[14px] ${convertFrom === 'USD' ? 'bg-acid text-void' : 'bg-panel2 text-ink'}`}>Cash → Instant</button>
+                  <button onClick={() => setConvertFrom('USDC')} className={`flex-1 py-3 rounded-xl font-mono text-[14px] ${convertFrom === 'USDC' ? 'bg-acid text-void' : 'bg-panel2 text-ink'}`}>Instant → Cash</button>
                 </div>
                 <input
                   type="number"
                   value={convertAmount}
                   onChange={(e) => setConvertAmount(e.target.value)}
-                  placeholder={`Amount in ${convertFrom}`}
-                  aria-label="Amount to convert"
+                  placeholder="Amount ($)"
+                  aria-label="Amount to move"
                   className="w-full bg-surface border border-[rgba(var(--fg-rgb),0.1)] rounded-xl px-4 py-4 font-mono text-[24px] text-ink placeholder:text-[rgba(var(--fg-rgb),0.2)] focus:border-electric focus-visible:ring-2 focus-visible:ring-electric outline-none transition-colors"
                 />
                 <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">
-                  Available: {convertFrom === 'USD' ? `$${convertAvailable.toLocaleString()}` : `${convertAvailable.toLocaleString()} USDC`}
+                  Available: ${convertAvailable.toLocaleString()} ({BALANCE_LABELS[convertFrom]} Balance)
                 </p>
                 {convertNum > 0 && (
                   <p className="font-mono text-[14px] text-electric">
-                    You'll receive: {convertedAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })} {convertTo}
+                    Your {BALANCE_LABELS[convertTo]} Balance receives ${convertNum.toLocaleString('en-US', { minimumFractionDigits: 2 })} — no fees
                   </p>
                 )}
                 <motion.button
@@ -722,7 +729,7 @@ export default function Wallet() {
                   className="w-full flex items-center justify-center gap-2 bg-acid text-void font-body text-[16px] font-semibold py-4 rounded-2xl disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   {submitting && <Loader2 size={18} className="animate-spin" />}
-                  Convert
+                  Move Money
                 </motion.button>
               </div>
             </motion.div>
@@ -733,7 +740,7 @@ export default function Wallet() {
               <div className="flex gap-2 mb-4">
                 {(['All', 'USD', 'USDC'] as const).map((f) => (
                   <button key={f} onClick={() => setHistoryFilter(f)} className={`px-4 py-2 rounded-lg font-mono text-[12px] ${historyFilter === f ? 'bg-acid text-void' : 'bg-panel2 text-[rgba(var(--fg-rgb),var(--muted-alpha))]'}`}>
-                    {f}
+                    {f === 'All' ? 'All' : BALANCE_LABELS[f]}
                   </button>
                 ))}
               </div>
@@ -745,7 +752,7 @@ export default function Wallet() {
                 <div className="space-y-2 max-h-[400px] overflow-y-auto">
                   {filteredTransactions.length === 0 ? (
                     <p className="text-center py-8 font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">
-                      No {historyFilter !== 'All' ? historyFilter : ''} transactions yet
+                      No {historyFilter !== 'All' ? `${BALANCE_LABELS[historyFilter].toLowerCase()} ` : ''}transactions yet
                     </p>
                   ) : (
                     filteredTransactions.map((tx) => (
