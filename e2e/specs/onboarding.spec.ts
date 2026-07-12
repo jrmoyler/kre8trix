@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { login } from '../fixtures/auth';
 
-test('walks through onboarding: connect a platform, wallet setup, verify step, complete', async ({ page }) => {
+test('walks through onboarding: connect a platform, payout method, verify step, complete', async ({ page }) => {
   await login(page);
   await page.goto('/onboarding');
 
@@ -12,8 +12,8 @@ test('walks through onboarding: connect a platform, wallet setup, verify step, c
   await expect(page.getByText('Connected').first()).toBeVisible();
   await page.getByRole('button', { name: 'Continue' }).click();
 
-  // Step 1 — Setup Wallet (defaults to "Create New Wallet", already selected).
-  await expect(page.getByRole('heading', { name: /setup wallet/i })).toBeVisible();
+  // Step 1 — Payout method (defaults to "Kre8trix Balance", already selected).
+  await expect(page.getByRole('heading', { name: /how you get paid/i })).toBeVisible();
   await page.getByRole('button', { name: 'Continue' }).click();
 
   // Step 2 — Verify Identity: live KYC status summary (D1), non-blocking.

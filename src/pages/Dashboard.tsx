@@ -470,7 +470,7 @@ export default function Dashboard() {
   const quickActions = [
     { icon: ArrowUpRight, label: 'Send Money', description: 'Transfer funds instantly', color: 'rgb(var(--color-acid))', path: '/wallet?action=send' },
     { icon: ArrowDownLeft, label: 'Request', description: 'Request payment from anyone', color: 'rgb(var(--color-electric))', path: '/wallet?action=request' },
-    { icon: RefreshCw, label: 'Convert', description: 'USD to USDC & back', color: 'rgb(var(--color-violet))', path: '/wallet?action=convert' },
+    { icon: RefreshCw, label: 'Move Money', description: 'Between your balances', color: 'rgb(var(--color-violet))', path: '/wallet?action=convert' },
     { icon: Zap, label: 'Get Advance', description: 'Revenue-backed financing', color: 'rgb(var(--color-ember))', path: '/advances' },
   ];
 
@@ -501,7 +501,7 @@ export default function Dashboard() {
           ) : (
             <>
               <BalanceCard
-                label="USD Balance"
+                label="Cash Balance"
                 balance={balances.usd}
                 change="+$1,240"
                 changeLabel="this month"
@@ -513,12 +513,10 @@ export default function Dashboard() {
                 sparklineColor="rgb(var(--color-electric))"
               />
               <BalanceCard
-                label="USDC Balance"
+                label="Instant Balance"
                 balance={balances.usdc}
-                change="+850 USDC"
+                change="+$850"
                 changeLabel="this week"
-                prefix=""
-                suffix=" USDC"
                 delay={450}
                 accentColor="rgb(var(--color-positive))"
                 gradientBg="linear-gradient(135deg, rgb(var(--color-panel)) 0%, rgba(var(--violet-rgb),0.03) 100%)"

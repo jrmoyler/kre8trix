@@ -111,7 +111,7 @@ export default function AmlMonitoring() {
         transition={{ duration: 0.4, ease: easeOutExpo }}
         className="font-display text-[48px] tracking-[0.02em] text-ink"
       >
-        AML Monitoring
+        Transaction Monitoring
       </motion.h2>
 
       <ComplianceNav active="aml" />

@@ -164,15 +164,7 @@ export default function Settings() {
 
   return (
     <div className="space-y-6">
-      <motion.h2
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, ease: easeOutExpo }}
-        className="font-display text-[48px] tracking-[0.02em] text-ink"
-      >
-        Settings
-      </motion.h2>
-
+      {/* The page title lives in the top bar — no in-page duplicate. */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Sidebar */}
         <motion.div
@@ -353,8 +345,8 @@ export default function Settings() {
                   <div className="space-y-4">
                     <div className="flex items-center justify-between p-4 rounded-xl bg-panel2">
                       <div>
-                        <p className="font-body text-[14px] text-ink">Auto-Convert USDC to USD</p>
-                        <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">On payout day</p>
+                        <p className="font-body text-[14px] text-ink">Auto-Transfer to Cash</p>
+                        <p className="font-mono text-[12px] text-[rgba(var(--fg-rgb),var(--muted-alpha))]">Moves your instant balance to cash on payout day</p>
                       </div>
                       <Toggle
                         on={settings.autoConvertUsdc}
@@ -363,7 +355,7 @@ export default function Settings() {
                     </div>
                     <button
                       onClick={() => {
-                        const next = settings.defaultPayoutWallet === 'USDC (Solana)' ? 'USD (Bank ····4821)' : 'USDC (Solana)';
+                        const next = settings.defaultPayoutWallet === 'Instant Balance' ? 'Bank account ····4821' : 'Instant Balance';
                         setSettings({ ...settings, defaultPayoutWallet: next });
                       }}
                       className="w-full flex items-center justify-between p-4 rounded-xl bg-panel2 hover:bg-[rgba(var(--fg-rgb),0.08)] transition-colors"

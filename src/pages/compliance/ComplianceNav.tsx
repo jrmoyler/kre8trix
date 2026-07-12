@@ -8,7 +8,7 @@ import { ShieldAlert } from 'lucide-react';
  */
 export default function ComplianceNav({ active }: { active: 'aml' | 'audit-log' }) {
   const tabs = [
-    { key: 'aml' as const, label: 'AML Monitoring', path: '/compliance/aml' },
+    { key: 'aml' as const, label: 'Transaction Monitoring', path: '/compliance/aml' },
     { key: 'audit-log' as const, label: 'Audit Log', path: '/compliance/audit-log' },
   ];
   return (

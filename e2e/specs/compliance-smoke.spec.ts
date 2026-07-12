@@ -2,14 +2,14 @@ import { test, expect } from '@playwright/test';
 import { login } from '../fixtures/auth';
 
 test.describe('Compliance Console', () => {
-  test('AML Monitoring loads with seeded alert data', async ({ page }) => {
+  test('Transaction Monitoring loads with seeded alert data', async ({ page }) => {
     const errors: string[] = [];
     page.on('pageerror', (e) => errors.push(e.message));
 
     await login(page);
     await page.goto('/compliance/aml');
 
-    await expect(page.getByRole('heading', { name: 'AML Monitoring', level: 2 })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Transaction Monitoring', level: 2 })).toBeVisible();
     await expect(page.getByText(/internal compliance ops view/i)).toBeVisible();
     await expect(page.getByText('OPEN ALERTS')).toBeVisible();
     // Seeded alerts (see seedAmlAlerts in src/lib/mock/state.ts).
@@ -18,7 +18,7 @@ test.describe('Compliance Console', () => {
     expect(errors).toEqual([]);
   });
 
-  test('AML alert detail panel supports notes and status changes', async ({ page }) => {
+  test('alert detail panel supports notes and status changes', async ({ page }) => {
     await login(page);
     await page.goto('/compliance/aml');
 

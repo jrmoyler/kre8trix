@@ -280,13 +280,13 @@ registerMock('POST', '/wallet/send', (ctx) => {
   } else {
     creator = state.creators.find((c) => c.walletAddress === recipientRaw);
     if (!creator && body.currency === 'USDC' && !SOLANA_ADDRESS_RE.test(recipientRaw)) {
-      throw new ApiError(400, 'Invalid Solana wallet address (base58, 32-44 characters)');
+      throw new ApiError(400, "That deposit ID doesn't look right — paste the full ID, or search by @handle");
     }
   }
 
   const available = body.currency === 'USD' ? state.balances.usd : state.balances.usdc;
   if (body.amount > available) {
-    throw new ApiError(400, `Insufficient ${body.currency} balance`);
+    throw new ApiError(400, `Insufficient ${body.currency === 'USD' ? 'cash' : 'instant'} balance`);
   }
 
   const resolvedAddress = creator?.walletAddress ?? recipientRaw;
@@ -331,7 +331,7 @@ registerMock('POST', '/wallet/send', (ctx) => {
         ...s.recentRecipients.filter((r) => r.walletAddress !== resolvedAddress),
       ].slice(0, 6);
     }
-    appendAuditLog(s, 'send_funds', `Sent ${body.currency === 'USD' ? `$${body.amount.toLocaleString()}` : `${body.amount.toLocaleString()} USDC`} to ${displayName}`);
+    appendAuditLog(s, 'send_funds', `Sent $${body.amount.toLocaleString()} to ${displayName}`);
   });
 
   const response: WalletMutationResponse = { transaction: transaction!, balances: balancesSnapshot() };
@@ -395,7 +395,7 @@ registerMock('POST', '/wallet/request', (ctx) => {
       iconColor: 'rgb(var(--color-electric))',
     };
     s.transactions.unshift(transaction);
-    appendAuditLog(s, 'request_funds', `Requested ${body.currency === 'USD' ? `$${body.amount.toLocaleString()}` : `${body.amount.toLocaleString()} USDC`} from ${body.recipient.trim()}`);
+    appendAuditLog(s, 'request_funds', `Requested $${body.amount.toLocaleString()} from ${body.recipient.trim()}`);
   });
 
   const response: WalletMutationResponse = { transaction: transaction!, balances: balancesSnapshot() };
@@ -411,7 +411,7 @@ registerMock('POST', '/wallet/convert', (ctx) => {
   const state = getState();
   const available = body.from === 'USD' ? state.balances.usd : state.balances.usdc;
   if (body.amount > available) {
-    throw new ApiError(400, `Insufficient ${body.from} balance`);
+    throw new ApiError(400, `Insufficient ${body.from === 'USD' ? 'cash' : 'instant'} balance`);
   }
 
   let transaction: WalletTransaction | undefined;
@@ -424,10 +424,11 @@ registerMock('POST', '/wallet/convert', (ctx) => {
       s.balances.usd += body.amount;
     }
     const to = body.from === 'USD' ? 'USDC' : 'USD';
+    const toLabel = to === 'USDC' ? 'Instant' : 'Cash';
     transaction = {
       id: `tx_${s.txCounter++}`,
       date: todayLabel(),
-      description: `${body.from} → ${to}`,
+      description: `Moved to ${toLabel} Balance`,
       platform: 'Kre8trix',
       type: 'Convert',
       currency: to,
@@ -436,7 +437,7 @@ registerMock('POST', '/wallet/convert', (ctx) => {
       iconColor: 'rgb(var(--color-acid))',
     };
     s.transactions.unshift(transaction);
-    appendAuditLog(s, 'convert_funds', `Converted ${body.amount.toLocaleString()} ${body.from} to ${to}`);
+    appendAuditLog(s, 'convert_funds', `Moved $${body.amount.toLocaleString()} to ${toLabel} Balance`);
   });
 
   const response: WalletMutationResponse = { transaction: transaction!, balances: balancesSnapshot() };
@@ -810,7 +811,7 @@ registerMock('PUT', '/settings', (ctx) => {
 /* ─────────────────────────── notifications (C5) ─────────────────────────── */
 
 const NOTIFICATION_TEMPLATES: Array<Pick<AppNotification, 'type' | 'title' | 'body' | 'actionPath'>> = [
-  { type: 'payment', title: 'Payout received', body: 'Stripe payout of $1,240 landed in your USD balance.', actionPath: '/wallet?action=history' },
+  { type: 'payment', title: 'Payout received', body: 'Stripe payout of $1,240 landed in your cash balance.', actionPath: '/wallet?action=history' },
   { type: 'payment', title: 'TikTok Creator Fund', body: 'A $312 Creator Fund payment just cleared.', actionPath: '/wallet?action=history' },
   { type: 'advance', title: 'Advance approved', body: 'You are pre-approved for up to $2,500 at 2.5% flat.', actionPath: '/advances' },
   { type: 'advance', title: 'Repayment processed', body: '$212 auto-deducted toward advance KRA-2847.', actionPath: '/advances' },

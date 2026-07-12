@@ -135,15 +135,15 @@ function defaultState(): MockState {
       { id: 'tx_12', date: 'Oct 15, 2024', description: 'YouTube Ad Revenue', platform: 'YouTube', type: 'Income', currency: 'USD', amount: 4850, status: 'Completed', iconColor: '#FF0000' },
       { id: 'tx_11', date: 'Oct 14, 2024', description: 'TikTok Creator Fund', platform: 'TikTok', type: 'Income', currency: 'USD', amount: 1240, status: 'Completed', iconColor: '#FF0050' },
       { id: 'tx_10', date: 'Oct 13, 2024', description: 'Shopify Store Sales', platform: 'Shopify', type: 'Income', currency: 'USD', amount: 2180, status: 'Completed', iconColor: '#96BF48' },
-      { id: 'tx_09', date: 'Oct 12, 2024', description: 'USDC → USD Conversion', platform: 'Kre8trix', type: 'Convert', currency: 'USD', amount: -500, status: 'Completed', iconColor: 'rgb(var(--color-acid))' },
+      { id: 'tx_09', date: 'Oct 12, 2024', description: 'Moved to Cash Balance', platform: 'Kre8trix', type: 'Convert', currency: 'USD', amount: -500, status: 'Completed', iconColor: 'rgb(var(--color-acid))' },
       { id: 'tx_08', date: 'Oct 11, 2024', description: 'Equipment Purchase', platform: 'Kre8trix Card', type: 'Expense', currency: 'USD', amount: -1299, status: 'Completed', iconColor: 'rgb(var(--color-violet))' },
       { id: 'tx_07', date: 'Oct 10, 2024', description: 'Stripe Payout', platform: 'Stripe', type: 'Income', currency: 'USD', amount: 3450, status: 'Pending', iconColor: '#635BFF' },
       { id: 'tx_06', date: 'Oct 9, 2024', description: 'Advance Repayment', platform: 'Kre8trix', type: 'Expense', currency: 'USD', amount: -1850, status: 'Completed', iconColor: 'rgb(var(--color-acid))' },
       { id: 'tx_05', date: 'Oct 8, 2024', description: 'Patreon Subscriptions', platform: 'Patreon', type: 'Income', currency: 'USD', amount: 890, status: 'Completed', iconColor: '#FF424D' },
-      { id: 'tx_04', date: 'Oct 9, 2024', description: 'USDC Deposit (Solana)', platform: 'Solana', type: 'Income', currency: 'USDC', amount: 2000, status: 'Completed', iconColor: 'rgb(var(--color-violet))' },
+      { id: 'tx_04', date: 'Oct 9, 2024', description: 'Instant Deposit', platform: 'Kre8trix', type: 'Income', currency: 'USDC', amount: 2000, status: 'Completed', iconColor: 'rgb(var(--color-violet))' },
       { id: 'tx_03', date: 'Oct 8, 2024', description: 'Card Subscription', platform: 'Kre8trix Card', type: 'Expense', currency: 'USD', amount: -29, status: 'Completed', iconColor: 'rgb(var(--color-violet))' },
       { id: 'tx_02', date: 'Oct 7, 2024', description: 'Brand Sponsorship', platform: 'Stripe', type: 'Income', currency: 'USD', amount: 5000, status: 'Completed', iconColor: '#635BFF' },
-      { id: 'tx_01', date: 'Oct 6, 2024', description: 'USD → USDC', platform: 'Kre8trix', type: 'Convert', currency: 'USDC', amount: 850, status: 'Completed', iconColor: 'rgb(var(--color-acid))' },
+      { id: 'tx_01', date: 'Oct 6, 2024', description: 'Moved to Instant Balance', platform: 'Kre8trix', type: 'Convert', currency: 'USDC', amount: 850, status: 'Completed', iconColor: 'rgb(var(--color-acid))' },
     ],
     activeAdvances: [
       {
@@ -181,7 +181,7 @@ function defaultState(): MockState {
         { key: 'marketing', label: 'Marketing emails', description: 'Product updates and tips', enabled: false },
       ],
       autoConvertUsdc: true,
-      defaultPayoutWallet: 'USDC (Solana)',
+      defaultPayoutWallet: 'Instant Balance',
     },
     reserve: {
       goal: 10000,
@@ -314,7 +314,7 @@ export function seedAuditLog(): AuditLogEntry[] {
     { actorType: 'user', actorName: 'Alex Chen', action: 'signup', description: 'Account created', hoursAgoValue: 2400 },
     { actorType: 'user', actorName: 'Alex Chen', action: 'connect_platform', description: 'Connected YouTube', hoursAgoValue: 2350, relatedPath: '/settings?tab=connections' },
     { actorType: 'user', actorName: 'Alex Chen', action: 'login', description: 'Signed in', hoursAgoValue: 200 },
-    { actorType: 'user', actorName: 'Alex Chen', action: 'send_funds', description: 'Sent $500 USDC to @zaravibes', hoursAgoValue: 190, relatedPath: '/wallet' },
+    { actorType: 'user', actorName: 'Alex Chen', action: 'send_funds', description: 'Sent $500 to @zaravibes', hoursAgoValue: 190, relatedPath: '/wallet' },
     { actorType: 'user', actorName: 'Alex Chen', action: 'apply_advance', description: 'Applied for a $2,500 advance', hoursAgoValue: 150, relatedPath: '/advances' },
     { actorType: 'compliance_officer', actorName: 'Compliance Ops', action: 'aml_alert_status_change', description: 'Reviewed alert aml_02 — cleared', hoursAgoValue: 110, relatedPath: '/compliance/aml' },
     { actorType: 'user', actorName: 'Alex Chen', action: 'login', description: 'Signed in', hoursAgoValue: 24 },
@@ -430,11 +430,6 @@ export function saveState() {
   } catch {
     /* storage unavailable (private mode quota etc.) — state stays in memory */
   }
-}
-
-export function resetState() {
-  cached = defaultState();
-  saveState();
 }
 
 /**

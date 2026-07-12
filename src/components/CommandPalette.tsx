@@ -69,7 +69,7 @@ export default function CommandPalette({ onOpenChange }: CommandPaletteProps) {
 
   const pages: PaletteItem[] = [
     { label: 'Dashboard', keywords: 'home overview', icon: LayoutDashboard, action: () => go('/dashboard') },
-    { label: 'Wallet', keywords: 'balance money usdc', icon: Wallet, action: () => go('/wallet') },
+    { label: 'Wallet', keywords: 'balance money send', icon: Wallet, action: () => go('/wallet') },
     { label: 'Credit Score', keywords: 'ccs score signals', icon: Target, action: () => go('/credit-score') },
     { label: 'Cash Flow', keywords: 'forecast tax reserve', icon: TrendingUp, action: () => go('/cash-flow') },
     { label: 'Advances', keywords: 'financing loan capital', icon: Zap, action: () => go('/advances') },
@@ -81,9 +81,9 @@ export default function CommandPalette({ onOpenChange }: CommandPaletteProps) {
   const actions: PaletteItem[] = [
     { label: 'Send Money', keywords: 'transfer pay wallet', icon: ArrowUpRight, action: () => go('/wallet?action=send') },
     { label: 'Request Payment', keywords: 'invoice receive wallet', icon: ArrowDownLeft, action: () => go('/wallet?action=request') },
-    { label: 'Convert USD ↔ USDC', keywords: 'swap exchange crypto', icon: RefreshCw, action: () => go('/wallet?action=convert') },
+    { label: 'Move Money', keywords: 'convert transfer between balances', icon: RefreshCw, action: () => go('/wallet?action=convert') },
     { label: 'Get an Advance', keywords: 'financing apply capital', icon: Zap, action: () => go('/advances') },
-    { label: 'Verify Identity', keywords: 'kyc kyb compliance documents selfie', icon: Shield, action: () => go('/kyc') },
+    { label: 'Verify Identity', keywords: 'verification documents selfie id', icon: Shield, action: () => go('/kyc') },
     { label: 'Restart Onboarding', keywords: 'setup connect platforms', icon: Rocket, action: () => go('/onboarding') },
     {
       label: 'Sign Out',
