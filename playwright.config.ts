@@ -28,10 +28,30 @@ export default defineConfig({
       },
     },
   ],
-  webServer: {
-    command: 'npm run dev',
-    url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
-    timeout: 30_000,
-  },
+  /* E4: with E2E_API=1 the suite runs against the real backend — an
+   * ephemeral API server on :4000 plus vite configured to proxy /api
+   * to it. Default (mock) mode is unchanged. */
+  webServer: process.env.E2E_API
+    ? [
+        {
+          command: 'npm run api',
+          url: 'http://localhost:4000/health',
+          reuseExistingServer: false,
+          timeout: 30_000,
+          env: { KRE8TRIX_EPHEMERAL: '1' },
+        },
+        {
+          command: 'npm run dev',
+          url: 'http://localhost:3000',
+          reuseExistingServer: false,
+          timeout: 30_000,
+          env: { VITE_API_URL: '/api' },
+        },
+      ]
+    : {
+        command: 'npm run dev',
+        url: 'http://localhost:3000',
+        reuseExistingServer: !process.env.CI,
+        timeout: 30_000,
+      },
 });
