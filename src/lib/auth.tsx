@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react
 import { api, clearToken, getToken, setToken } from './api';
 import { AuthContext, type AuthContextValue } from './auth-context';
 import { clearPendingOAuth } from './oauth';
-import { clearPersistedState } from './mock/state';
+import { clearPersistedState } from '../backend/state';
 import type { AuthResponse, User } from './types';
 
 export function AuthProvider({ children }: { children: ReactNode }) {

@@ -3,25 +3,17 @@
  *
  * All UI data access goes through `api.get/post/put/del`. When
  * `VITE_API_URL` is set the request is sent to that server with JSON
- * encoding and an Authorization header. When it is not set, requests are
- * served by the in-browser mock backend registered via `registerMock`
- * (see src/lib/mock/handlers.ts), so the app can be pointed at a real
- * API later without touching any page code.
+ * encoding and an Authorization header. When it is not set, requests
+ * are served in-browser by the shared backend core
+ * (src/backend/handlers.ts) via its route registry, so the app behaves
+ * identically against the mock and the real server (server/index.ts) —
+ * both run the same handlers.
  */
 
-/* ─────────────────────────── errors ─────────────────────────── */
+import { ApiError, dispatch, type HttpMethod } from '../backend/registry';
 
-export class ApiError extends Error {
-  readonly status: number;
-  readonly details?: unknown;
-
-  constructor(status: number, message: string, details?: unknown) {
-    super(message);
-    this.name = 'ApiError';
-    this.status = status;
-    this.details = details;
-  }
-}
+export { ApiError };
+export type { HttpMethod };
 
 /* ─────────────────────────── auth token ─────────────────────────── */
 
@@ -39,28 +31,7 @@ export function clearToken() {
   localStorage.removeItem(TOKEN_KEY);
 }
 
-/* ─────────────────────────── mock registry ─────────────────────────── */
-
-export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE';
-
-export interface MockContext {
-  /** Parsed query-string parameters. */
-  query: Record<string, string>;
-  /** JSON request body, if any. */
-  body: unknown;
-  /** Bearer token from the Authorization header (null when logged out). */
-  token: string | null;
-  /** C5: path params captured from `:param` segments in the registered path. */
-  params: Record<string, string>;
-}
-
-export type MockHandler = (ctx: MockContext) => unknown;
-
-const mockRegistry = new Map<string, MockHandler>();
-
-export function registerMock(method: HttpMethod, path: string, handler: MockHandler) {
-  mockRegistry.set(`${method} ${path}`, handler);
-}
+/* ─────────────────────────── mock transport ─────────────────────────── */
 
 /** Simulated network latency so loading states are visible in dev. */
 const MOCK_LATENCY_MS = 450;
@@ -69,54 +40,9 @@ function delay(ms: number) {
   return new Promise<void>((resolve) => setTimeout(resolve, ms));
 }
 
-/* C5: registered paths may declare `:param` segments (e.g. `/notifications/:id/read`).
-   Exact-path handlers still win; patterns are only consulted on an exact-lookup miss. */
-function matchMockRoute(
-  method: HttpMethod,
-  pathname: string,
-): { handler: MockHandler; params: Record<string, string> } | null {
-  const requestSegments = pathname.split('/');
-  for (const [key, handler] of mockRegistry) {
-    if (!key.startsWith(`${method} `) || !key.includes('/:')) continue;
-    const patternSegments = key.slice(method.length + 1).split('/');
-    if (patternSegments.length !== requestSegments.length) continue;
-    const params: Record<string, string> = {};
-    let matched = true;
-    for (let i = 0; i < patternSegments.length; i++) {
-      const segment = patternSegments[i];
-      if (segment.startsWith(':')) {
-        params[segment.slice(1)] = decodeURIComponent(requestSegments[i]);
-      } else if (segment !== requestSegments[i]) {
-        matched = false;
-        break;
-      }
-    }
-    if (matched) return { handler, params };
-  }
-  return null;
-}
-
 async function dispatchMock(method: HttpMethod, path: string, body?: unknown): Promise<unknown> {
-  const [pathname, search = ''] = path.split('?');
-  let handler = mockRegistry.get(`${method} ${pathname}`);
-  let params: Record<string, string> = {};
-  if (!handler) {
-    const match = matchMockRoute(method, pathname);
-    if (match) {
-      handler = match.handler;
-      params = match.params;
-    }
-  }
-  if (!handler) {
-    throw new ApiError(404, `No mock handler for ${method} ${pathname}`);
-  }
-  const query: Record<string, string> = {};
-  new URLSearchParams(search).forEach((value, key) => {
-    query[key] = value;
-  });
-
   await delay(MOCK_LATENCY_MS * (0.6 + Math.random() * 0.8));
-  return handler({ query, body, token: getToken(), params });
+  return dispatch(method, path, { body, token: getToken() });
 }
 
 /* ─────────────────────────── real transport ─────────────────────────── */

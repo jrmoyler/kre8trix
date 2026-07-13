@@ -2,8 +2,8 @@ import type { Page } from '@playwright/test';
 
 /**
  * The mock backend accepts any well-formed email + a password of 6+
- * characters (see registerMock('POST', '/auth/login', ...) in
- * src/lib/mock/handlers.ts) — there's no real credential store to
+ * characters (see registerRoute('POST', '/auth/login', ...) in
+ * src/backend/handlers.ts) — there's no real credential store to
  * seed, so any consistent fake identity works for every test run.
  */
 export const TEST_EMAIL = 'alex@kre8trix.app';

@@ -9,3 +9,6 @@ dist/
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+
+# E2: real API server data (per-account state + user records)
+server/.data/

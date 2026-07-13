@@ -7,6 +7,15 @@ export default defineConfig({
   plugins: [inspectAttr(), react()],
   server: {
     port: 3000,
+    /* E3: with `VITE_API_URL=/api`, API calls proxy to the real server
+     * (server/index.ts, `npm run api`) on the same origin — no CORS. */
+    proxy: {
+      "/api": {
+        target: "http://localhost:4000",
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, ""),
+      },
+    },
   },
   resolve: {
     alias: {
