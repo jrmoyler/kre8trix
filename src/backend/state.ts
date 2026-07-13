@@ -1,7 +1,9 @@
 /*
- * Mutable state for the mock backend. Persisted to sessionStorage so
- * that sends, conversions, advance applications, and settings changes
- * survive route changes and reloads within a browser session.
+ * Mutable state for the shared backend core. Persistence is pluggable
+ * (see StateStore below): the in-browser mock keeps state in
+ * sessionStorage so changes survive route changes and reloads within a
+ * browser session; the real Node server (server/) persists each
+ * account's state to disk.
  */
 
 import type {
@@ -21,8 +23,8 @@ import type {
   TurboTaxConnection,
   User,
   WalletTransaction,
-} from '../types';
-import { AUDIT_GENESIS_HASH, computeEntryHash } from '../audit';
+} from '../lib/types';
+import { AUDIT_GENESIS_HASH, computeEntryHash } from '../lib/audit';
 
 /* C4: server-side half of the OAuth authorization-code flow. */
 export interface OAuthMockState {
@@ -404,46 +406,110 @@ export function seedAmlAlerts(): AmlAlert[] {
   ];
 }
 
-let cached: MockState | null = null;
+/* ────────────────────────────────────────────────────────────────
+ * E1 — pluggable persistence.
+ *
+ * Handlers read and mutate state through getState()/mutate() without
+ * knowing where it lives. In the browser the default store below keeps
+ * the existing sessionStorage behavior; the Node server swaps in a
+ * file-backed store (server/store.ts) and switches the namespace to
+ * the authenticated user before each dispatch, giving every account
+ * its own persisted state.
+ * ──────────────────────────────────────────────────────────────── */
 
-export function getState(): MockState {
-  if (cached) return cached;
-  try {
-    const raw = sessionStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      cached = JSON.parse(raw) as MockState;
-      /* C4: migrate state persisted before the OAuth flow existed. */
-      if (!cached.oauth) cached.oauth = { pending: {}, codes: {} };
-      return cached;
-    }
-  } catch {
-    /* corrupt storage — fall through to defaults */
-  }
-  cached = defaultState();
-  return cached;
+export interface StateStore {
+  load(namespace: string): string | null;
+  save(namespace: string, serialized: string): void;
+  clear(namespace: string): void;
 }
 
-export function saveState() {
-  if (!cached) return;
-  try {
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(cached));
-  } catch {
-    /* storage unavailable (private mode quota etc.) — state stays in memory */
-  }
+const DEFAULT_NAMESPACE = 'default';
+
+function storageKey(namespace: string): string {
+  return namespace === DEFAULT_NAMESPACE ? STORAGE_KEY : `${STORAGE_KEY}.${namespace}`;
+}
+
+/* sessionStorage-backed store. Every access is wrapped in try/catch so
+   this module also loads in runtimes without sessionStorage (Node) —
+   there the server installs its own store before any dispatch. */
+const sessionStorageStore: StateStore = {
+  load(namespace) {
+    try {
+      return sessionStorage.getItem(storageKey(namespace));
+    } catch {
+      return null;
+    }
+  },
+  save(namespace, serialized) {
+    try {
+      sessionStorage.setItem(storageKey(namespace), serialized);
+    } catch {
+      /* storage unavailable (private mode quota etc.) — state stays in memory */
+    }
+  },
+  clear(namespace) {
+    try {
+      sessionStorage.removeItem(storageKey(namespace));
+    } catch {
+      /* storage unavailable — in-memory cache is already dropped */
+    }
+  },
+};
+
+let store: StateStore = sessionStorageStore;
+let currentNamespace = DEFAULT_NAMESPACE;
+const cache = new Map<string, MockState>();
+
+/** Replace the persistence backend (used by the real server). Drops the in-memory cache. */
+export function setStateStore(next: StateStore) {
+  store = next;
+  cache.clear();
 }
 
 /**
- * Wipe the persisted mock-backend state entirely (called on logout so no
- * per-user data — balances, transactions, profile, OAuth codes — outlives
- * the session).
+ * Select which account's state subsequent getState()/mutate() calls
+ * operate on. Handlers are synchronous, so the server can safely set
+ * this immediately before each dispatch.
+ */
+export function setStateNamespace(namespace: string) {
+  currentNamespace = namespace;
+}
+
+export function getState(): MockState {
+  const cached = cache.get(currentNamespace);
+  if (cached) return cached;
+
+  let state: MockState | null = null;
+  const raw = store.load(currentNamespace);
+  if (raw) {
+    try {
+      state = JSON.parse(raw) as MockState;
+      /* C4: migrate state persisted before the OAuth flow existed. */
+      if (!state.oauth) state.oauth = { pending: {}, codes: {} };
+    } catch {
+      /* corrupt storage — fall through to defaults */
+      state = null;
+    }
+  }
+  if (!state) state = defaultState();
+  cache.set(currentNamespace, state);
+  return state;
+}
+
+export function saveState() {
+  const state = cache.get(currentNamespace);
+  if (!state) return;
+  store.save(currentNamespace, JSON.stringify(state));
+}
+
+/**
+ * Wipe the current namespace's persisted state entirely (called on
+ * logout in the browser so no per-user data — balances, transactions,
+ * profile, OAuth codes — outlives the session).
  */
 export function clearPersistedState() {
-  cached = null;
-  try {
-    sessionStorage.removeItem(STORAGE_KEY);
-  } catch {
-    /* storage unavailable — in-memory cache is already dropped */
-  }
+  cache.delete(currentNamespace);
+  store.clear(currentNamespace);
 }
 
 /** Update state and persist in one step. */

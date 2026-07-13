@@ -1,11 +1,15 @@
 /*
- * Mock backend handlers. Registered against the api layer's mock
- * registry — active whenever VITE_API_URL is unset. Routes, payloads,
- * and responses mirror the intended real API so the UI does not change
- * when a server is introduced.
+ * Shared backend handlers — the Kre8trix API's business logic.
+ *
+ * Registered against the runtime-agnostic route registry (registry.ts)
+ * and executed by two transports: in the browser as the mock backend
+ * (whenever VITE_API_URL is unset), and in Node by the real HTTP
+ * server (server/index.ts), which layers real JWT auth, credential
+ * checking, and on-disk persistence on top. Keep this module free of
+ * browser- and Node-specific globals.
  */
 
-import { ApiError, registerMock, type MockContext } from '../api';
+import { ApiError, registerRoute, type RequestContext } from './registry';
 import {
   ensureAmlState,
   ensureAuditState,
@@ -19,11 +23,11 @@ import {
   SELF_WALLET_ADDRESS,
   type MockState,
 } from './state';
-import { AML_STATUS_OPTIONS } from '../aml';
-import { AUDIT_GENESIS_HASH, computeEntryHash } from '../audit';
-import { EMAIL_RE, SOLANA_ADDRESS_RE } from '../types';
+import { AML_STATUS_OPTIONS } from '../lib/aml';
+import { AUDIT_GENESIS_HASH, computeEntryHash } from '../lib/audit';
+import { EMAIL_RE, SOLANA_ADDRESS_RE } from '../lib/types';
 /* C4: OAuth provider metadata shared with the consent screen UI. */
-import { OAUTH_CLIENT_ID, OAUTH_PROVIDERS, OAUTH_REDIRECT_PATH } from '../oauth';
+import { OAUTH_CLIENT_ID, OAUTH_PROVIDERS, OAUTH_REDIRECT_PATH } from './oauth-providers';
 import type {
   AdvancesOverview,
   AppNotification,
@@ -78,11 +82,11 @@ import type {
   SarFiling,
   AuditAction,
   AuditActorType,
-} from '../types';
+} from '../lib/types';
 
 /* ─────────────────────────── helpers ─────────────────────────── */
 
-function requireAuth(ctx: MockContext) {
+function requireAuth(ctx: RequestContext) {
   if (!ctx.token) throw new ApiError(401, 'Not authenticated');
 }
 
@@ -140,7 +144,7 @@ function todayLabel(): string {
  * change it documents, so the audit entry and the mutation it describes
  * land atomically. Defensively backfills auditLog/auditCounter so call
  * sites don't each need their own ensureAuditState() guard. */
-function appendAuditLog(
+export function appendAuditLog(
   state: MockState,
   action: AuditAction,
   description: string,
@@ -168,7 +172,7 @@ function appendAuditLog(
 
 /* ─────────────────────────── auth ─────────────────────────── */
 
-registerMock('POST', '/auth/login', (ctx) => {
+registerRoute('POST', '/auth/login', (ctx) => {
   const body = ctx.body as { email?: string; password?: string };
   if (!body?.email || !EMAIL_RE.test(body.email.trim())) {
     throw new ApiError(400, 'Enter a valid email address');
@@ -182,7 +186,7 @@ registerMock('POST', '/auth/login', (ctx) => {
   return response;
 });
 
-registerMock('POST', '/auth/signup', (ctx) => {
+registerRoute('POST', '/auth/signup', (ctx) => {
   const body = ctx.body as { name?: string; email?: string; password?: string };
   if (!body?.name?.trim()) throw new ApiError(400, 'Name is required');
   if (!body?.email || !EMAIL_RE.test(body.email.trim())) {
@@ -211,7 +215,7 @@ registerMock('POST', '/auth/signup', (ctx) => {
   return response;
 });
 
-registerMock('GET', '/auth/me', (ctx) => {
+registerRoute('GET', '/auth/me', (ctx) => {
   requireAuth(ctx);
   return getState().user;
 });
@@ -228,12 +232,12 @@ function balancesSnapshot(): WalletBalances {
   };
 }
 
-registerMock('GET', '/wallet/balances', (ctx) => {
+registerRoute('GET', '/wallet/balances', (ctx) => {
   requireAuth(ctx);
   return balancesSnapshot();
 });
 
-registerMock('GET', '/wallet/transactions', (ctx) => {
+registerRoute('GET', '/wallet/transactions', (ctx) => {
   requireAuth(ctx);
   const { transactions } = getState();
   const { currency, limit } = ctx.query;
@@ -248,7 +252,7 @@ registerMock('GET', '/wallet/transactions', (ctx) => {
 /** D1: sends at or above this amount require completed identity verification. */
 const KYC_SEND_THRESHOLD = 1000;
 
-registerMock('POST', '/wallet/send', (ctx) => {
+registerRoute('POST', '/wallet/send', (ctx) => {
   requireAuth(ctx);
   ensureCreatorState();
   ensureKycState();
@@ -344,7 +348,7 @@ function shortenAddress(address: string): string {
   return `${address.slice(0, 4)}…${address.slice(-4)}`;
 }
 
-registerMock('GET', '/creators/search', (ctx) => {
+registerRoute('GET', '/creators/search', (ctx) => {
   requireAuth(ctx);
   ensureCreatorState();
   const q = (ctx.query.q ?? '').trim().replace(/^@/, '').toLowerCase();
@@ -358,13 +362,13 @@ registerMock('GET', '/creators/search', (ctx) => {
     .slice(0, 6);
 });
 
-registerMock('GET', '/wallet/recipients', (ctx) => {
+registerRoute('GET', '/wallet/recipients', (ctx) => {
   requireAuth(ctx);
   ensureCreatorState();
   return getState().recentRecipients.slice(0, 6);
 });
 
-registerMock('POST', '/wallet/request', (ctx) => {
+registerRoute('POST', '/wallet/request', (ctx) => {
   requireAuth(ctx);
   const body = ctx.body as SendPayload;
   if (!body?.recipient?.trim()) throw new ApiError(400, 'Enter who to request from');
@@ -402,7 +406,7 @@ registerMock('POST', '/wallet/request', (ctx) => {
   return response;
 });
 
-registerMock('POST', '/wallet/convert', (ctx) => {
+registerRoute('POST', '/wallet/convert', (ctx) => {
   requireAuth(ctx);
   const body = ctx.body as ConvertPayload;
   assertAmount(body?.amount);
@@ -446,7 +450,7 @@ registerMock('POST', '/wallet/convert', (ctx) => {
 
 /* ─────────────────────────── platform revenue ─────────────────────────── */
 
-registerMock('GET', '/revenue/platforms', (ctx) => {
+registerRoute('GET', '/revenue/platforms', (ctx) => {
   requireAuth(ctx);
   const platforms = [
     { platform: 'YouTube', amount: 4850, color: '#FF0000' },
@@ -523,7 +527,7 @@ function buildForecast(window: ForecastWindow): CashFlowForecast {
   return { window, points, summary: FORECAST_SUMMARY, confidencePercent: config.confidence };
 }
 
-registerMock('GET', '/cashflow/forecast', (ctx) => {
+registerRoute('GET', '/cashflow/forecast', (ctx) => {
   requireAuth(ctx);
   const window = (ctx.query.window as ForecastWindow) || '30D';
   if (!['30D', '60D', '90D'].includes(window)) {
@@ -532,7 +536,7 @@ registerMock('GET', '/cashflow/forecast', (ctx) => {
   return buildForecast(window);
 });
 
-registerMock('GET', '/cashflow/seasonality', (ctx) => {
+registerRoute('GET', '/cashflow/seasonality', (ctx) => {
   requireAuth(ctx);
   const months: SeasonalityMonth[] = [
     { month: 'Jan', index: 82 },
@@ -551,7 +555,7 @@ registerMock('GET', '/cashflow/seasonality', (ctx) => {
   return months;
 });
 
-registerMock('GET', '/cashflow/tax', (ctx) => {
+registerRoute('GET', '/cashflow/tax', (ctx) => {
   requireAuth(ctx);
   const tracker: TaxTracker = {
     ytdIncome: 94300,
@@ -563,12 +567,12 @@ registerMock('GET', '/cashflow/tax', (ctx) => {
   return tracker;
 });
 
-registerMock('GET', '/cashflow/reserve', (ctx) => {
+registerRoute('GET', '/cashflow/reserve', (ctx) => {
   requireAuth(ctx);
   return getState().reserve;
 });
 
-registerMock('PUT', '/cashflow/reserve', (ctx) => {
+registerRoute('PUT', '/cashflow/reserve', (ctx) => {
   requireAuth(ctx);
   const body = ctx.body as Partial<ReserveBuilder>;
   // Whitelist known fields and validate numerics so arbitrary or
@@ -621,7 +625,7 @@ function weightedScore(signalScores: Record<string, number>): number {
   return Math.round(weighted / totalWeight);
 }
 
-registerMock('GET', '/ccs/score', (ctx) => {
+registerRoute('GET', '/ccs/score', (ctx) => {
   requireAuth(ctx);
   const score: CcsScore = {
     score: 612,
@@ -642,7 +646,7 @@ registerMock('GET', '/ccs/score', (ctx) => {
   return score;
 });
 
-registerMock('POST', '/ccs/simulate', (ctx) => {
+registerRoute('POST', '/ccs/simulate', (ctx) => {
   requireAuth(ctx);
   const body = ctx.body as CcsSimulationRequest;
   const adjustments = body?.adjustments ?? {};
@@ -690,12 +694,12 @@ function advancesOverview(): AdvancesOverview {
   };
 }
 
-registerMock('GET', '/advances', (ctx) => {
+registerRoute('GET', '/advances', (ctx) => {
   requireAuth(ctx);
   return advancesOverview();
 });
 
-registerMock('POST', '/advances/apply', (ctx) => {
+registerRoute('POST', '/advances/apply', (ctx) => {
   requireAuth(ctx);
   ensureKycState();
   const body = ctx.body as { amount?: number };
@@ -747,12 +751,12 @@ registerMock('POST', '/advances/apply', (ctx) => {
 
 /* ─────────────────────────── profile & settings ─────────────────────────── */
 
-registerMock('GET', '/profile', (ctx) => {
+registerRoute('GET', '/profile', (ctx) => {
   requireAuth(ctx);
   return getState().profile;
 });
 
-registerMock('PUT', '/profile', (ctx) => {
+registerRoute('PUT', '/profile', (ctx) => {
   requireAuth(ctx);
   const body = ctx.body as Partial<Profile>;
   if (body.email !== undefined && !EMAIL_RE.test(body.email.trim())) {
@@ -766,12 +770,12 @@ registerMock('PUT', '/profile', (ctx) => {
   return getState().profile;
 });
 
-registerMock('GET', '/profile/connections', (ctx) => {
+registerRoute('GET', '/profile/connections', (ctx) => {
   requireAuth(ctx);
   return getState().connections;
 });
 
-registerMock('PUT', '/profile/connections', (ctx) => {
+registerRoute('PUT', '/profile/connections', (ctx) => {
   requireAuth(ctx);
   const body = ctx.body as { name?: string; connected?: boolean };
   if (!body?.name) throw new ApiError(400, 'Platform name is required');
@@ -793,12 +797,12 @@ registerMock('PUT', '/profile/connections', (ctx) => {
   return getState().connections;
 });
 
-registerMock('GET', '/settings', (ctx) => {
+registerRoute('GET', '/settings', (ctx) => {
   requireAuth(ctx);
   return getState().settings;
 });
 
-registerMock('PUT', '/settings', (ctx) => {
+registerRoute('PUT', '/settings', (ctx) => {
   requireAuth(ctx);
   const body = ctx.body as Partial<AppSettings>;
   mutate((s) => {
@@ -883,14 +887,14 @@ function setNotificationRead(id: string, read: boolean): AppNotification[] {
   return notificationsSnapshot();
 }
 
-registerMock('GET', '/notifications', (ctx) => {
+registerRoute('GET', '/notifications', (ctx) => {
   requireAuth(ctx);
   ensureNotificationShape();
   maybeGenerateNotification();
   return notificationsSnapshot();
 });
 
-registerMock('POST', '/notifications/read-all', (ctx) => {
+registerRoute('POST', '/notifications/read-all', (ctx) => {
   requireAuth(ctx);
   ensureNotificationShape();
   mutate((s) => {
@@ -899,13 +903,13 @@ registerMock('POST', '/notifications/read-all', (ctx) => {
   return notificationsSnapshot();
 });
 
-registerMock('POST', '/notifications/:id/read', (ctx) => {
+registerRoute('POST', '/notifications/:id/read', (ctx) => {
   requireAuth(ctx);
   ensureNotificationShape();
   return setNotificationRead(ctx.params.id, true);
 });
 
-registerMock('POST', '/notifications/:id/unread', (ctx) => {
+registerRoute('POST', '/notifications/:id/unread', (ctx) => {
   requireAuth(ctx);
   ensureNotificationShape();
   return setNotificationRead(ctx.params.id, false);
@@ -1072,7 +1076,7 @@ function marketplaceApps(): DealApplication[] {
   return getState().marketplaceApplications ?? [];
 }
 
-registerMock('GET', '/marketplace/deals', (ctx) => {
+registerRoute('GET', '/marketplace/deals', (ctx) => {
   requireAuth(ctx);
   const appliedIds = new Set(marketplaceApps().map((a) => a.dealId));
   let deals: BrandDeal[] = MARKETPLACE_DEALS.map((d) => ({ ...d, applied: appliedIds.has(d.id) }));
@@ -1097,7 +1101,7 @@ registerMock('GET', '/marketplace/deals', (ctx) => {
   return deals;
 });
 
-registerMock('GET', '/marketplace/applications', (ctx) => {
+registerRoute('GET', '/marketplace/applications', (ctx) => {
   requireAuth(ctx);
   return marketplaceApps();
 });
@@ -1105,7 +1109,7 @@ registerMock('GET', '/marketplace/applications', (ctx) => {
 /* The mock registry matches exact paths, so register one apply route per
    catalog deal — same shape as the real API's POST /marketplace/deals/:id/apply. */
 for (const deal of MARKETPLACE_DEALS) {
-  registerMock('POST', `/marketplace/deals/${deal.id}/apply`, (ctx) => {
+  registerRoute('POST', `/marketplace/deals/${deal.id}/apply`, (ctx) => {
     requireAuth(ctx);
     const body = ctx.body as { pitch?: string };
     const pitch = body?.pitch?.trim() ?? '';
@@ -1202,12 +1206,12 @@ function buildTaxSummary(): TaxSummary {
   };
 }
 
-registerMock('GET', '/tax/summary', (ctx) => {
+registerRoute('GET', '/tax/summary', (ctx) => {
   requireAuth(ctx);
   return buildTaxSummary();
 });
 
-registerMock('PUT', '/tax/estimates', (ctx) => {
+registerRoute('PUT', '/tax/estimates', (ctx) => {
   requireAuth(ctx);
   const body = ctx.body as Partial<TaxEstimateSettings>;
   if (body.effectiveRatePercent !== undefined) {
@@ -1229,7 +1233,7 @@ registerMock('PUT', '/tax/estimates', (ctx) => {
   return buildTaxSummary();
 });
 
-registerMock('GET', '/tax/1099k', (ctx) => {
+registerRoute('GET', '/tax/1099k', (ctx) => {
   requireAuth(ctx);
   const threshold = 5000;
   const platforms = [
@@ -1253,7 +1257,7 @@ registerMock('GET', '/tax/1099k', (ctx) => {
   return rows;
 });
 
-registerMock('POST', '/tax/turbotax/connect', (ctx) => {
+registerRoute('POST', '/tax/turbotax/connect', (ctx) => {
   requireAuth(ctx);
   ensureTaxState();
   const body = ctx.body as { connected?: boolean } | undefined;
@@ -1291,7 +1295,7 @@ function providerScope(platform: OAuthPlatform): string {
 }
 
 for (const provider of Object.values(OAUTH_PROVIDERS)) {
-  registerMock('GET', `/oauth/${provider.slug}/start`, (ctx) => {
+  registerRoute('GET', `/oauth/${provider.slug}/start`, (ctx) => {
     requireAuth(ctx);
     const state = randomToken();
     mutate((s) => {
@@ -1318,7 +1322,7 @@ for (const provider of Object.values(OAUTH_PROVIDERS)) {
   });
 }
 
-registerMock('POST', '/oauth/authorize/decision', (ctx) => {
+registerRoute('POST', '/oauth/authorize/decision', (ctx) => {
   requireAuth(ctx);
   const body = ctx.body as OAuthDecisionPayload;
   if (!body?.state) throw new ApiError(400, 'invalid_request: missing state parameter');
@@ -1362,7 +1366,7 @@ registerMock('POST', '/oauth/authorize/decision', (ctx) => {
   return response;
 });
 
-registerMock('POST', '/oauth/token', (ctx) => {
+registerRoute('POST', '/oauth/token', (ctx) => {
   requireAuth(ctx);
   const body = ctx.body as OAuthTokenPayload;
   if (body?.grant_type !== 'authorization_code') {
@@ -1443,12 +1447,12 @@ function kycSnapshot(): KycProfile {
   return profile;
 }
 
-registerMock('GET', '/kyc/status', (ctx) => {
+registerRoute('GET', '/kyc/status', (ctx) => {
   requireAuth(ctx);
   return kycSnapshot();
 });
 
-registerMock('PUT', '/kyc/entity-type', (ctx) => {
+registerRoute('PUT', '/kyc/entity-type', (ctx) => {
   requireAuth(ctx);
   ensureKycState();
   const body = ctx.body as { entityType?: 'individual' | 'business' };
@@ -1462,7 +1466,7 @@ registerMock('PUT', '/kyc/entity-type', (ctx) => {
   return getState().kyc!;
 });
 
-registerMock('PUT', '/kyc/personal-info', (ctx) => {
+registerRoute('PUT', '/kyc/personal-info', (ctx) => {
   requireAuth(ctx);
   ensureKycState();
   const body = ctx.body as Partial<KycPersonalInfo>;
@@ -1486,7 +1490,7 @@ registerMock('PUT', '/kyc/personal-info', (ctx) => {
   return getState().kyc!;
 });
 
-registerMock('PUT', '/kyc/business-info', (ctx) => {
+registerRoute('PUT', '/kyc/business-info', (ctx) => {
   requireAuth(ctx);
   ensureKycState();
   const body = ctx.body as Partial<KybBusinessInfo>;
@@ -1506,7 +1510,7 @@ registerMock('PUT', '/kyc/business-info', (ctx) => {
   return getState().kyc!;
 });
 
-registerMock('POST', '/kyc/documents', (ctx) => {
+registerRoute('POST', '/kyc/documents', (ctx) => {
   requireAuth(ctx);
   ensureKycState();
   const body = ctx.body as { type?: KycDocumentType; fileName?: string; sizeBytes?: number };
@@ -1539,7 +1543,7 @@ registerMock('POST', '/kyc/documents', (ctx) => {
   return getState().kyc!;
 });
 
-registerMock('POST', '/kyc/selfie', (ctx) => {
+registerRoute('POST', '/kyc/selfie', (ctx) => {
   requireAuth(ctx);
   ensureKycState();
   mutate((s) => {
@@ -1553,7 +1557,7 @@ registerMock('POST', '/kyc/selfie', (ctx) => {
   return getState().kyc!;
 });
 
-registerMock('POST', '/kyc/submit', (ctx) => {
+registerRoute('POST', '/kyc/submit', (ctx) => {
   requireAuth(ctx);
   ensureKycState();
   const { kyc } = getState();
@@ -1590,7 +1594,7 @@ registerMock('POST', '/kyc/submit', (ctx) => {
   return getState().kyc!;
 });
 
-registerMock('POST', '/kyc/reset', (ctx) => {
+registerRoute('POST', '/kyc/reset', (ctx) => {
   requireAuth(ctx);
   mutate((s) => {
     s.kyc = seedKyc();
@@ -1603,7 +1607,7 @@ registerMock('POST', '/kyc/reset', (ctx) => {
  *
  * Alerts are derived from the existing wallet transaction ledger (no
  * separate synthetic dataset) plus a couple of illustrative seed alerts
- * (see seedAmlAlerts in mock/state.ts) so the console isn't empty before
+ * (see seedAmlAlerts in state.ts) so the console isn't empty before
  * the demo user sends anything. This is a realistic-looking mock — no
  * real FinCEN/SAR e-filing integration exists.
  */
@@ -1724,7 +1728,7 @@ function amlAlertsSnapshot(): AmlAlert[] {
   return [...getState().amlAlerts!].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
-registerMock('GET', '/aml/summary', (ctx) => {
+registerRoute('GET', '/aml/summary', (ctx) => {
   requireAuth(ctx);
   const alerts = amlAlertsSnapshot();
   const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
@@ -1739,7 +1743,7 @@ registerMock('GET', '/aml/summary', (ctx) => {
   return summary;
 });
 
-registerMock('GET', '/aml/alerts', (ctx) => {
+registerRoute('GET', '/aml/alerts', (ctx) => {
   requireAuth(ctx);
   let alerts = amlAlertsSnapshot();
   const { status, severity } = ctx.query;
@@ -1755,12 +1759,12 @@ function findAmlAlert(id: string): AmlAlert {
   return alert;
 }
 
-registerMock('GET', '/aml/alerts/:id', (ctx) => {
+registerRoute('GET', '/aml/alerts/:id', (ctx) => {
   requireAuth(ctx);
   return findAmlAlert(ctx.params.id);
 });
 
-registerMock('PUT', '/aml/alerts/:id/status', (ctx) => {
+registerRoute('PUT', '/aml/alerts/:id/status', (ctx) => {
   requireAuth(ctx);
   findAmlAlert(ctx.params.id);
   const body = ctx.body as { status?: AmlAlertStatus };
@@ -1779,7 +1783,7 @@ registerMock('PUT', '/aml/alerts/:id/status', (ctx) => {
   return findAmlAlert(ctx.params.id);
 });
 
-registerMock('POST', '/aml/alerts/:id/notes', (ctx) => {
+registerRoute('POST', '/aml/alerts/:id/notes', (ctx) => {
   requireAuth(ctx);
   findAmlAlert(ctx.params.id);
   const body = ctx.body as { body?: string };
@@ -1797,7 +1801,7 @@ registerMock('POST', '/aml/alerts/:id/notes', (ctx) => {
   return findAmlAlert(ctx.params.id);
 });
 
-registerMock('POST', '/aml/alerts/:id/sar', (ctx) => {
+registerRoute('POST', '/aml/alerts/:id/sar', (ctx) => {
   requireAuth(ctx);
   const alert = findAmlAlert(ctx.params.id);
   if (alert.sar) throw new ApiError(409, 'A SAR has already been filed for this alert');
@@ -1829,7 +1833,7 @@ registerMock('POST', '/aml/alerts/:id/sar', (ctx) => {
 
 /* ─────────────────────────── D3: immutable audit log ─────────────────────────── */
 
-registerMock('GET', '/audit-log', (ctx) => {
+registerRoute('GET', '/audit-log', (ctx) => {
   requireAuth(ctx);
   ensureAuditState();
   let entries = [...getState().auditLog!].sort((a, b) => b.timestamp.localeCompare(a.timestamp));
@@ -1841,7 +1845,7 @@ registerMock('GET', '/audit-log', (ctx) => {
   return entries;
 });
 
-registerMock('GET', '/audit-log/verify', (ctx) => {
+registerRoute('GET', '/audit-log/verify', (ctx) => {
   requireAuth(ctx);
   ensureAuditState();
   const entries = getState().auditLog!;
