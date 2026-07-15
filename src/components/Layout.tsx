@@ -175,8 +175,9 @@ export default function Layout({ children }: { children: ReactNode }) {
       {/* Sidebar */}
       <Navbar />
 
-      {/* Main content area */}
-      <div className="md:ml-[72px] lg:ml-[260px]">
+      {/* Main content area — extra bottom padding on mobile so content and
+          footer clear the fixed bottom tab bar (Navbar). */}
+      <div className="md:ml-[72px] lg:ml-[260px] pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">
         {/* Top Bar */}
         <header className="sticky top-0 z-50 h-16 bg-void/80 backdrop-blur-[20px] border-b border-[rgba(var(--fg-rgb),0.08)] flex items-center justify-between px-8">
           <div className="flex items-center gap-4">
