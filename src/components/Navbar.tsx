@@ -11,8 +11,6 @@ import {
   BarChart3,
   Receipt,
   Settings,
-  Menu,
-  X,
 } from 'lucide-react';
 import InitialsAvatar from './InitialsAvatar';
 import { useAuth } from '@/lib/auth-context';
@@ -37,24 +35,6 @@ export default function Navbar() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [prevPathname, setPrevPathname] = useState(location.pathname);
-
-  // Close the mobile menu whenever the route changes (state adjustment
-  // during render, per https://react.dev/learn/you-might-not-need-an-effect).
-  if (prevPathname !== location.pathname) {
-    setPrevPathname(location.pathname);
-    setMobileOpen(false);
-  }
-
-  useEffect(() => {
-    if (!mobileOpen) return;
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setMobileOpen(false);
-    };
-    document.addEventListener('keydown', handleKey);
-    return () => document.removeEventListener('keydown', handleKey);
-  }, [mobileOpen]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -81,31 +61,13 @@ export default function Navbar() {
 
   return (
     <>
-      {/* Mobile hamburger */}
-      <button
-        onClick={() => setMobileOpen(!mobileOpen)}
-        className="fixed top-4 left-4 z-[60] md:hidden bg-panel border border-[rgba(var(--fg-rgb),0.08)] rounded-lg p-2 text-ink"
-      >
-        {mobileOpen ? <X size={20} /> : <Menu size={20} />}
-      </button>
-
-      {/* Mobile overlay — decorative click-outside dismiss; keyboard users close
-          the menu via Escape (handled above) or the hamburger button itself. */}
-      {mobileOpen && (
-        <div
-          aria-hidden="true"
-          className="fixed inset-0 bg-black/60 z-[55] md:hidden"
-          onClick={() => setMobileOpen(false)}
-        />
-      )}
-
+      {/* ── Desktop / tablet sidebar (>= md) ───────────────────────────── */}
       <aside
         className={`
-          fixed top-0 left-0 h-full bg-deep border-r border-[rgba(var(--fg-rgb),0.08)]
-          flex flex-col transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
+          hidden md:flex fixed top-0 left-0 h-full bg-deep border-r border-[rgba(var(--fg-rgb),0.08)]
+          flex-col transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
           z-[56]
           ${sidebarWidth}
-          ${mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
         `}
       >
         {/* Logo */}
@@ -164,6 +126,47 @@ export default function Navbar() {
           )}
         </div>
       </aside>
+
+      {/* ── Mobile bottom tab bar (< md) ───────────────────────────────
+          Replaces the old hamburger overlay, which sat over the page title.
+          All ten tabs stay reachable via horizontal scroll. */}
+      <nav
+        aria-label="Primary"
+        className="
+          md:hidden fixed bottom-0 left-0 right-0 z-[56]
+          bg-deep border-t border-[rgba(var(--fg-rgb),0.08)]
+          overflow-x-auto
+          pb-[env(safe-area-inset-bottom)]
+        "
+      >
+        <ul className="flex items-stretch min-w-max">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const active = isActive(item.path);
+            return (
+              <li key={item.path} className="flex-1">
+                <button
+                  onClick={() => navigate(item.path)}
+                  aria-current={active ? 'page' : undefined}
+                  className={`
+                    w-full min-w-[68px] h-16 px-2 flex flex-col items-center justify-center gap-1
+                    transition-colors duration-200
+                    ${active
+                      ? 'text-acid'
+                      : 'text-[rgba(var(--fg-rgb),var(--muted-alpha))] hover:text-ink'
+                    }
+                  `}
+                >
+                  <Icon size={20} className="flex-shrink-0" />
+                  <span className="font-body text-[10px] font-medium leading-none whitespace-nowrap">
+                    {item.label}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
     </>
   );
 }
